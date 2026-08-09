@@ -1,0 +1,146 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { Clock, Mail, MapPin, MessageCircle, Phone, Siren } from "lucide-react";
+
+import { Reveal } from "@/components/motion-primitives";
+import { SectionHeading } from "@/components/site/sections";
+import { CLINIC } from "@/lib/clinic-data";
+import { useClinicStore } from "@/lib/clinic-store";
+import { useI18n } from "@/lib/i18n";
+import { mailtoHref, telHref, waMeHref } from "@/lib/sanitize";
+
+const title = "Contact PawCare — Hours, Location & Emergency Line";
+const description =
+  "Call, message or visit PawCare Veterinary Clinic in San Francisco. Emergency line answered 24/7, seven days a week.";
+
+export const Route = createFileRoute("/contact")({
+  head: () => ({
+    meta: [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: "/contact" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "/contact" }],
+  }),
+  component: ContactPage,
+});
+
+function ContactPage() {
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
+  const contact = {
+    emergency: settings.emergency,
+    phone: settings.phone,
+    whatsapp: settings.whatsapp,
+    email: settings.email,
+    address: settings.address,
+    hours: CLINIC.hours,
+  };
+
+  const cards = [
+    {
+      icon: Siren,
+      label: t("contact.emergency"),
+      value: contact.emergency,
+      href: telHref(contact.emergency),
+      urgent: true,
+    },
+    {
+      icon: Phone,
+      label: t("contact.reception"),
+      value: contact.phone,
+      href: telHref(contact.phone),
+    },
+    {
+      icon: MessageCircle,
+      label: t("contact.whatsapp"),
+      value: contact.whatsapp,
+      href: waMeHref(contact.whatsapp),
+    },
+    {
+      icon: Mail,
+      label: t("contact.email"),
+      value: contact.email,
+      href: mailtoHref(contact.email),
+    },
+  ];
+
+  return (
+    <>
+      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <SectionHeading
+            eyebrow={t("page.contact.eyebrow")}
+            title={t("page.contact.title")}
+            description={t("page.contact.desc")}
+          />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {cards.map((card, i) => (
+            <Reveal key={card.label} delay={i * 0.06}>
+              <a
+                href={card.href ?? undefined}
+                className="block h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:-translate-y-1 hover:shadow-raised"
+              >
+                <span
+                  className={
+                    card.urgent
+                      ? "grid size-11 place-items-center rounded-xl bg-destructive/10 text-destructive"
+                      : "grid size-11 place-items-center rounded-xl bg-primary/10 text-primary"
+                  }
+                >
+                  <card.icon className="size-5" />
+                </span>
+                <p className="mt-5 text-xs uppercase tracking-wider text-muted-foreground">
+                  {card.label}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{card.value}</p>
+              </a>
+            </Reveal>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <Reveal>
+            <div className="overflow-hidden rounded-2xl border border-border shadow-card">
+              <iframe
+                title={t("contact.map")}
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-122.4300%2C37.7450%2C-122.4000%2C37.7650&layer=mapnik"
+                className="h-[420px] w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.06}>
+            <div className="h-full rounded-2xl border border-border bg-card p-6 shadow-card">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <Clock className="size-4 text-primary" /> {t("contact.hours")}
+              </h3>
+              <ul className="mt-4 space-y-3">
+                {CLINIC.hours.map((h, i) => (
+                  <li key={`${h.day}-${i}`} className="flex justify-between gap-4 text-sm">
+                    <span className="text-muted-foreground">{t(`hour.${i}`)}</span>
+                    <span className="font-medium text-foreground">{h.time}</span>
+                  </li>
+                ))}
+              </ul>
+              <h3 className="mt-8 flex items-center gap-2 text-sm font-semibold">
+                <MapPin className="size-4 text-primary" /> {t("contact.address")}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {contact.address}
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    </>
+  );
+}

@@ -1,0 +1,172 @@
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Menu, Moon, Phone, Sun, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+
+import { Button } from "@/components/ui/button";
+import { PawCareLogo } from "@/components/PawCareMark";
+import { useClinicStore } from "@/lib/clinic-store";
+import { LanguageToggle, useI18n } from "@/lib/i18n";
+import { telHref } from "@/lib/sanitize";
+import { cn } from "@/lib/utils";
+
+function useNav() {
+  const { t } = useI18n();
+  return [
+    { to: "/", label: t("nav.home") },
+    { to: "/services", label: t("nav.services") },
+    { to: "/doctors", label: t("nav.doctors") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/contact", label: t("nav.contact") },
+  ] as const;
+}
+
+function useTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem("pawcare:theme");
+    } catch {
+      /* storage unavailable */
+    }
+    const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = stored ? stored === "dark" : prefers;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+  }, []);
+  const toggle = () => {
+    setDark((d) => {
+      const next = !d;
+      document.documentElement.classList.toggle("dark", next);
+      try {
+        localStorage.setItem("pawcare:theme", next ? "dark" : "light");
+      } catch {
+        /* storage unavailable */
+      }
+      return next;
+    });
+  };
+  return { dark, toggle };
+}
+
+export function SiteHeader() {
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { dark, toggle } = useTheme();
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
+  const NAV = useNav();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+        scrolled ? "bg-background shadow-card" : "border-b border-transparent bg-transparent",
+      )}
+      style={scrolled ? { borderBottom: "1px solid var(--border)" } : undefined}
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+        <Link to="/" aria-label={t("header.homeAria")}>
+          <PawCareLogo />
+        </Link>
+
+        <nav className="hidden items-center gap-1 md:flex" aria-label={t("header.mainAria")}>
+          {NAV.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              activeOptions={{ exact: item.to === "/" }}
+              activeProps={{ className: "text-foreground" }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <button
+            onClick={toggle}
+            aria-label={dark ? t("header.lightMode") : t("header.darkMode")}
+            className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
+          <a
+            href={telHref(settings.emergency) ?? undefined}
+            className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:inline-flex"
+          >
+            <Phone className="size-4" />
+            {settings.emergency}
+          </a>
+          <Button asChild size="sm" className="hidden shadow-glow sm:inline-flex">
+            <Link to="/book">{t("nav.book")}</Link>
+          </Button>
+          <button
+            className="grid size-9 place-items-center rounded-lg text-foreground md:hidden"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? t("header.closeMenu") : t("header.openMenu")}
+            aria-expanded={open}
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="mobile-menu"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-t border-border bg-background md:hidden"
+          >
+            <nav
+              className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4"
+              aria-label={t("header.mobileAria")}
+            >
+              {NAV.map((item, i) => (
+                <motion.div
+                  key={item.to}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.06 * i, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Link
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg bg-muted/50 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Button asChild className="mt-2 w-full shadow-glow">
+                  <Link to="/book" onClick={() => setOpen(false)}>
+                    {t("nav.book")}
+                  </Link>
+                </Button>
+              </motion.div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
