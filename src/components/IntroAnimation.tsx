@@ -7,7 +7,24 @@ import { useI18n } from "@/lib/i18n";
 /** Toggle the whole splash off for QA/dev without touching component code. */
 export const ENABLE_INTRO_ANIMATION = true;
 
-const MAX_DURATION = 2000;
+const MAX_DURATION = 900;
+const INTRO_SEEN_KEY = "pawcare:intro-seen";
+
+function hasSeenIntro(): boolean {
+  try {
+    return window.sessionStorage.getItem(INTRO_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markIntroSeen() {
+  try {
+    window.sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 export function IntroAnimation() {
   const reduceMotion = useReducedMotion();
@@ -20,8 +37,11 @@ export function IntroAnimation() {
 
   useEffect(() => {
     if (!ENABLE_INTRO_ANIMATION) return;
+    // Show the splash once per browser session; reloads and later visits
+    // go straight to the page.
+    if (hasSeenIntro()) return;
+    markIntroSeen();
     setVisible(true);
-    document.body.style.overflow = "hidden";
 
     const start = performance.now();
     const total = reduceRef.current ? 400 : MAX_DURATION;
@@ -48,7 +68,6 @@ export function IntroAnimation() {
     function finish() {
       cancelAnimationFrame(raf);
       window.clearTimeout(skipTimer);
-      document.body.style.overflow = "";
       setVisible(false);
       window.removeEventListener("keydown", finish);
       window.removeEventListener("pointerdown", finish);
@@ -60,7 +79,6 @@ export function IntroAnimation() {
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(skipTimer);
-      document.body.style.overflow = "";
       window.removeEventListener("keydown", finish);
       window.removeEventListener("pointerdown", finish);
     };
@@ -76,7 +94,7 @@ export function IntroAnimation() {
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
           initial={{ opacity: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-          transition={{ duration: reduceMotion ? 0.2 : 0.35, ease }}
+          transition={{ duration: reduceMotion ? 0.15 : 0.25, ease }}
           role="status"
           aria-label={t("intro.loadingAria")}
         >

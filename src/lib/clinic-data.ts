@@ -108,7 +108,7 @@ export const WHY_US = [
   },
   {
     title: "Transparent pricing",
-    detail: "Written estimates before treatment begins. No line item you didn't approve.",
+    detail: "Written estimates before treatment begins. No line item you haven't approved.",
   },
   {
     title: "Emergency services",

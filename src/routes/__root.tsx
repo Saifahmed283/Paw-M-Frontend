@@ -76,6 +76,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: () => ({ lang: readLangCookie() }),
   head: () => ({
@@ -98,10 +100,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap",
-      },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
@@ -133,6 +131,28 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient, lang } = Route.useRouteContext();
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Font stylesheet is loaded after first paint so a slow or unreachable
+    // Google Fonts endpoint can never delay the initial render.
+    let link: HTMLLinkElement | undefined;
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      if (cancelled) return;
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.media = "print";
+      link.onload = () => {
+        if (link) link.media = "all";
+      };
+      link.href = FONT_CSS_URL;
+      document.head.appendChild(link);
+    }, 100);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, []);
 
   return (
     <I18nProvider initialLang={lang}>

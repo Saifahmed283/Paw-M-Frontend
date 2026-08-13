@@ -295,7 +295,8 @@ const EN: Dict = {
   "whyitem.1.detail":
     "Digital radiography, in-house diagnostics and monitored anaesthesia as standard.",
   "whyitem.2.title": "Transparent pricing",
-  "whyitem.2.detail": "Written estimates before treatment begins. No line item you didn't approve.",
+  "whyitem.2.detail":
+    "Written estimates before treatment begins. No line item you haven't approved.",
   "whyitem.3.title": "Emergency services",
   "whyitem.3.detail":
     "A staffed critical care team on the floor, not a redirected answering service.",
@@ -691,7 +692,7 @@ const AR: Dict = {
   "booking.genericDoctor": "أول طبيب متاح",
 
   "footer.tagline":
-    "مستشفى بيتي متخصص مبني على تشخيصات واضحة وراحة تامة وسجلات طبية تملكها أنت بالفعل.",
+    "مستشفى بيطري متخصص مبني على تشخيصات واضحة وتقديرات صادقة وسجلات طبية تملكها أنت بالفعل.",
   "footer.clinic": "العيادة",
   "footer.care": "الرعاية",
   "footer.services": "الخدمات",
@@ -708,7 +709,7 @@ const AR: Dict = {
   "page.doctors.eyebrow": "فريقنا",
   "page.doctors.title": "أربعة عشر طبيباً بيطرياً. ملف طبي مشترك.",
   "page.doctors.desc":
-    "يترأس كل طبيب تخصصًا محددًا، وتُعرض الحالات المعقدة على الفريق فيقتل قبل اعتماد أي خطة علاج.",
+    "يترأس كل طبيب تخصصًا محددًا، وتُراجع الحالات المعقدة معًا قبل اعتماد أي خطة علاج.",
   "page.about.eyebrow": "حول باوكير",
   "page.about.title": "ممارسة طبية تصادف أنها تعالج الحيوانات",
   "page.about.desc":
@@ -787,9 +788,9 @@ const AR: Dict = {
 
   // آراء العملاء
   "testi.0.quote":
-    "تمت تخصيص الكلب في أقل من أربع دقائق في الثانية فجرًا. وصلت الملاحظات إلى بريدي قبل وصولنا للبيت.",
+    "تم فرز كلبنا الجحر في أقل من أربع دقائق عند الساعة الثانية فجرًا. وصلت ملاحظات المتابعة إلى بريدي قبل وصولنا إلى البيت.",
   "testi.0.name": "هانا دويل",
-  "testi.0.pet": "روفوس · جحر بريطاني",
+  "testi.0.pet": "روفوس · بوردر تيرير",
   "testi.1.quote": "شرحوا كل بند في التقدير قبل لمس أي شيء. هذا الصدق نادر.",
   "testi.1.name": "ماركوس بيل",
   "testi.1.pet": "نالا · مين كون",
@@ -816,7 +817,7 @@ const AR: Dict = {
     "جميع البطاقات الرئيسية والتحويل البنكي ومعظم شركات التأمين عبر الفوترة المباشرة، مع تقديرات مكتوبة قبل كل إجراء.",
   "faq.4.q": "هل تعالجون حيوانات غير القطط والكلاب؟",
   "faq.4.a":
-    "نعم — الأرانب والقوارض الحية والزرعات والطيور يعالجها فريق الحيوانات الغريبة بأساليب خاصة بالأنواع.",
+    "نعم — الأرانب وخنازير غينيا والزواحف والطيور يعالجها فريق الحيوانات الغريبة بأساليب خاصة بالأنواع.",
   "faq.5.q": "كيف تعمل تذكيرات التطعيم؟",
   "faq.5.a":
     "يُسجل كل لقاح مع تاريخ استحقاقه، وتصلك تذكيرات قبل 30 و7 و1 يوم عبر البريد أو واتساب حسب اختيارك.",
@@ -836,7 +837,7 @@ const AR: Dict = {
   "doc.dr-samir-haddad.bio": "يُجري أكثر من 300 عملية أنسجة رخوة وعظام كل عام.",
   "doc.dr-samir-haddad.tag.0": "جراحة العظام",
   "doc.dr-samir-haddad.tag.1": "الأنسجة الرخوة",
-  "doc.dr-samir-haddad.tag.2": "إصلاح الرباطع الصليبي",
+  "doc.dr-samir-haddad.tag.2": "إصلاح الرباط الصليبي",
   "doc.dr-samir-haddad.tag.3": "إعادة التأهيل بعد الجراحة",
   "doc.dr-nadia-osei.name": "د. نادية أوساي",
   "doc.dr-nadia-osei.spec": "الطوارئ والرعاية الحرجة",
@@ -850,7 +851,7 @@ const AR: Dict = {
   "doc.dr-james-oconnell.spec": "طب وجراحة الأسنان",
   "doc.dr-james-oconnell.exp": "9 سنوات",
   "doc.dr-james-oconnell.bio":
-    "مركع على العناية بالأسنان مع إدارة الألم للحيوانات الكبيرة الصغيرة.",
+    "مركز على العناية بالأسنان مع إدارة الألم للمرضى المسنين والسلالات الصغيرة.",
   "doc.dr-james-oconnell.tag.0": "جراحة الأسنان",
   "doc.dr-james-oconnell.tag.1": "خلع الأسنان",
   "doc.dr-james-oconnell.tag.2": "إدارة الألم",
@@ -864,7 +865,7 @@ const AR: Dict = {
   "doc.dr-priya-raman.tag.2": "علم خلايا الجلد",
   "doc.dr-priya-raman.tag.3": "العلاج المناعي",
   "doc.dr-tomas-lindqvist.name": "د. توماس لينكيست",
-  "doc.dr-tomas-lindqvist.spec": "الحيوانات الغريبة والثديات الصغيرة",
+  "doc.dr-tomas-lindqvist.spec": "الحيوانات الغريبة والثدييات الصغيرة",
   "doc.dr-tomas-lindqvist.exp": "14 عامًا",
   "doc.dr-tomas-lindqvist.bio": "يرعى الأرانب والزواحف والطيور بأساليب خاصة بها.",
   "doc.dr-tomas-lindqvist.tag.0": "تخدير الحيوانات الغريبة",
@@ -894,7 +895,7 @@ const AR: Dict = {
   "doctors.specLabel": "التخصص",
   "doctors.petLabel": "نوع الحيوان",
   "doctors.showing": "عرض {count} من {total} أطباء",
-  "doctors.empty": "لا يوجد طبيب يطابق هذا الجمع. جرّب نوع حيوان آخر.",
+  "doctors.empty": "لا يوجد طبيب يطابق هذا المزيج. جرّب نوع حيوان آخر.",
 
   // صفحة حول
   "about.principle.0.title": "شخّص قبل أن تعالج",
@@ -925,7 +926,7 @@ const AR: Dict = {
   "dash.unnamed": "طبيب بدون اسم",
   "dash.untitled": "خدمة بدون عنوان",
   "availability.fullyBooked": "مكتمل الحجز هذا الشهر — انضم لقائمة الانتظار عند الحجز.",
-  "availability.slotsOpen": "موعد متاح",
+  "availability.slotsOpen": "مواعيد متاحة",
   "availability.treats": "يعالج:",
   "availability.experience": "خبرة",
   "availability.book": "احجز",
@@ -957,7 +958,7 @@ const AR: Dict = {
   "booking.ph.phone": "+1 415 555 0100",
   "booking.ph.email": "alex@example.com",
   "booking.ph.petName": "روفوس",
-  "booking.ph.breed": "جحر بيطري",
+  "booking.ph.breed": "بوردر تيرير",
   "booking.ph.age": "4 سنوات",
   "booking.ph.weight": "8.2 كجم",
   "booking.ph.symptoms": "يعرج في الساق الأمامية اليسرى منذ الثلاثاء ويأكل بشكل طبيعي.",

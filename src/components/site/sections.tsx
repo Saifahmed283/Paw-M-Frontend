@@ -1,6 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import * as Icons from "lucide-react";
-import { ArrowRight, Check, PawPrint, Quote, Star } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Bath,
+  Check,
+  FlaskConical,
+  FolderHeart,
+  PawPrint,
+  Pill,
+  Quote,
+  Salad,
+  ScanLine,
+  Scissors,
+  Siren,
+  Sparkles,
+  Star,
+  Stethoscope,
+  Syringe,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -31,6 +49,21 @@ import { cn } from "@/lib/utils";
 import { telHref } from "@/lib/sanitize";
 import heroImage from "@/assets/hero-vet.jpg";
 import clinicImage from "@/assets/clinic-interior.jpg";
+
+const SERVICE_ICONS: Record<string, LucideIcon> = {
+  Stethoscope,
+  Syringe,
+  Scissors,
+  Siren,
+  FlaskConical,
+  Sparkles,
+  Pill,
+  Bath,
+  Salad,
+  ScanLine,
+  Activity,
+  FolderHeart,
+};
 
 export function SectionHeading({
   eyebrow,
@@ -241,8 +274,7 @@ export function ServicesGrid({ limit }: { limit?: number }) {
   return (
     <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((service, i) => {
-        const Icon = (Icons[service.icon as keyof typeof Icons] ??
-          Icons.Stethoscope) as Icons.LucideIcon;
+        const Icon = SERVICE_ICONS[service.icon] ?? Stethoscope;
         return (
           <Reveal key={service.slug} delay={(i % 3) * 0.06}>
             <article className="group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
