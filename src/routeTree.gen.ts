@@ -17,7 +17,13 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StoreRouteImport } from './routes/store'
 import { Route as BookingSuccessRouteImport } from './routes/booking.success'
+import { Route as StoreIndexRouteImport } from './routes/store.index'
+import { Route as StoreProductIdRouteImport } from './routes/store.$productId'
+import { Route as StoreCheckoutRouteImport } from './routes/store.checkout'
+import { Route as StoreTrackRouteImport } from './routes/store.track'
+import { Route as StoreWishlistRouteImport } from './routes/store.wishlist'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,10 +65,40 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookingSuccessRoute = BookingSuccessRouteImport.update({
   id: '/booking/success',
   path: '/booking/success',
   getParentRoute: () => rootRouteImport,
+} as any)
+const StoreIndexRoute = StoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreProductIdRoute = StoreProductIdRouteImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCheckoutRoute = StoreCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreTrackRoute = StoreTrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreWishlistRoute = StoreWishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => StoreRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -74,7 +110,13 @@ export interface FileRoutesByFullPath {
   '/doctors': typeof DoctorsRoute
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/track': typeof StoreTrackRoute
+  '/store/wishlist': typeof StoreWishlistRoute
+  '/store/': typeof StoreIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +128,11 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/booking/success': typeof BookingSuccessRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/track': typeof StoreTrackRoute
+  '/store/wishlist': typeof StoreWishlistRoute
+  '/store': typeof StoreIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +144,13 @@ export interface FileRoutesById {
   '/doctors': typeof DoctorsRoute
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/track': typeof StoreTrackRoute
+  '/store/wishlist': typeof StoreWishlistRoute
+  '/store/': typeof StoreIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +163,13 @@ export interface FileRouteTypes {
     | '/doctors'
     | '/services'
     | '/sitemap.xml'
+    | '/store'
     | '/booking/success'
+    | '/store/$productId'
+    | '/store/checkout'
+    | '/store/track'
+    | '/store/wishlist'
+    | '/store/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +181,11 @@ export interface FileRouteTypes {
     | '/services'
     | '/sitemap.xml'
     | '/booking/success'
+    | '/store/$productId'
+    | '/store/checkout'
+    | '/store/track'
+    | '/store/wishlist'
+    | '/store'
   id:
     | '__root__'
     | '/'
@@ -132,7 +196,13 @@ export interface FileRouteTypes {
     | '/doctors'
     | '/services'
     | '/sitemap.xml'
+    | '/store'
     | '/booking/success'
+    | '/store/$productId'
+    | '/store/checkout'
+    | '/store/track'
+    | '/store/wishlist'
+    | '/store/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,6 +214,7 @@ export interface RootRouteChildren {
   DoctorsRoute: typeof DoctorsRoute
   ServicesRoute: typeof ServicesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StoreRoute: typeof StoreRouteWithChildren
   BookingSuccessRoute: typeof BookingSuccessRoute
 }
 
@@ -205,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/booking/success': {
       id: '/booking/success'
       path: '/booking/success'
@@ -212,8 +290,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store/': {
+      id: '/store/'
+      path: '/'
+      fullPath: '/store/'
+      preLoaderRoute: typeof StoreIndexRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/$productId': {
+      id: '/store/$productId'
+      path: '/$productId'
+      fullPath: '/store/$productId'
+      preLoaderRoute: typeof StoreProductIdRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/checkout': {
+      id: '/store/checkout'
+      path: '/checkout'
+      fullPath: '/store/checkout'
+      preLoaderRoute: typeof StoreCheckoutRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/track': {
+      id: '/store/track'
+      path: '/track'
+      fullPath: '/store/track'
+      preLoaderRoute: typeof StoreTrackRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/wishlist': {
+      id: '/store/wishlist'
+      path: '/wishlist'
+      fullPath: '/store/wishlist'
+      preLoaderRoute: typeof StoreWishlistRouteImport
+      parentRoute: typeof StoreRoute
+    }
   }
 }
+
+interface StoreRouteChildren {
+  StoreProductIdRoute: typeof StoreProductIdRoute
+  StoreCheckoutRoute: typeof StoreCheckoutRoute
+  StoreTrackRoute: typeof StoreTrackRoute
+  StoreWishlistRoute: typeof StoreWishlistRoute
+  StoreIndexRoute: typeof StoreIndexRoute
+}
+
+const StoreRouteChildren: StoreRouteChildren = {
+  StoreProductIdRoute: StoreProductIdRoute,
+  StoreCheckoutRoute: StoreCheckoutRoute,
+  StoreTrackRoute: StoreTrackRoute,
+  StoreWishlistRoute: StoreWishlistRoute,
+  StoreIndexRoute: StoreIndexRoute,
+}
+
+const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -224,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   DoctorsRoute: DoctorsRoute,
   ServicesRoute: ServicesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StoreRoute: StoreRouteWithChildren,
   BookingSuccessRoute: BookingSuccessRoute,
 }
 export const routeTree = rootRouteImport

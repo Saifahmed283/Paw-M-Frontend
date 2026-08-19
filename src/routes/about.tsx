@@ -7,9 +7,9 @@ import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import clinicImage from "@/assets/clinic-interior.jpg";
 
-const title = "About PawCare — A Boutique Veterinary Hospital";
+const title = "About Paw-M — A Boutique Veterinary Hospital";
 const description =
-  "PawCare was built around clear diagnostics, honest estimates and medical records pet owners actually own. Meet the practice behind the care.";
+  "Paw-M was built around clear diagnostics, honest estimates and medical records pet owners actually own. Meet the practice behind the care.";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -38,6 +38,7 @@ function AboutPage() {
             eyebrow={t("page.about.eyebrow")}
             title={t("page.about.title")}
             description={t("page.about.desc")}
+            as="h1"
           />
         </div>
       </section>

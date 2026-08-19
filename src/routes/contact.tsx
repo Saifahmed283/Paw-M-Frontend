@@ -8,9 +8,9 @@ import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { mailtoHref, telHref, waMeHref } from "@/lib/sanitize";
 
-const title = "Contact PawCare — Hours, Location & Emergency Line";
+const title = "Contact Paw-M — Hours, Location & Emergency Line";
 const description =
-  "Call, message or visit PawCare Veterinary Clinic in San Francisco. Emergency line answered 24/7, seven days a week.";
+  "Call, message or visit Paw-M Veterinary Clinic in San Francisco. Emergency line answered 24/7, seven days a week.";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -75,6 +75,7 @@ function ContactPage() {
             eyebrow={t("page.contact.eyebrow")}
             title={t("page.contact.title")}
             description={t("page.contact.desc")}
+            as="h1"
           />
         </div>
       </section>

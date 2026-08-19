@@ -1,6 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isAuthed, isLocked, isPinConfigured, logout, setPin, unlock, verifyPin } from "@/lib/auth";
+import { api } from "@/lib/api";
+import {
+  changeCredentials,
+  currentUsername,
+  isAuthConfigured,
+  isAuthed,
+  isLocked,
+  login,
+  logout,
+  register,
+} from "@/lib/auth";
+
+vi.mock("@/lib/api", () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
 
 class MemoryStorage {
   store = new Map<string, string>();
@@ -28,6 +48,9 @@ beforeEach(() => {
     localStorage: local,
     sessionStorage: session,
   });
+  vi.mocked(api.get).mockReset();
+  vi.mocked(api.post).mockReset();
+  vi.mocked(api.put).mockReset();
 });
 
 afterEach(() => {
@@ -35,61 +58,74 @@ afterEach(() => {
 });
 
 describe("auth", () => {
-  it("allows first-run PIN setup", async () => {
-    expect(isPinConfigured()).toBe(false);
-    await setPin("", "1234");
-    expect(isPinConfigured()).toBe(true);
-    expect(await verifyPin("1234")).toBe(true);
-    expect(await verifyPin("9999")).toBe(false);
+  it("allows first-run registration, then signs in", async () => {
+    vi.mocked(api.get).mockResolvedValue({ configured: false });
+    expect(await isAuthConfigured()).toBe(false);
+
+    vi.mocked(api.post).mockResolvedValue({ configured: true });
+    await register("admin", "staffpass");
+
+    vi.mocked(api.get).mockResolvedValue({ configured: true });
+    expect(await isAuthConfigured()).toBe(true);
+
+    vi.mocked(api.post).mockResolvedValue({ ok: false });
+    expect(await login("admin", "wrongpass")).toBe(false);
+
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    expect(await login("admin", "staffpass")).toBe(true);
   });
 
-  it("rejects setting a PIN shorter than 4 chars", async () => {
-    await expect(setPin("", "12")).rejects.toThrow("at least 4");
+  it("rejects a username or password that is too short", async () => {
+    await expect(register("ab", "staffpass")).rejects.toThrow("at least 3");
+    await expect(register("admin", "12345")).rejects.toThrow("at least 6");
+    expect(api.post).not.toHaveBeenCalled();
   });
 
-  it("rejects a change when the current PIN is wrong", async () => {
-    await setPin("", "1234");
-    await expect(setPin("0000", "5678")).rejects.toThrow("incorrect");
-    expect(await verifyPin("1234")).toBe(true);
+  it("login sends the credentials to the API", async () => {
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    await login("Admin ", "staffpass");
+    expect(api.post).toHaveBeenCalledWith("/auth/login", {
+      username: "Admin",
+      password: "staffpass",
+    });
   });
 
-  it("changes the PIN when the current PIN matches", async () => {
-    await setPin("", "1234");
-    await setPin("1234", "5678");
-    expect(await verifyPin("1234")).toBe(false);
-    expect(await verifyPin("5678")).toBe(true);
-  });
-
-  it("unlock only succeeds with the correct PIN and opens a session", async () => {
-    await setPin("", "1234");
-    expect(await unlock("9999")).toBe(false);
-    expect(isAuthed()).toBe(false);
-    expect(await unlock("1234")).toBe(true);
+  it("stores the username in the session and exposes it", async () => {
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    expect(await login("admin", "staffpass")).toBe(true);
     expect(isAuthed()).toBe(true);
+    expect(currentUsername()).toBe("admin");
   });
 
   it("locks after MAX_ATTEMPTS failed attempts", async () => {
-    await setPin("", "1234");
+    vi.mocked(api.post).mockResolvedValue({ ok: false });
     for (let i = 0; i < 5; i++) {
-      await unlock("0000");
+      await login("admin", "wrong");
     }
     expect(isLocked()).toBe(true);
-    expect(await unlock("1234")).toBe(false);
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    expect(await login("admin", "staffpass")).toBe(false);
   });
 
   it("logout clears the session", async () => {
-    await setPin("", "1234");
-    await unlock("1234");
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    await login("admin", "staffpass");
     expect(isAuthed()).toBe(true);
     logout();
     expect(isAuthed()).toBe(false);
   });
 
-  it("hashes the PIN with a salt (not stored plaintext)", async () => {
-    await setPin("", "1234");
-    const stored = local.getItem("pawcare:admin-pin");
-    expect(stored).not.toContain("1234");
-    expect(stored!).toContain("hash");
-    expect(stored!).toContain("salt");
+  it("changeCredentials forwards the new values", async () => {
+    vi.mocked(api.put).mockResolvedValue({ configured: true });
+    await changeCredentials({
+      currentPassword: "staffpass",
+      newUsername: "doctor",
+      newPassword: "newpass1",
+    });
+    expect(api.put).toHaveBeenCalledWith("/auth/credentials", {
+      currentPassword: "staffpass",
+      newUsername: "doctor",
+      newPassword: "newpass1",
+    });
   });
 });

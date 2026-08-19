@@ -3,7 +3,7 @@ import { getCookie } from "@tanstack/react-start/server";
 
 import type { Lang } from "./i18n";
 
-export const LANG_COOKIE = "pawcare_lang";
+export const LANG_COOKIE = "paw_m_lang";
 
 function parseLang(value: string | undefined): Lang {
   return value === "ar" ? "ar" : "en";

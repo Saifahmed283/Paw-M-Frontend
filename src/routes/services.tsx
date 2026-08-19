@@ -3,9 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CtaBand, SectionHeading, ServicesGrid } from "@/components/site/sections";
 import { useI18n } from "@/lib/i18n";
 
-const title = "Veterinary Services — PawCare";
+const title = "Veterinary Services — Paw-M";
 const description =
-  "Checkups, vaccination, surgery, emergency care, in-house laboratory, dentistry, imaging and more at PawCare Veterinary Clinic.";
+  "Checkups, vaccination, surgery, emergency care, in-house laboratory, dentistry, imaging and more at Paw-M Veterinary Clinic.";
 
 export const Route = createFileRoute("/services")({
   head: () => ({
@@ -32,6 +32,7 @@ function ServicesPage() {
             eyebrow={t("page.services.eyebrow")}
             title={t("page.services.title")}
             description={t("page.services.desc")}
+            as="h1"
           />
         </div>
       </section>

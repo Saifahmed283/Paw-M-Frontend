@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Menu, Moon, Phone, Sun, X } from "lucide-react";
+import { Heart, Menu, Moon, Phone, ShoppingBag, Sun, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
-import { PawCareLogo } from "@/components/PawCareMark";
+import { PawMLogo } from "@/components/PawMMark";
+import { CartDrawer } from "@/components/site/CartDrawer";
 import { useClinicStore } from "@/lib/clinic-store";
+import { useCartCount } from "@/lib/cart-store";
+import { useWishlist } from "@/lib/wishlist-store";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import { telHref } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
@@ -16,6 +19,7 @@ function useNav() {
     { to: "/", label: t("nav.home") },
     { to: "/services", label: t("nav.services") },
     { to: "/doctors", label: t("nav.doctors") },
+    { to: "/store", label: t("nav.store") },
     { to: "/about", label: t("nav.about") },
     { to: "/contact", label: t("nav.contact") },
   ] as const;
@@ -26,7 +30,7 @@ function useTheme() {
   useEffect(() => {
     let stored: string | null = null;
     try {
-      stored = localStorage.getItem("pawcare:theme");
+      stored = localStorage.getItem("paw-m:theme");
     } catch {
       /* storage unavailable */
     }
@@ -40,7 +44,7 @@ function useTheme() {
       const next = !d;
       document.documentElement.classList.toggle("dark", next);
       try {
-        localStorage.setItem("pawcare:theme", next ? "dark" : "light");
+        localStorage.setItem("paw-m:theme", next ? "dark" : "light");
       } catch {
         /* storage unavailable */
       }
@@ -53,10 +57,13 @@ function useTheme() {
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const { dark, toggle } = useTheme();
   const { t } = useI18n();
   const { settings } = useClinicStore();
   const NAV = useNav();
+  const count = useCartCount();
+  const wished = useWishlist();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -75,7 +82,7 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
         <Link to="/" aria-label={t("header.homeAria")}>
-          <PawCareLogo />
+          <PawMLogo />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label={t("header.mainAria")}>
@@ -111,6 +118,30 @@ export function SiteHeader() {
           <Button asChild size="sm" className="hidden shadow-glow sm:inline-flex">
             <Link to="/book">{t("nav.book")}</Link>
           </Button>
+          <Link
+            to="/store/wishlist"
+            aria-label={t("header.wishlistAria")}
+            className="relative grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Heart className="size-4" />
+            {wished.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-4 text-primary-foreground">
+                {wished.length}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={() => setCartOpen(true)}
+            aria-label={t("header.cartAria")}
+            className="relative grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ShoppingBag className="size-4" />
+            {count > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-4 text-primary-foreground">
+                {count}
+              </span>
+            )}
+          </button>
           <button
             className="grid size-9 place-items-center rounded-lg text-foreground md:hidden"
             onClick={() => setOpen((o) => !o)}
@@ -167,6 +198,8 @@ export function SiteHeader() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
   );
 }

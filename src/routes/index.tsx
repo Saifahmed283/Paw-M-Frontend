@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 
+import { ProductCard } from "@/components/site/ProductCard";
 import {
   BookingTimeline,
   CtaBand,
@@ -11,12 +13,13 @@ import {
   Testimonials,
   WhyUs,
 } from "@/components/site/sections";
+import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 
-const title = "PawCare — Veterinary Clinic in San Francisco";
+const title = "Paw-M — Veterinary Clinic in San Francisco";
 const description =
-  "Same-day diagnostics, transparent estimates and a 24/7 emergency team. Book your pet's appointment with PawCare in under a minute.";
+  "Same-day diagnostics, transparent estimates and a 24/7 emergency team. Book your pet's appointment with Paw-M in under a minute.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,7 +38,7 @@ export const Route = createFileRoute("/")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "VeterinaryCare",
-          name: "PawCare Veterinary Clinic",
+          name: "Paw-M Veterinary Clinic",
           description,
           url: "/",
           address: {
@@ -52,8 +55,16 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { doctors } = useClinicStore();
+  const { doctors, products } = useClinicStore();
   const { t } = useI18n();
+
+  const featured = [...products]
+    .sort(
+      (a, b) =>
+        Number(b.featured) - Number(a.featured) ||
+        new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
+    )
+    .slice(0, 4);
 
   return (
     <>
@@ -67,6 +78,31 @@ function Index() {
         />
         <ServicesGrid limit={6} />
       </section>
+
+      {featured.length > 0 && (
+        <section className="border-y border-border bg-surface py-20">
+          <div className="mx-auto max-w-6xl px-5 sm:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <SectionHeading
+                eyebrow={t("home.shop.eyebrow")}
+                title={t("home.shop.title")}
+                description={t("home.shop.desc")}
+              />
+              <Button asChild variant="outline" className="mb-1">
+                <Link to="/store">
+                  {t("home.shop.browse")}
+                  <ArrowRight className="size-4 rtl:rotate-180" />
+                </Link>
+              </Button>
+            </div>
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {featured.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <WhyUs />
 

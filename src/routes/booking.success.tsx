@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 
-const title = "Appointment Confirmed — PawCare";
-const description = "Your PawCare veterinary appointment request has been received.";
+const title = "Appointment Confirmed — Paw-M";
+const description = "Your Paw-M veterinary appointment request has been received.";
 
 export const Route = createFileRoute("/booking/success")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -68,7 +68,7 @@ function SuccessPage() {
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild className="shadow-glow">
-            <a href={icsHref} download="pawcare-appointment.ics">
+            <a href={icsHref} download="paw-m-appointment.ics">
               <CalendarCheck className="size-4" /> {t("booking.addCalendar")}
             </a>
           </Button>

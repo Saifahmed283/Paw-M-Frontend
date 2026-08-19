@@ -7,6 +7,17 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+const API_ORIGIN = ((): string => {
+  try {
+    const env = (import.meta as { env?: Record<string, string | undefined> }).env;
+    const url = env?.["VITE_API_URL"];
+    if (url) return new URL(url).origin;
+  } catch {
+    /* ignore */
+  }
+  return "http://localhost:3001";
+})();
+
 const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy": [
     "default-src 'self'",
@@ -14,7 +25,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https:",
-    "connect-src 'self'",
+    `connect-src 'self' ${API_ORIGIN}`,
     "frame-src https://www.openstreetmap.org",
     "frame-ancestors 'none'",
     "object-src 'none'",

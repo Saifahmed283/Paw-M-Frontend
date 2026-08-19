@@ -14,11 +14,11 @@ import { addBookingRequest, useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const title = "Book an Appointment — PawCare";
+const title = "Book an Appointment — Paw-M";
 const description =
-  "Book your pet's veterinary appointment at PawCare in under a minute. Live availability across every clinician, with instant confirmation.";
+  "Book your pet's veterinary appointment at Paw-M in under a minute. Live availability across every clinician, with instant confirmation.";
 
-const DRAFT_KEY = "pawcare:booking-draft";
+const DRAFT_KEY = "paw-m:booking-draft";
 
 type Draft = {
   ownerName: string;
@@ -129,31 +129,36 @@ function BookPage() {
     Boolean(draft.date && draft.time),
   ];
 
-  const submit = () => {
+  const submit = async () => {
     const selDoctor = doctors.find((d) => d.id === draft.doctorId);
     if (!selDoctor) {
       toast.error(t("booking.error.doctor"));
       setStep(3);
       return;
     }
-    addBookingRequest({
-      ownerName: draft.ownerName,
-      phone: draft.phone,
-      email: draft.email,
-      petName: draft.petName,
-      animalType: draft.animalType,
-      breed: draft.breed,
-      age: draft.age,
-      weight: draft.weight,
-      symptoms: draft.symptoms,
-      allergies: draft.allergies,
-      medications: draft.medications,
-      doctorId: selDoctor.id,
-      doctorName: t(`doc.${selDoctor.id}.name`),
-      date: draft.date,
-      time: draft.time,
-      emergency: draft.emergency,
-    });
+    try {
+      await addBookingRequest({
+        ownerName: draft.ownerName,
+        phone: draft.phone,
+        email: draft.email,
+        petName: draft.petName,
+        animalType: draft.animalType,
+        breed: draft.breed,
+        age: draft.age,
+        weight: draft.weight,
+        symptoms: draft.symptoms,
+        allergies: draft.allergies,
+        medications: draft.medications,
+        doctorId: selDoctor.id,
+        doctorName: t(`doc.${selDoctor.id}.name`),
+        date: draft.date,
+        time: draft.time,
+        emergency: draft.emergency,
+      });
+    } catch {
+      toast.error(t("booking.error.failed"));
+      return;
+    }
     try {
       localStorage.removeItem(DRAFT_KEY);
     } catch {

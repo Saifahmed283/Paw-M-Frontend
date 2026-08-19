@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
-import { PawCareMark } from "@/components/PawCareMark";
+import { PawMMark } from "@/components/PawMMark";
 import { useI18n } from "@/lib/i18n";
 
 /** Toggle the whole splash off for QA/dev without touching component code. */
 export const ENABLE_INTRO_ANIMATION = true;
 
 const MAX_DURATION = 900;
-const INTRO_SEEN_KEY = "pawcare:intro-seen";
+const INTRO_SEEN_KEY = "paw-m:intro-seen";
 
 function hasSeenIntro(): boolean {
   try {
@@ -90,7 +90,7 @@ export function IntroAnimation() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          key="pawcare-intro"
+          key="paw-m-intro"
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
           initial={{ opacity: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
@@ -117,7 +117,7 @@ export function IntroAnimation() {
                 transition={{ duration: 0.45, ease, delay: reduceMotion ? 0.05 : 0.5 }}
                 className="text-4xl font-bold tracking-[-0.035em] text-foreground sm:text-5xl"
               >
-                PawCare
+                Paw-M
               </motion.span>
             </div>
 
@@ -185,4 +185,4 @@ function IntroMark({ reduceMotion }: { reduceMotion: boolean }) {
   );
 }
 
-export { PawCareMark };
+export { PawMMark };

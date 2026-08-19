@@ -70,11 +70,13 @@ export function SectionHeading({
   title,
   description,
   center = false,
+  as = "h2",
 }: {
   eyebrow: string;
   title: string;
   description?: string;
   center?: boolean;
+  as?: "h1" | "h2";
 }) {
   return (
     <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
@@ -93,9 +95,15 @@ export function SectionHeading({
         </span>
       </Reveal>
       <Reveal delay={0.05}>
-        <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
-          <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
-        </h2>
+        {as === "h1" ? (
+          <h1 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
+            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
+          </h1>
+        ) : (
+          <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
+            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
+          </h2>
+        )}
       </Reveal>
       {description && (
         <Reveal delay={0.1}>

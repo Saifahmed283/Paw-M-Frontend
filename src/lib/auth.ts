@@ -1,19 +1,17 @@
 import { storageGet, storageRemove, storageSet } from "@/lib/storage";
+import { api } from "@/lib/api";
 
-const PIN_KEY = "pawcare:admin-pin";
-const SESSION_KEY = "pawcare:admin-session";
-const LOCK_KEY = "pawcare:admin-attempts";
+const SESSION_KEY = "paw-m:admin-session";
+const LOCK_KEY = "paw-m:admin-attempts";
 
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 export const MAX_ATTEMPTS = 5;
 export const LOCKOUT_MS = 10 * 60 * 1000;
-
-export type PinRecord = {
-  salt: string;
-  hash: string;
-};
+export const MIN_USERNAME = 3;
+export const MIN_PASSWORD = 6;
 
 type Session = {
+  username: string;
   token: string;
   expiresAt: number;
 };
@@ -22,14 +20,6 @@ type AttemptRecord = {
   count: number;
   lockedUntil: number;
 };
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 function randomHex(bytes: number): string {
   const buf = new Uint8Array(bytes);
@@ -45,48 +35,70 @@ function randomHex(bytes: number): string {
     .join("");
 }
 
-export async function hashPin(pin: string, salt: string): Promise<string> {
-  return sha256Hex(`${salt}:${pin}`);
-}
-
-function readRecord(): PinRecord | null {
-  const raw = storageGet("local", PIN_KEY);
-  if (!raw) return null;
+export async function isAuthConfigured(): Promise<boolean> {
   try {
-    const parsed = JSON.parse(raw) as PinRecord;
-    return typeof parsed.salt === "string" && typeof parsed.hash === "string" ? parsed : null;
+    const r = await api.get<{ configured: boolean }>("/auth/config");
+    return r.configured;
   } catch {
-    return null;
+    return false;
   }
 }
 
-export function isPinConfigured(): boolean {
-  return readRecord() !== null;
+/** Create the staff account on first run. Throws if one already exists. */
+export async function register(username: string, password: string): Promise<void> {
+  const name = username.trim();
+  if (name.length < MIN_USERNAME) {
+    throw new Error(`Username must be at least ${MIN_USERNAME} characters.`);
+  }
+  if (password.length < MIN_PASSWORD) {
+    throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
+  }
+  await api.post("/auth/register", { username: name, password });
 }
 
-/** Set the PIN on first run, or change it when `currentPin` matches. */
-export async function setPin(currentPin: string, newPin: string): Promise<void> {
-  const normalized = newPin.trim();
-  if (normalized.length < 4) throw new Error("PIN must be at least 4 characters.");
-
-  const record = readRecord();
-  if (record) {
-    const current = currentPin.trim();
-    if ((await hashPin(current, record.salt)) !== record.hash) {
-      throw new Error("Current PIN is incorrect.");
+/** Sign in with staff credentials; opens a session on success. */
+export async function login(username: string, password: string): Promise<boolean> {
+  if (isLocked()) return false;
+  try {
+    const r = await api.post<{ ok: boolean }>("/auth/login", {
+      username: username.trim(),
+      password,
+    });
+    if (!r.ok) {
+      recordFailedAttempt();
+      return false;
     }
+    clearAttempts();
+    const session: Session = {
+      username: username.trim(),
+      token: randomHex(24),
+      expiresAt: Date.now() + SESSION_TTL_MS,
+    };
+    storageSet("session", SESSION_KEY, JSON.stringify(session));
+    return true;
+  } catch {
+    return false;
   }
-
-  const salt = randomHex(16);
-  const next: PinRecord = { salt, hash: await hashPin(normalized, salt) };
-  storageSet("local", PIN_KEY, JSON.stringify(next));
 }
 
-export async function verifyPin(pin: string): Promise<boolean> {
-  const record = readRecord();
-  if (!record) return false;
-  const normalized = pin.trim();
-  return (await hashPin(normalized, record.salt)) === record.hash;
+/** Change the staff username and/or password. Throws if the current password is wrong. */
+export async function changeCredentials(input: {
+  currentPassword: string;
+  newUsername?: string;
+  newPassword?: string;
+}): Promise<void> {
+  const { currentPassword, newUsername, newPassword } = input;
+  if (newUsername !== undefined && newUsername.trim().length < MIN_USERNAME) {
+    throw new Error(`Username must be at least ${MIN_USERNAME} characters.`);
+  }
+  if (newPassword !== undefined && newPassword.length < MIN_PASSWORD) {
+    throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
+  }
+  await api.put("/auth/credentials", {
+    currentPassword,
+    newUsername: newUsername?.trim() || undefined,
+    newPassword,
+  });
 }
 
 function readAttempts(): AttemptRecord {
@@ -119,17 +131,15 @@ function clearAttempts() {
   storageRemove("local", LOCK_KEY);
 }
 
-export async function unlock(pin: string): Promise<boolean> {
-  if (isLocked()) return false;
-  const ok = await verifyPin(pin);
-  if (!ok) {
-    recordFailedAttempt();
-    return false;
+export function currentUsername(): string {
+  const raw = storageGet("session", SESSION_KEY);
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw) as Session;
+    return typeof parsed.username === "string" ? parsed.username : "";
+  } catch {
+    return "";
   }
-  clearAttempts();
-  const session: Session = { token: randomHex(24), expiresAt: Date.now() + SESSION_TTL_MS };
-  storageSet("session", SESSION_KEY, JSON.stringify(session));
-  return true;
 }
 
 export function isAuthed(): boolean {

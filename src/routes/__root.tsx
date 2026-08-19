@@ -17,6 +17,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider, type Lang, useI18n } from "@/lib/i18n";
+import { refreshClinicData } from "@/lib/clinic-store";
 import { readLangCookie } from "@/lib/lang-cookie";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 
@@ -84,16 +85,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PawCare Veterinary Clinic" },
+      { title: "Paw-M Veterinary Clinic" },
       {
         name: "description",
         content:
-          "PawCare is a boutique veterinary hospital: same-day diagnostics, transparent estimates and 24/7 emergency care.",
+          "Paw-M is a boutique veterinary hospital: same-day diagnostics, transparent estimates and 24/7 emergency care.",
       },
-      { name: "author", content: "PawCare Veterinary Clinic" },
-      { property: "og:site_name", content: "PawCare" },
+      { name: "author", content: "Paw-M Veterinary Clinic" },
+      { property: "og:site_name", content: "Paw-M" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-image.png" },
       { name: "theme-color", content: "#7BA882" },
     ],
     links: [
@@ -101,6 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -131,12 +135,22 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient, lang } = Route.useRouteContext();
   const { pathname } = useLocation();
+  const isDashboard = pathname.startsWith("/dashboard");
 
   useEffect(() => {
+    // Kick off the clinic-data fetch only after the hydration pass has fully
+    // committed. If it started from this effect directly, the (very fast,
+    // localhost) response could land while React was still hydrating the
+    // nested routes, re-rendering them with fetched data and throwing a
+    // hydration mismatch that left the router unable to render navigations.
+    let cancelled = false;
+    const loadId = window.setTimeout(() => {
+      if (cancelled) return;
+      refreshClinicData();
+    }, 0);
     // Font stylesheet is loaded after first paint so a slow or unreachable
     // Google Fonts endpoint can never delay the initial render.
     let link: HTMLLinkElement | undefined;
-    let cancelled = false;
     const id = window.setTimeout(() => {
       if (cancelled) return;
       link = document.createElement("link");
@@ -150,6 +164,7 @@ function RootComponent() {
     }, 100);
     return () => {
       cancelled = true;
+      window.clearTimeout(loadId);
       window.clearTimeout(id);
     };
   }, []);
@@ -157,8 +172,8 @@ function RootComponent() {
   return (
     <I18nProvider initialLang={lang}>
       <QueryClientProvider client={queryClient}>
-        <IntroAnimation />
-        <SiteHeader />
+        {!isDashboard && <IntroAnimation />}
+        {!isDashboard && <SiteHeader />}
         <motion.main
           key={pathname}
           initial={{ opacity: 0, y: 12 }}
@@ -169,7 +184,7 @@ function RootComponent() {
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </motion.main>
-        <SiteFooter />
+        {!isDashboard && <SiteFooter />}
         <Toaster position="top-center" richColors />
       </QueryClientProvider>
     </I18nProvider>

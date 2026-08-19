@@ -1,11 +1,13 @@
 export const CLINIC = {
-  name: "PawCare",
+  name: "Paw-M",
   tagline: "Veterinary care, quietly excellent.",
   phone: "+1 (415) 555-0142",
   emergency: "+1 (415) 555-0911",
   whatsapp: "+1 (415) 555-0142",
-  email: "hello@pawcare.clinic",
+  email: "hello@paw-m.clinic",
   address: "218 Marlow Street, Suite 4 · San Francisco, CA 94110",
+  currency: "EGP",
+  instapay: "",
   hours: [
     { day: "Monday – Friday", time: "08:00 – 20:00" },
     { day: "Saturday", time: "09:00 – 18:00" },

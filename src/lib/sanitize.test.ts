@@ -55,7 +55,7 @@ describe("telHref", () => {
 
 describe("mailtoHref", () => {
   it("builds a mailto: link for a valid email", () => {
-    expect(mailtoHref("hello@pawcare.clinic")).toBe("mailto:hello@pawcare.clinic");
+    expect(mailtoHref("hello@paw-m.clinic")).toBe("mailto:hello@paw-m.clinic");
   });
 
   it("blocks header-injection vectors", () => {

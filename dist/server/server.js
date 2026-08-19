@@ -102,7 +102,26 @@ var SECURITY_HEADERS = {
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 		"font-src 'self' https://fonts.gstatic.com data:",
 		"img-src 'self' data: https:",
-		"connect-src 'self'",
+		`connect-src 'self' ${(() => {
+			try {
+				const url = {
+					"BASE_URL": "/",
+					"DEV": false,
+					"MODE": "production",
+					"PROD": true,
+					"SSR": true,
+					"TSS_DEV_SERVER": "false",
+					"TSS_DEV_SSR_STYLES_BASEPATH": "/",
+					"TSS_DEV_SSR_STYLES_ENABLED": "true",
+					"TSS_DISABLE_CSRF_MIDDLEWARE_WARNING": "false",
+					"TSS_INLINE_CSS_ENABLED": "false",
+					"TSS_ROUTER_BASEPATH": "",
+					"TSS_SERVER_FN_BASE": "/_serverFn/"
+				}["VITE_API_URL"];
+				if (url) return new URL(url).origin;
+			} catch {}
+			return "http://localhost:3001";
+		})()}`,
 		"frame-src https://www.openstreetmap.org",
 		"frame-ancestors 'none'",
 		"object-src 'none'",
@@ -116,7 +135,7 @@ var SECURITY_HEADERS = {
 };
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-v6kVJSYH.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-dCrBaRd0.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response) {

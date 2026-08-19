@@ -8,9 +8,9 @@ import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const title = "Our Veterinarians — PawCare";
+const title = "Our Veterinarians — Paw-M";
 const description =
-  "Meet the PawCare veterinary team: internal medicine, surgery, emergency care, dentistry, dermatology and exotics specialists, with live availability.";
+  "Meet the Paw-M veterinary team: internal medicine, surgery, emergency care, dentistry, dermatology and exotics specialists, with live availability.";
 
 export const Route = createFileRoute("/doctors")({
   head: () => ({
@@ -87,6 +87,7 @@ function DoctorsPage() {
             eyebrow={t("page.doctors.eyebrow")}
             title={t("page.doctors.title")}
             description={t("page.doctors.desc")}
+            as="h1"
           />
         </div>
       </section>
