@@ -118,7 +118,7 @@ export const WHY_US = [
   },
   {
     title: "Personalised treatment",
-    detail: "Care plans built around your pet's age, breed and history — not a template.",
+    detail: "Care plans built around your pet's age and history — not a template.",
   },
   {
     title: "Digital medical records",
@@ -219,7 +219,7 @@ export const DOCTORS: Doctor[] = [
 export const BOOKING_STEPS = [
   { title: "Choose a date", detail: "Live availability across every clinician." },
   { title: "Pick a time", detail: "Booked slots disappear as you look." },
-  { title: "Tell us about your pet", detail: "Species, breed, age, weight, history." },
+  { title: "Tell us about your pet", detail: "Species, age, weight, history." },
   { title: "Describe the case", detail: "Symptoms, medications, allergies." },
   { title: "Confirm", detail: "Summary, calendar invite and reminders." },
 ];
@@ -285,11 +285,6 @@ export const FAQS = [
 export const ANIMAL_TYPES = [
   "Dog",
   "Cat",
-  "Rabbit",
-  "Bird",
-  "Reptile",
-  "Ferret",
-  "Guinea Pig",
   "Other",
 ];
 

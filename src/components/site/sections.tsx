@@ -117,10 +117,15 @@ export function SectionHeading({
 export function Hero() {
   const reduce = useReducedMotion();
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [mounted, setMounted] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   const { settings, doctors, requests } = useClinicStore();
   const { lang } = useI18n();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const firstDoctor = doctors[0];
   const nextDay = useMemo(
@@ -153,7 +158,7 @@ export function Hero() {
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }}
+          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }) : false}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease }}
         >
@@ -222,7 +227,7 @@ export function Hero() {
 
         <motion.div
           ref={frameRef}
-          initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
+          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }) : false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease, delay: 0.1 }}
           className="relative"
@@ -239,7 +244,7 @@ export function Hero() {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={mounted ? { opacity: 0, y: 14 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease, delay: 0.45 }}
             className="glass absolute -bottom-6 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8"
@@ -252,7 +257,7 @@ export function Hero() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={mounted ? { opacity: 0, y: 14 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease, delay: 0.6 }}
             className="glass absolute -right-4 top-8 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-4 rtl:sm:-left-8"

@@ -71,11 +71,11 @@ function DoctorsPage() {
 
   const filtered = useMemo(
     () =>
-      doctors.filter(
-        (d) =>
-          (specialty === "All" || d.specialization === specialty) &&
-          (pet === "All" || d.pets.includes(pet)),
-      ),
+doctors.filter(
+         (d) =>
+           (specialty === "All" || d.specialization === specialty) &&
+           (pet === "All" || pet === "Other" || d.pets.includes(pet)),
+       ),
     [specialty, pet, doctors],
   );
 

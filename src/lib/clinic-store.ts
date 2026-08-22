@@ -12,7 +12,6 @@ export type BookingRequest = {
   email: string;
   petName: string;
   animalType: string;
-  breed: string;
   age: string;
   weight: string;
   symptoms: string;
