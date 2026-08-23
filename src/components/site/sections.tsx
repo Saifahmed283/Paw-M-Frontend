@@ -29,10 +29,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
-import { BlurText, GradientText, ShinyText } from "@/components/reactbits/TextAnimations";
+import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
 import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
 import {
@@ -151,7 +150,7 @@ export function Hero() {
   const rotatingTexts = Array.from({ length: 5 }, (_, i) => t(`hero.rotating.${i}`));
 
   return (
-    <section className="relative overflow-hidden pb-20 pt-28 sm:pt-36">
+    <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
       <div className="hero-gradient absolute inset-0 -z-10" />
       <AmbientGlobs className="-z-[5]" />
       <div className="grid-lines absolute inset-x-0 top-0 -z-10 h-[420px] opacity-25" />
@@ -162,22 +161,15 @@ export function Hero() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease }}
         >
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium">
-            <span className="mr-2 inline-block size-1.5 rounded-full bg-success rtl:ml-2 rtl:mr-0" />
-            <ShinyText text={t("hero.badge")} spread={90} speed={3} className="text-[inherit]" />
-          </Badge>
-
-          <h1 className="mt-6 text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
+          <h1 className="text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
             {t("hero.title.a")}{" "}
-            <span className="text-gradient-soft">
-              <RotatingText
+            <RotatingText
                 texts={rotatingTexts}
                 className="align-baseline"
                 splitBy="words"
                 staggerDuration={0.05}
                 rotationInterval={2600}
               />
-            </span>
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">

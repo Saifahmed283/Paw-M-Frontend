@@ -306,6 +306,10 @@
 
   .text-rotate-element {
     display: inline-block;
+    background-image: var(--gradient-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .text-rotate-space {
