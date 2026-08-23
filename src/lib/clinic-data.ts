@@ -282,11 +282,7 @@ export const FAQS = [
   },
 ];
 
-export const ANIMAL_TYPES = [
-  "Dog",
-  "Cat",
-  "Other",
-];
+export const ANIMAL_TYPES = ["Dog", "Cat", "Other"];
 
 export const TIME_SLOTS = [
   "08:00",
