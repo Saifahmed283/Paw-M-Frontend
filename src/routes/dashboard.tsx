@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { PawMLogo } from "@/components/PawMMark";
-import { Lock, LogOut } from "lucide-react";
+import { Lock, LogOut, RefreshCw } from "lucide-react";
 import {
   Archive,
   ArchiveRestore,
@@ -92,6 +92,7 @@ import {
   setOrderPaymentStatus,
   setOrderStatus,
   setReviewStatus,
+  syncGoogleReviews as syncReviews,
   updatePayment,
   updateSettings,
   useClinicStore,
@@ -102,6 +103,7 @@ import {
   type Payment,
   type PaymentMethod,
   type Product,
+  type Review,
   type ServiceItem,
   type Status,
 } from "@/lib/clinic-store";
@@ -1502,6 +1504,9 @@ function ArchivePanel() {
 function SettingsPanel() {
   const { t, lang, setLang } = useI18n();
   const { settings } = useClinicStore();
+  const [gsBusy, setGsBusy] = useState(false);
+  const [gsResult, setGsResult] = useState<{ synced: number; total: number } | null>(null);
+  const [gsError, setGsError] = useState<string | null>(null);
   const [credsForm, setCredsForm] = useState({
     currentPassword: "",
     newUsername: "",
@@ -1526,6 +1531,27 @@ function SettingsPanel() {
     }
     await updateSettings({ ...form, currency: form.currency.trim() });
     toast.success(t("dash.toast.saved"));
+  };
+
+  const doSync = async () => {
+    setGsBusy(true);
+    setGsError(null);
+    setGsResult(null);
+    try {
+      const r = await syncReviews();
+      setGsResult(r);
+      toast.success(
+        t("dash.settings.googleSyncSuccess", {
+          synced: String(r.synced),
+          total: String(r.total),
+        }),
+      );
+    } catch {
+      setGsError(t("dash.settings.googleSyncFail"));
+      toast.error(t("dash.settings.googleSyncFail"));
+    } finally {
+      setGsBusy(false);
+    }
   };
 
   return (
@@ -1709,12 +1735,35 @@ function SettingsPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t("dash.settings.googleSync")}</CardTitle>
+          <CardDescription>{t("dash.settings.googleSyncDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-3">
+          <Button onClick={doSync} disabled={gsBusy} variant="outline" size="sm">
+            <RefreshCw className={cn("size-4", gsBusy && "animate-spin")} />
+            {gsBusy ? t("dash.settings.googleSyncBtn") + "…" : t("dash.settings.googleSyncBtn")}
+          </Button>
+          {gsResult && !gsError && (
+            <span className="text-xs text-success">
+              ✓{" "}
+              {t("dash.settings.googleSyncSuccess", {
+                synced: String(gsResult.synced),
+                total: String(gsResult.total),
+              })}
+            </span>
+          )}
+          {gsError && <span className="text-xs text-destructive">{gsError}</span>}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"];
-const PET_TYPES = ["dog", "cat", "both"];
+const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
+const PET_TYPES = ["dog", "cat", "both"] as const;
 const LOW_STOCK_THRESHOLD = 5;
 
 const EMPTY_PRODUCT = {
@@ -2437,11 +2486,9 @@ function OrdersPanel() {
 
 function ReviewsPanel() {
   const { t } = useI18n();
-  const { reviews, products } = useClinicStore();
+  const { products, reviews } = useClinicStore();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const productName = (id: string) => products.find((p) => p.id === id)?.name ?? id;
-
   const filtered = useMemo(
     () => reviews.filter((r) => statusFilter === "all" || r.status === statusFilter),
     [reviews, statusFilter],
@@ -2449,6 +2496,8 @@ function ReviewsPanel() {
   const grid = useGrid(filtered, query, ["author", "comment", "productId"]);
   const pending = grid.slice.filter((r) => r.status === "pending");
   const approved = grid.slice.filter((r) => r.status === "approved");
+  const productName = (productId: string) =>
+    products.find((product) => product.id === productId)?.name ?? productId;
 
   return (
     <Card>
@@ -2484,133 +2533,158 @@ function ReviewsPanel() {
             ))}
           </div>
         </div>
-        {grid.slice.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">{t("dash.empty")}</p>
-        ) : (
-          <>
-            <div className="space-y-6">
-              {pending.length > 0 && (
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm font-bold">
-                    {t("dash.reviews.pending")}
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-600">
-                      {pending.length}
-                    </span>
-                  </h3>
-                  <div className="mt-3 space-y-3">
-                    {pending.map((r) => (
-                      <div key={r.id} className="rounded-xl border border-border p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">{r.author}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {productName(r.productId)}
-                            </p>
-                          </div>
-                          <span className="flex gap-0.5">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <Star
-                                key={i}
-                                className={cn(
-                                  "size-3.5",
-                                  i < r.rating ? "fill-amber-400 text-amber-400" : "text-border",
-                                )}
-                              />
-                            ))}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                          {r.comment}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            className="h-7"
-                            onClick={async () => {
-                              await setReviewStatus(r.id, "approved");
-                              toast.success(t("dash.toast.saved"));
-                            }}
-                          >
-                            {t("dash.reviews.approve")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                            aria-label={t("dash.delete")}
-                            onClick={async () => {
-                              await deleteReview(r.id);
-                              toast.success(t("dash.toast.deleted"));
-                            }}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {approved.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold">{t("dash.reviews.approved")}</h3>
-                  <div className="mt-3 space-y-3">
-                    {approved.map((r) => (
-                      <div
-                        key={r.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-4"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold">
-                            {r.author}{" "}
-                            <span className="font-normal text-muted-foreground">
-                              — {productName(r.productId)}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">{r.comment}</p>
-                        </div>
+        <div className="space-y-6">
+          {pending.length > 0 && (
+            <div>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                {t("dash.reviews.pending")}
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-600">
+                  {pending.length}
+                </span>
+              </h3>
+              <div className="space-y-3">
+                {pending.map((r) => (
+                  <div key={r.id} className="rounded-xl border border-border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{r.author}</p>
                         <div className="flex items-center gap-2">
-                          <span className="flex gap-0.5">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <Star
-                                key={i}
-                                className={cn(
-                                  "size-3",
-                                  i < r.rating ? "fill-amber-400 text-amber-400" : "text-border",
-                                )}
-                              />
-                            ))}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                            aria-label={t("dash.delete")}
-                            onClick={async () => {
-                              await deleteReview(r.id);
-                              toast.success(t("dash.toast.deleted"));
-                            }}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            {r.productId === "clinic"
+                              ? t("reviews.googleSource")
+                              : productName(r.productId)}
+                          </p>
+                          {r.productId === "clinic" && (
+                            <Badge
+                              variant="secondary"
+                              className="ms-1 text-[10px] px-1.5 py-0 align-middle"
+                            >
+                              {t("reviews.badge.google")}
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                    ))}
+                      <span className="flex gap-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "size-3.5",
+                              i < r.rating ? "fill-amber-400 text-amber-400" : "text-border",
+                            )}
+                          />
+                        ))}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {r.comment}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7"
+                        onClick={async () => {
+                          await setReviewStatus(r.id, "approved");
+                          toast.success(t("dash.toast.saved"));
+                        }}
+                      >
+                        {t("dash.reviews.approve")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                        aria-label={t("dash.delete")}
+                        onClick={async () => {
+                          await deleteReview(r.id);
+                          toast.success(t("dash.toast.deleted"));
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-            <PaginationBar
-              total={grid.total}
-              page={grid.page}
-              pageSize={grid.pageSize}
-              pageCount={grid.pageCount}
-              onPage={grid.setPage}
-              onPageSize={grid.setPageSize}
-            />
-          </>
-        )}
+          )}
+
+          {approved.length > 0 && (
+            <div>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                {t("dash.reviews.approved")}
+                <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-bold text-green-600">
+                  {approved.length}
+                </span>
+              </h3>
+              <div className="space-y-3">
+                {approved.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-4"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">
+                        {r.author}
+                        {r.productId !== "clinic" && (
+                          <span className="font-normal text-muted-foreground">
+                            — {productName(r.productId)}
+                          </span>
+                        )}
+                      </p>
+                      {r.productId === "clinic" && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("reviews.googleSource")}
+                        </p>
+                      )}
+                      {r.productId !== "clinic" && (
+                        <p className="mt-1 text-sm text-muted-foreground">{r.comment}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="flex gap-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "size-3.5",
+                              i < r.rating ? "fill-amber-400 text-amber-400" : "text-border",
+                            )}
+                          />
+                        ))}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                        aria-label={t("dash.delete")}
+                        onClick={async () => {
+                          await deleteReview(r.id);
+                          toast.success(t("dash.toast.deleted"));
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {approved.length === 0 && (
+            <p className="py-4 text-sm text-muted-foreground">{t("dash.empty")}</p>
+          )}
+        </div>
+
+        <PaginationBar
+          total={grid.total}
+          page={grid.page}
+          pageSize={grid.pageSize}
+          pageCount={grid.pageCount}
+          onPage={grid.setPage}
+          onPageSize={grid.setPageSize}
+        />
       </CardContent>
     </Card>
   );
@@ -3166,20 +3240,24 @@ function ShiftBanner() {
   );
 }
 
-const NAV_ITEMS: { id: string; icon: React.ComponentType<{ className?: string }>; roles: string[] }[] = [
-  { id: "overview",    icon: LayoutDashboard, roles: ["all"] },
-  { id: "requests",    icon: ListChecks,     roles: ["all"] },
+const NAV_ITEMS: {
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: string[];
+}[] = [
+  { id: "overview", icon: LayoutDashboard, roles: ["all"] },
+  { id: "requests", icon: ListChecks, roles: ["all"] },
   { id: "reservations", icon: CalendarCheck, roles: ["staff", "payroll", "admin"] },
-  { id: "doctors",     icon: Users,          roles: ["payroll", "admin"] },
-  { id: "services",    icon: HeartPulse,     roles: ["payroll", "admin"] },
-  { id: "products",    icon: ShoppingBag,    roles: ["payroll", "admin"] },
-  { id: "orders",      icon: Package,        roles: ["payroll", "admin"] },
-  { id: "payments",    icon: Banknote,       roles: ["payroll", "admin"] },
-  { id: "reviews",     icon: MessageSquareText, roles: ["payroll", "admin"] },
-  { id: "workdays",    icon: FolderOpen,     roles: ["payroll", "admin"] },
-  { id: "archive",     icon: Archive,        roles: ["payroll", "admin"] },
-  { id: "logs",        icon: History,        roles: ["admin"] },
-  { id: "settings",    icon: Settings,       roles: ["admin"] },
+  { id: "doctors", icon: Users, roles: ["payroll", "admin"] },
+  { id: "services", icon: HeartPulse, roles: ["payroll", "admin"] },
+  { id: "products", icon: ShoppingBag, roles: ["payroll", "admin"] },
+  { id: "orders", icon: Package, roles: ["payroll", "admin"] },
+  { id: "payments", icon: Banknote, roles: ["payroll", "admin"] },
+  { id: "reviews", icon: MessageSquareText, roles: ["payroll", "admin"] },
+  { id: "workdays", icon: FolderOpen, roles: ["payroll", "admin"] },
+  { id: "archive", icon: Archive, roles: ["payroll", "admin"] },
+  { id: "logs", icon: History, roles: ["admin"] },
+  { id: "settings", icon: Settings, roles: ["admin"] },
 ];
 
 function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
@@ -3252,7 +3330,9 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => { window.location.href = "/"; }}
+          onClick={() => {
+            window.location.href = "/";
+          }}
           className="mb-4 -ms-2 text-muted-foreground"
         >
           <ArrowLeft className="size-4 me-1" /> {t("dash.back")}
@@ -3330,7 +3410,9 @@ function DashboardPage() {
     if (isAuthed()) {
       setAuthed(true);
       setRole(currentRole());
-      const firstAllowed = NAV_ITEMS.find((i) => i.roles.includes("all") || i.roles.includes(currentRole()));
+      const firstAllowed = NAV_ITEMS.find(
+        (i) => i.roles.includes("all") || i.roles.includes(currentRole()),
+      );
       if (firstAllowed) setTab(firstAllowed.id);
     }
   }, []);
@@ -3368,7 +3450,14 @@ function DashboardPage() {
   const resGrid = useGrid(upcomingBase, resQuery, ["ownerName", "petName", "doctorName", "phone"]);
 
   if (!authed) {
-    return <AuthGate onUnlocked={(r) => { setAuthed(true); setRole(r); }} />;
+    return (
+      <AuthGate
+        onUnlocked={(r) => {
+          setAuthed(true);
+          setRole(r);
+        }}
+      />
+    );
   }
 
   const signOut = () => {
@@ -3451,8 +3540,8 @@ function DashboardPage() {
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
           {NAV_ITEMS.filter(
-              (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
-            ).map((item) => (
+            (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
+          ).map((item) => (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
@@ -3497,13 +3586,19 @@ function DashboardPage() {
                 {currentUsername() || t("auth.staff")}
               </span>
               {role === "admin" && (
-                <Badge variant="default" className="text-[10px] px-1.5 py-0">Admin</Badge>
+                <Badge variant="default" className="text-[10px] px-1.5 py-0">
+                  Admin
+                </Badge>
               )}
               {role === "payroll" && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Payroll</Badge>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  Payroll
+                </Badge>
               )}
               {role === "staff" && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Staff</Badge>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  Staff
+                </Badge>
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -3536,9 +3631,9 @@ function DashboardPage() {
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
                 aria-label={t("dash.title")}
               >
-{NAV_ITEMS.filter(
-            (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
-          ).map((item) => (
+                {NAV_ITEMS.filter(
+                  (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
+                ).map((item) => (
                   <option key={item.id} value={item.id}>
                     {t(`dash.${item.id}`)}
                   </option>
