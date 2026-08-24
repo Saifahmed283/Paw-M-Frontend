@@ -581,6 +581,16 @@ const EN: Dict = {
   "doc.dr-tomas-lindqvist.tag.1": "Avian medicine",
   "doc.dr-tomas-lindqvist.tag.2": "Dental burring",
   "doc.dr-tomas-lindqvist.tag.3": "Husbandry",
+  "doc.dr-mirna.name": "Dr. Mirna",
+  "doc.dr-mirna.spec": "Veterinarian",
+  "doc.dr-mirna.exp": "10+ years",
+  "doc.dr-mirna.bio":
+    "Experienced veterinarian trusted by hundreds of pet owners across the region.",
+  "doc.dr-mirna.tag.0": "Veterinary Consultation",
+  "doc.dr-mirna.tag.1": "Surgery",
+  "doc.dr-mirna.tag.2": "Spaying & Neutering",
+  "doc.dr-mirna.tag.3": "Dental Care",
+  "doc.dr-mirna.tag.4": "Exotics",
 
   // Animal types & days
   "animal.Dog": "Dog",
@@ -1396,6 +1406,16 @@ const AR: Dict = {
   "doc.dr-tomas-lindqvist.tag.1": "طب الطيور",
   "doc.dr-tomas-lindqvist.tag.2": "برد الأسنان",
   "doc.dr-tomas-lindqvist.tag.3": "التربية والرعاية",
+  "doc.dr-mirna.name": "د. ميرنا",
+  "doc.dr-mirna.spec": "طبيب بيطري",
+  "doc.dr-mirna.exp": "أكثر من 10 سنوات",
+  "doc.dr-mirna.bio":
+    "طبيب بيطري ذو خبرة موثوق من قبل مئات أصحاب الحيوانات الأليفة في جميع أنحاء المنطقة.",
+  "doc.dr-mirna.tag.0": "استشارات بيطرية",
+  "doc.dr-mirna.tag.1": "جراحة",
+  "doc.dr-mirna.tag.2": "تعقيم",
+  "doc.dr-mirna.tag.3": "العناية بالأسنان",
+  "doc.dr-mirna.tag.4": "حيوانات غريبة",
 
   // أنواع الحيوانات وأيام الأسبوع
   "animal.Dog": "كلب",
