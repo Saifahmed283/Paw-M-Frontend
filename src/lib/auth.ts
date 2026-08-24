@@ -12,6 +12,7 @@ export const MIN_PASSWORD = 6;
 
 type Session = {
   username: string;
+  role: string;
   token: string;
   expiresAt: number;
 };
@@ -60,7 +61,7 @@ export async function register(username: string, password: string): Promise<void
 export async function login(username: string, password: string): Promise<boolean> {
   if (isLocked()) return false;
   try {
-    const r = await api.post<{ ok: boolean }>("/auth/login", {
+    const r = await api.post<{ ok: boolean; role?: string }>("/auth/login", {
       username: username.trim(),
       password,
     });
@@ -71,6 +72,7 @@ export async function login(username: string, password: string): Promise<boolean
     clearAttempts();
     const session: Session = {
       username: username.trim(),
+      role: r.role ?? "staff",
       token: randomHex(24),
       expiresAt: Date.now() + SESSION_TTL_MS,
     };
@@ -131,26 +133,40 @@ function clearAttempts() {
   storageRemove("local", LOCK_KEY);
 }
 
-export function currentUsername(): string {
+function readSession(): Session | null {
   const raw = storageGet("session", SESSION_KEY);
-  if (!raw) return "";
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as Session;
-    return typeof parsed.username === "string" ? parsed.username : "";
+    const parsed = JSON.parse(raw) as Partial<Session>;
+    if (
+      parsed &&
+      typeof parsed.username === "string" &&
+      typeof parsed.expiresAt === "number" &&
+      parsed.expiresAt > Date.now()
+    ) {
+      return parsed as Session;
+    }
+    return null;
   } catch {
-    return "";
+    return null;
   }
 }
 
+export function currentUsername(): string {
+  return readSession()?.username ?? "";
+}
+
+export function currentRole(): string {
+  return readSession()?.role ?? "staff";
+}
+
+export function hasMinRole(minRole: string): boolean {
+  const order = ["staff", "payroll", "admin"];
+  return order.indexOf(currentRole()) >= order.indexOf(minRole);
+}
+
 export function isAuthed(): boolean {
-  const raw = storageGet("session", SESSION_KEY);
-  if (!raw) return false;
-  try {
-    const parsed = JSON.parse(raw) as Session;
-    return parsed && typeof parsed.expiresAt === "number" && parsed.expiresAt > Date.now();
-  } catch {
-    return false;
-  }
+  return readSession() !== null;
 }
 
 export function logout(): void {

@@ -7,6 +7,7 @@ import { Lock, LogOut } from "lucide-react";
 import {
   Archive,
   ArchiveRestore,
+  ArrowLeft,
   Banknote,
   CalendarCheck,
   CalendarClock,
@@ -106,7 +107,9 @@ import {
 } from "@/lib/clinic-store";
 import {
   changeCredentials,
+  currentRole,
   currentUsername,
+  hasMinRole,
   isAuthConfigured,
   isAuthed,
   login,
@@ -3163,23 +3166,23 @@ function ShiftBanner() {
   );
 }
 
-const NAV_ITEMS = [
-  { id: "overview", icon: LayoutDashboard },
-  { id: "requests", icon: ListChecks },
-  { id: "reservations", icon: CalendarCheck },
-  { id: "doctors", icon: Users },
-  { id: "services", icon: HeartPulse },
-  { id: "products", icon: ShoppingBag },
-  { id: "orders", icon: Package },
-  { id: "payments", icon: Banknote },
-  { id: "reviews", icon: MessageSquareText },
-  { id: "workdays", icon: FolderOpen },
-  { id: "archive", icon: Archive },
-  { id: "logs", icon: History },
-  { id: "settings", icon: Settings },
-] as const;
+const NAV_ITEMS: { id: string; icon: React.ComponentType<{ className?: string }>; roles: string[] }[] = [
+  { id: "overview",    icon: LayoutDashboard, roles: ["all"] },
+  { id: "requests",    icon: ListChecks,     roles: ["all"] },
+  { id: "reservations", icon: CalendarCheck, roles: ["staff", "payroll", "admin"] },
+  { id: "doctors",     icon: Users,          roles: ["payroll", "admin"] },
+  { id: "services",    icon: HeartPulse,     roles: ["payroll", "admin"] },
+  { id: "products",    icon: ShoppingBag,    roles: ["payroll", "admin"] },
+  { id: "orders",      icon: Package,        roles: ["payroll", "admin"] },
+  { id: "payments",    icon: Banknote,       roles: ["payroll", "admin"] },
+  { id: "reviews",     icon: MessageSquareText, roles: ["payroll", "admin"] },
+  { id: "workdays",    icon: FolderOpen,     roles: ["payroll", "admin"] },
+  { id: "archive",     icon: Archive,        roles: ["payroll", "admin"] },
+  { id: "logs",        icon: History,        roles: ["admin"] },
+  { id: "settings",    icon: Settings,       roles: ["admin"] },
+];
 
-function AuthGate({ onUnlocked }: { onUnlocked: () => void }) {
+function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
   const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -3215,11 +3218,11 @@ function AuthGate({ onUnlocked }: { onUnlocked: () => void }) {
         } else {
           await register(username, password);
           await login(username, password);
-          onUnlocked();
+          onUnlocked(currentRole());
         }
       } else {
         if (await login(username, password)) {
-          onUnlocked();
+          onUnlocked(currentRole());
         } else {
           setError(remainingLockMs() > 0 ? t("auth.locked") : t("auth.invalidCreds"));
         }
@@ -3245,6 +3248,15 @@ function AuthGate({ onUnlocked }: { onUnlocked: () => void }) {
         onSubmit={submit}
         className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-card"
       >
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => { window.location.href = "/"; }}
+          className="mb-4 -ms-2 text-muted-foreground"
+        >
+          <ArrowLeft className="size-4 me-1" /> {t("dash.back")}
+        </Button>
         <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Lock className="size-5" />
         </span>
@@ -3312,16 +3324,22 @@ function DashboardPage() {
   const { t, tOr, lang } = useI18n();
   const store = useClinicStore();
   const [authed, setAuthed] = useState(false);
+  const [role, setRole] = useState<string>("staff");
 
   useEffect(() => {
-    if (isAuthed()) setAuthed(true);
+    if (isAuthed()) {
+      setAuthed(true);
+      setRole(currentRole());
+      const firstAllowed = NAV_ITEMS.find((i) => i.roles.includes("all") || i.roles.includes(currentRole()));
+      if (firstAllowed) setTab(firstAllowed.id);
+    }
   }, []);
   const [tab, setTab] = useState<string>("overview");
   const [query, setQuery] = useState("");
   const [resQuery, setResQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
 
-  const currentNav = NAV_ITEMS.find((i) => i.id === tab) ?? NAV_ITEMS[0];
+  const currentNav = NAV_ITEMS.find((i) => i.id === tab) ?? NAV_ITEMS[0]!;
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
@@ -3350,7 +3368,7 @@ function DashboardPage() {
   const resGrid = useGrid(upcomingBase, resQuery, ["ownerName", "petName", "doctorName", "phone"]);
 
   if (!authed) {
-    return <AuthGate onUnlocked={() => setAuthed(true)} />;
+    return <AuthGate onUnlocked={(r) => { setAuthed(true); setRole(r); }} />;
   }
 
   const signOut = () => {
@@ -3432,7 +3450,9 @@ function DashboardPage() {
           <PawMLogo />
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter(
+              (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
+            ).map((item) => (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
@@ -3469,13 +3489,24 @@ function DashboardPage() {
             </a>
           </Button>
           <div className="flex items-center justify-between gap-2 px-1">
-            <span
-              className="truncate text-xs font-medium text-muted-foreground"
-              title={currentUsername()}
-            >
-              {currentUsername() || t("auth.staff")}
-            </span>
-            <div className="flex items-center gap-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="truncate text-xs font-medium text-muted-foreground"
+                title={currentUsername()}
+              >
+                {currentUsername() || t("auth.staff")}
+              </span>
+              {role === "admin" && (
+                <Badge variant="default" className="text-[10px] px-1.5 py-0">Admin</Badge>
+              )}
+              {role === "payroll" && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Payroll</Badge>
+              )}
+              {role === "staff" && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Staff</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               <LanguageToggle />
               <Button variant="ghost" size="sm" onClick={signOut}>
                 <LogOut className="size-4" /> {t("auth.signOut")}
@@ -3505,7 +3536,9 @@ function DashboardPage() {
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
                 aria-label={t("dash.title")}
               >
-                {NAV_ITEMS.map((item) => (
+{NAV_ITEMS.filter(
+            (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
+          ).map((item) => (
                   <option key={item.id} value={item.id}>
                     {t(`dash.${item.id}`)}
                   </option>

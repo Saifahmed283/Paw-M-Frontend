@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
 import {
   changeCredentials,
+  currentRole,
   currentUsername,
+  hasMinRole,
   isAuthConfigured,
   isAuthed,
   isLocked,
@@ -90,11 +92,20 @@ describe("auth", () => {
     });
   });
 
-  it("stores the username in the session and exposes it", async () => {
-    vi.mocked(api.post).mockResolvedValue({ ok: true });
+  it("stores the username and role in the session and exposes them", async () => {
+    vi.mocked(api.post).mockResolvedValue({ ok: true, role: "admin" });
     expect(await login("admin", "staffpass")).toBe(true);
     expect(isAuthed()).toBe(true);
     expect(currentUsername()).toBe("admin");
+    expect(currentRole()).toBe("admin");
+    expect(hasMinRole("payroll")).toBe(true);
+  });
+
+  it("defaults role to 'staff' when not returned by the API", async () => {
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    expect(await login("admin", "staffpass")).toBe(true);
+    expect(currentRole()).toBe("staff");
+    expect(hasMinRole("admin")).toBe(false);
   });
 
   it("locks after MAX_ATTEMPTS failed attempts", async () => {
