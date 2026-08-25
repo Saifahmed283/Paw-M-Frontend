@@ -78,7 +78,10 @@ export function WishlistButton({
       )}
     >
       <Heart
-        className={cn("size-4 transition-colors", wished ? "fill-rose-500 text-rose-500" : "text-muted-foreground")}
+        className={cn(
+          "size-4 transition-colors",
+          wished ? "fill-rose-500 text-rose-500" : "text-muted-foreground",
+        )}
       />
     </button>
   );
@@ -122,7 +125,9 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <Badge className="border border-border/60 bg-background/60 text-foreground backdrop-blur-md dark:bg-background/80 dark:text-foreground">{t(`store.cat.${product.category}`)}</Badge>
+          <Badge className="border border-border/60 bg-background/60 text-foreground backdrop-blur-md dark:bg-background/80 dark:text-foreground">
+            {t(`store.cat.${product.category}`)}
+          </Badge>
           {onSale && product.compareAtPrice != null && (
             <Badge className="border-amber-300/60 bg-amber-400 text-amber-900 backdrop-blur-md dark:border-amber-400/40 dark:bg-amber-500/90 dark:text-amber-50">
               -
@@ -149,7 +154,7 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
         ) : (
-<motion.div
+          <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.3 }}
@@ -163,7 +168,12 @@ export function ProductCard({ product }: { product: Product }) {
                   : "border-success/60 bg-success/90 text-success-foreground dark:text-success-foreground",
               )}
             >
-              <span className={cn("size-1.5 rounded-full", lowStock ? "bg-amber-700" : "bg-success-foreground")} />
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  lowStock ? "bg-amber-700" : "bg-success-foreground",
+                )}
+              />
               {lowStock ? `${product.stock} left` : "In stock"}
             </span>
           </motion.div>
@@ -178,7 +188,9 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         </div>
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</h3>
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{product.description}</p>
+        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {product.description}
+        </p>
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <ProductPrice product={product} />
           <div className="w-32">

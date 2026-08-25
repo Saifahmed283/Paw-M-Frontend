@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { PawMLogo } from "@/components/PawMMark";
-import { Lock, LogOut, RefreshCw } from "lucide-react";
+import { Bell, Lock, LogOut, RefreshCw } from "lucide-react";
 import {
   Archive,
   ArchiveRestore,
@@ -38,6 +38,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Dashboard Panels
+import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
+import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
+import { TasksPanel } from "@/components/dashboard/TasksPanel";
+import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import {
   PaginationBar,
   SearchBox,
@@ -3247,12 +3253,15 @@ const NAV_ITEMS: {
 }[] = [
   { id: "overview", icon: LayoutDashboard, roles: ["all"] },
   { id: "requests", icon: ListChecks, roles: ["all"] },
+  { id: "staff-overview", icon: Users, roles: ["admin"] },
+  { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
+  { id: "tasks", icon: ListChecks, roles: ["staff"] },
+  { id: "notifications", icon: Bell, roles: ["all"] },
   { id: "reservations", icon: CalendarCheck, roles: ["staff", "payroll", "admin"] },
   { id: "doctors", icon: Users, roles: ["payroll", "admin"] },
   { id: "services", icon: HeartPulse, roles: ["payroll", "admin"] },
   { id: "products", icon: ShoppingBag, roles: ["payroll", "admin"] },
   { id: "orders", icon: Package, roles: ["payroll", "admin"] },
-  { id: "payments", icon: Banknote, roles: ["payroll", "admin"] },
   { id: "reviews", icon: MessageSquareText, roles: ["payroll", "admin"] },
   { id: "workdays", icon: FolderOpen, roles: ["payroll", "admin"] },
   { id: "archive", icon: Archive, roles: ["payroll", "admin"] },
@@ -3838,6 +3847,10 @@ function DashboardPage() {
               </Card>
             )}
 
+            {tab === "staff-overview" && <StaffOverviewPanel />}
+            {tab === "payroll" && <PayrollPanel />}
+            {tab === "tasks" && <TasksPanel />}
+            {tab === "notifications" && <NotificationsPanel />}
             {tab === "reservations" && (
               <Card>
                 <CardHeader className="space-y-4">

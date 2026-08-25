@@ -18,6 +18,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider, type Lang, useI18n } from "@/lib/i18n";
 import { refreshClinicData } from "@/lib/clinic-store";
+import { isAuthed } from "@/lib/auth";
 import { readLangCookie } from "@/lib/lang-cookie";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 
@@ -45,7 +46,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  const { t } = useI18n();
   useEffect(() => {
     reportRuntimeError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -53,8 +53,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("error.desc")}</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Something went wrong</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Please try again or return home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -63,13 +63,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            {t("error.retry")}
+            Try again
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            {t("error.home")}
+            Home
           </a>
         </div>
       </div>
@@ -146,7 +146,7 @@ function RootComponent() {
     let cancelled = false;
     const loadId = window.setTimeout(() => {
       if (cancelled) return;
-      refreshClinicData();
+      if (isAuthed()) refreshClinicData();
     }, 0);
     // Font stylesheet is loaded after first paint so a slow or unreachable
     // Google Fonts endpoint can never delay the initial render.

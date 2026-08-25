@@ -239,7 +239,8 @@ const EN: Dict = {
   "reviews.badge.google": "Google Review",
   "reviews.googleSource": "Imported from Google Places",
   "dash.settings.googleSync": "Sync Google Reviews",
-  "dash.settings.googleSyncDesc": "Import the latest customer reviews from Google Maps into this dashboard.",
+  "dash.settings.googleSyncDesc":
+    "Import the latest customer reviews from Google Maps into this dashboard.",
   "dash.settings.googleSyncBtn": "Sync Now",
   "dash.settings.googleSyncSuccess": "Synced {synced} of {total} reviews.",
   "dash.settings.googleSyncFail": "Could not sync Google reviews — check your API key.",
@@ -1076,15 +1077,12 @@ const AR: Dict = {
   "reviews.badge.google": "تقييم Google",
   "reviews.googleSource": "مستورد من Google Places",
   "dash.settings.googleSync": "مزامنة تقييمات Google",
-  "dash.settings.googleSyncDesc":
-    "استيراد آخر تقييمات العملاء من Google Maps إلى لوحة التحكم.",
+  "dash.settings.googleSyncDesc": "استيراد آخر تقييمات العملاء من Google Maps إلى لوحة التحكم.",
   "dash.settings.googleSyncBtn": "مزامنة الآن",
   "dash.settings.googleSyncSuccess": "تم مزامنة {synced} من {total} تقييم.",
-  "dash.settings.googleSyncFail":
-    "تعذرت مزامنة تقييمات Google — تحقق من مفتاح API.",
+  "dash.settings.googleSyncFail": "تعذرت مزامنة تقييمات Google — تحقق من مفتاح API.",
   "homepage.clinicReviews.title": "آراء عملائنا على Google",
-  "homepage.clinicReviews.subtitle":
-    "آراء حقيقية من أصحاب الحيوانات الذين يثقون في Paw-M.",
+  "homepage.clinicReviews.subtitle": "آراء حقيقية من أصحاب الحيوانات الذين يثقون في Paw-M.",
   "homepage.clinicReviews.allReviews": "قراءة جميع التقييمات على Google",
   "payments.hint": "سجّل وتابع الدخل — مدفوعات العيادة والاستشارات وغيرها.",
   "payments.add": "إضافة دفعة",

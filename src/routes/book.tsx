@@ -135,24 +135,27 @@ function BookPage() {
       setStep(3);
       return;
     }
-try {
-       await addBookingRequest({
-ownerName: draft.ownerName,
-          phone: draft.phone,
-          email: draft.email,
-          petName: draft.petName,
-          animalType: draft.animalType === "Other" && draft.customAnimalType ? draft.customAnimalType : draft.animalType,
-          age: draft.age,
-          weight: draft.weight,
-          symptoms: draft.symptoms,
-          allergies: draft.allergies,
-          medications: draft.medications,
-          doctorId: selDoctor.id,
-          doctorName: t(`doc.${selDoctor.id}.name`),
-          date: draft.date,
-          time: draft.time,
-          emergency: draft.emergency,
-       });
+    try {
+      await addBookingRequest({
+        ownerName: draft.ownerName,
+        phone: draft.phone,
+        email: draft.email,
+        petName: draft.petName,
+        animalType:
+          draft.animalType === "Other" && draft.customAnimalType
+            ? draft.customAnimalType
+            : draft.animalType,
+        age: draft.age,
+        weight: draft.weight,
+        symptoms: draft.symptoms,
+        allergies: draft.allergies,
+        medications: draft.medications,
+        doctorId: selDoctor.id,
+        doctorName: t(`doc.${selDoctor.id}.name`),
+        date: draft.date,
+        time: draft.time,
+        emergency: draft.emergency,
+      });
     } catch {
       toast.error(t("booking.error.failed"));
       return;
@@ -250,65 +253,65 @@ ownerName: draft.ownerName,
               </div>
             )}
 
-{step === 1 && (
-               <div className="grid gap-5 sm:grid-cols-2">
-                 <Field label={t("booking.pet.name")} required>
-                   <Input
-                     value={draft.petName}
-                     onChange={(e) => set("petName", e.target.value)}
-                     placeholder={t("booking.ph.petName")}
-                   />
-                 </Field>
-                 <Field label={t("booking.pet.type")} required>
-                   <div className="flex flex-wrap gap-2">
-                     {ANIMAL_TYPES.map((type) => (
-                       <button
-                         key={type}
-                         type="button"
-                         onClick={() => {
-                           set("animalType", type);
-                           // Clear custom animal type when switching from Other to a specific type
-                           if (type !== "Other") {
-                             set("customAnimalType", undefined);
-                           }
-                         }}
-                         className={cn(
-                           "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                           draft.animalType === type
-                             ? "border-primary bg-primary text-primary-foreground"
-                             : "border-border text-muted-foreground hover:border-primary/40",
-                         )}
-                       >
-                         {t(`animal.${type}`)}
-                       </button>
-                     ))}
-                   </div>
-                   {draft.animalType === "Other" && (
-                     <Field label={t("booking.pet.otherType")}>
-                       <Input
-                         value={draft.customAnimalType ?? ""}
-                         onChange={(e) => set("customAnimalType", e.target.value)}
-                         placeholder={t("booking.ph.otherPetType")}
-                       />
-                     </Field>
-                   )}
-                 </Field>
-                 <Field label={t("booking.pet.age")}>
-                   <Input
-                     value={draft.age}
-                     onChange={(e) => set("age", e.target.value)}
-                     placeholder={t("booking.ph.age")}
-                   />
-                 </Field>
-                 <Field label={t("booking.pet.weight")}>
-                   <Input
-                     value={draft.weight}
-                     onChange={(e) => set("weight", e.target.value)}
-                     placeholder={t("booking.ph.weight")}
-                   />
-                 </Field>
-               </div>
-             )}
+            {step === 1 && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label={t("booking.pet.name")} required>
+                  <Input
+                    value={draft.petName}
+                    onChange={(e) => set("petName", e.target.value)}
+                    placeholder={t("booking.ph.petName")}
+                  />
+                </Field>
+                <Field label={t("booking.pet.type")} required>
+                  <div className="flex flex-wrap gap-2">
+                    {ANIMAL_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          set("animalType", type);
+                          // Clear custom animal type when switching from Other to a specific type
+                          if (type !== "Other") {
+                            set("customAnimalType", undefined);
+                          }
+                        }}
+                        className={cn(
+                          "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                          draft.animalType === type
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/40",
+                        )}
+                      >
+                        {t(`animal.${type}`)}
+                      </button>
+                    ))}
+                  </div>
+                  {draft.animalType === "Other" && (
+                    <Field label={t("booking.pet.otherType")}>
+                      <Input
+                        value={draft.customAnimalType ?? ""}
+                        onChange={(e) => set("customAnimalType", e.target.value)}
+                        placeholder={t("booking.ph.otherPetType")}
+                      />
+                    </Field>
+                  )}
+                </Field>
+                <Field label={t("booking.pet.age")}>
+                  <Input
+                    value={draft.age}
+                    onChange={(e) => set("age", e.target.value)}
+                    placeholder={t("booking.ph.age")}
+                  />
+                </Field>
+                <Field label={t("booking.pet.weight")}>
+                  <Input
+                    value={draft.weight}
+                    onChange={(e) => set("weight", e.target.value)}
+                    placeholder={t("booking.ph.weight")}
+                  />
+                </Field>
+              </div>
+            )}
 
             {step === 2 && (
               <div className="grid gap-5">

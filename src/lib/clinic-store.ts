@@ -554,10 +554,15 @@ export async function deleteReview(id: string) {
   }
 }
 
-export async function syncGoogleReviews(placeId?: string): Promise<{ synced: number; total: number }> {
+export async function syncGoogleReviews(
+  placeId?: string,
+): Promise<{ synced: number; total: number }> {
   await ensureLoaded();
   try {
-    const data = await api.post<{ synced: number; total: number }>("/google/sync-reviews", placeId ? { placeId } : undefined);
+    const data = await api.post<{ synced: number; total: number }>(
+      "/google/sync-reviews",
+      placeId ? { placeId } : undefined,
+    );
     const reviews = await api.get<Review[]>("/reviews");
     set((s) => ({ ...s, reviews: Array.isArray(reviews) ? reviews : s.reviews }));
     return data;

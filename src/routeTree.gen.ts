@@ -17,6 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as BookingSuccessRouteImport } from './routes/booking.success'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
@@ -65,6 +66,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreRoute = StoreRouteImport.update({
   id: '/store',
   path: '/store',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/doctors': typeof DoctorsRoute
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
   '/store/$productId': typeof StoreProductIdRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/doctors': typeof DoctorsRoute
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/booking/success': typeof BookingSuccessRoute
   '/store/$productId': typeof StoreProductIdRoute
   '/store/checkout': typeof StoreCheckoutRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/doctors': typeof DoctorsRoute
   '/services': typeof ServicesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
   '/store/$productId': typeof StoreProductIdRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/doctors'
     | '/services'
     | '/sitemap.xml'
+    | '/staff'
     | '/store'
     | '/booking/success'
     | '/store/$productId'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/doctors'
     | '/services'
     | '/sitemap.xml'
+    | '/staff'
     | '/booking/success'
     | '/store/$productId'
     | '/store/checkout'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/doctors'
     | '/services'
     | '/sitemap.xml'
+    | '/staff'
     | '/store'
     | '/booking/success'
     | '/store/$productId'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   DoctorsRoute: typeof DoctorsRoute
   ServicesRoute: typeof ServicesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StaffRoute: typeof StaffRoute
   StoreRoute: typeof StoreRouteWithChildren
   BookingSuccessRoute: typeof BookingSuccessRoute
 }
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/store': {
@@ -355,6 +375,7 @@ const rootRouteChildren: RootRouteChildren = {
   DoctorsRoute: DoctorsRoute,
   ServicesRoute: ServicesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StaffRoute: StaffRoute,
   StoreRoute: StoreRouteWithChildren,
   BookingSuccessRoute: BookingSuccessRoute,
 }

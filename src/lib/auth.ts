@@ -1,7 +1,7 @@
-import { storageGet, storageRemove, storageSet } from "@/lib/storage";
+import { SESSION_KEY, storageGet, storageRemove, storageSet } from "@/lib/storage";
 import { api } from "@/lib/api";
 
-const SESSION_KEY = "paw-m:admin-session";
+export { SESSION_KEY } from "@/lib/storage";
 const LOCK_KEY = "paw-m:admin-attempts";
 
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -13,6 +13,7 @@ export const MIN_PASSWORD = 6;
 type Session = {
   username: string;
   role: string;
+  id: number;
   token: string;
   expiresAt: number;
 };
@@ -61,7 +62,7 @@ export async function register(username: string, password: string): Promise<void
 export async function login(username: string, password: string): Promise<boolean> {
   if (isLocked()) return false;
   try {
-    const r = await api.post<{ ok: boolean; role?: string }>("/auth/login", {
+    const r = await api.post<{ ok: boolean; role?: string; id?: number }>("/auth/login", {
       username: username.trim(),
       password,
     });
@@ -73,6 +74,7 @@ export async function login(username: string, password: string): Promise<boolean
     const session: Session = {
       username: username.trim(),
       role: r.role ?? "staff",
+      id: r.id ?? 0,
       token: randomHex(24),
       expiresAt: Date.now() + SESSION_TTL_MS,
     };

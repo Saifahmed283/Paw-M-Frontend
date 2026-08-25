@@ -1,1 +1,0 @@
-function e(e){try{return e===`local`?window.localStorage:window.sessionStorage}catch{return null}}function t(t,n){try{return e(t)?.getItem(n)??null}catch{return null}}function n(t,n,r){try{e(t)?.setItem(n,r)}catch{}}function r(t,n){try{e(t)?.removeItem(n)}catch{}}export{r as n,n as r,t};

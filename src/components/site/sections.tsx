@@ -164,12 +164,12 @@ export function Hero() {
           <h1 className="text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
             {t("hero.title.a")}{" "}
             <RotatingText
-                texts={rotatingTexts}
-                className="align-baseline"
-                splitBy="words"
-                staggerDuration={0.05}
-                rotationInterval={2600}
-              />
+              texts={rotatingTexts}
+              className="align-baseline"
+              splitBy="words"
+              staggerDuration={0.05}
+              rotationInterval={2600}
+            />
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">

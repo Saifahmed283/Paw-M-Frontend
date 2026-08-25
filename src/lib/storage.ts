@@ -4,6 +4,8 @@
  * read/write is wrapped in try/catch.
  */
 
+export const SESSION_KEY = "paw-m:admin-session";
+
 function storage(kind: "local" | "session"): Storage | null {
   try {
     return kind === "local" ? window.localStorage : window.sessionStorage;

@@ -135,8 +135,7 @@ function Index() {
 
         if (googleReviews.length === 0) return null;
 
-        const avgRating =
-          googleReviews.reduce((s, r) => s + r.rating, 0) / googleReviews.length;
+        const avgRating = googleReviews.reduce((s, r) => s + r.rating, 0) / googleReviews.length;
 
         return (
           <section className="border-t border-border py-20">
@@ -157,10 +156,7 @@ function Index() {
                     <CardContent className="flex flex-1 flex-col gap-3 p-5">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold">{r.author}</span>
-                        <time
-                          className="text-xs text-muted-foreground"
-                          dateTime={r.createdAt}
-                        >
+                        <time className="text-xs text-muted-foreground" dateTime={r.createdAt}>
                           {new Date(r.createdAt).toLocaleDateString(
                             lang === "ar" ? "ar" : "en-US",
                             { month: "short", year: "numeric" },
@@ -173,9 +169,7 @@ function Index() {
                             key={i}
                             className={cn(
                               "size-3.5",
-                              i < r.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-border",
+                              i < r.rating ? "fill-amber-400 text-amber-400" : "text-border",
                             )}
                           />
                         ))}
@@ -188,12 +182,7 @@ function Index() {
                 ))}
               </div>
               <div className="mt-8 text-center">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
+                <Button asChild variant="outline" size="sm" className="gap-2">
                   <a
                     href={`https://search.google.com/local/writereview?placeid={{googlePlaceId}}`}
                     target="_blank"
