@@ -135,7 +135,7 @@ var SECURITY_HEADERS = {
 };
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-D13b4sB7.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-B6c3Dt4y.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response) {
