@@ -12,9 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ListChecks, Clock, Plus, Trash2, Edit, Check, X } from "lucide-react";
 
+interface Task {
+  id: number;
+  title: string;
+  description?: string;
+  priority: "high" | "medium" | "low";
+  dueDate?: string;
+  status: "open" | "in_progress" | "completed" | "cancelled";
+}
+
 export function TasksPanel() {
   const { t } = useI18n();
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<{
     status: "all" | "open" | "in_progress" | "completed" | "cancelled";
@@ -33,12 +42,12 @@ export function TasksPanel() {
     try {
       let url = `/api/tasks/mine`;
       if (userId) {
-        const response = await api.get(url);
+        const response = await api.get<Task[]>(url);
         if (Array.isArray(response)) {
           const filtered =
             filter.status === "all"
               ? response
-              : response.filter((task: any) => task.status === filter.status);
+              : response.filter((task) => task.status === filter.status);
           setTasks(filtered);
         }
       }
@@ -55,7 +64,7 @@ export function TasksPanel() {
     console.log("Opening create task modal");
   }
 
-  async function updateTaskStatus(taskId: number, status: string) {
+  async function updateTaskStatus(taskId: number, status: "open" | "in_progress" | "completed" | "cancelled") {
     try {
       await api.patch(`/api/tasks/${taskId}/status`, { status });
       await fetchTasks(); // Refresh the list
@@ -64,7 +73,7 @@ export function TasksPanel() {
     }
   }
 
-  async function deleteTask(taskId: number) {
+  async function deleteTask(taskId: number): Promise<void> {
     try {
       await api.delete(`/api/tasks/${taskId}`);
       await fetchTasks(); // Refresh the list

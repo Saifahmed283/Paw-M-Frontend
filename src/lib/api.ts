@@ -6,10 +6,15 @@ const API_BASE =
 import { storageGet } from "@/lib/storage";
 import { SESSION_KEY } from "@/lib/storage";
 
+const CLIENT_SESSION_KEY = "paw-m:client-session";
+
 async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
+  const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
   // Get session from storage
   const sessionJson = storageGet("session", SESSION_KEY);
   const session = sessionJson ? JSON.parse(sessionJson) : null;
+  const clientSessionJson = storageGet("session", CLIENT_SESSION_KEY);
+  const clientSession = clientSessionJson ? JSON.parse(clientSessionJson) : null;
 
   // Prepare headers
   const headers = new Headers({
@@ -22,8 +27,9 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
     headers.set("x-user-id", String(session.id));
     headers.set("x-user-role", session.role);
   }
+  if (clientSession?.token) headers.set("x-client-session", clientSession.token);
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     ...init,
     headers,
   });
@@ -36,8 +42,8 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
 }
 
 export const api = {
-  get: <T = unknown>(path: string) => apiFetch(path) as Promise<T>,
-  post: <T = unknown>(path: string, body: unknown) =>
+  get: <T = unknown>(path: string, init?: RequestInit) => apiFetch(path, init) as Promise<T>,
+  post: <T = unknown>(path: string, body?: unknown) =>
     apiFetch(path, { method: "POST", body: JSON.stringify(body) }) as Promise<T>,
   patch: <T = unknown>(path: string, body?: unknown) =>
     apiFetch(path, { method: "PATCH", body: JSON.stringify(body) }) as Promise<T>,

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ClientAuthGate } from "@/components/ClientAuthGate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +74,14 @@ export const Route = createFileRoute("/book")({
 });
 
 function BookPage() {
+  return (
+    <ClientAuthGate>
+      <BookingForm />
+    </ClientAuthGate>
+  );
+}
+
+function BookingForm() {
   const { doctor } = Route.useSearch();
   const navigate = useNavigate();
   const { t } = useI18n();

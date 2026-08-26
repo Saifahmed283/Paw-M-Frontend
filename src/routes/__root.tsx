@@ -17,7 +17,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider, type Lang, useI18n } from "@/lib/i18n";
-import { refreshClinicData } from "@/lib/clinic-store";
+import { refreshClinicData, refreshPublicData } from "@/lib/clinic-store";
 import { isAuthed } from "@/lib/auth";
 import { readLangCookie } from "@/lib/lang-cookie";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
@@ -53,7 +53,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Something went wrong</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Something went wrong
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">Please try again or return home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -146,6 +148,7 @@ function RootComponent() {
     let cancelled = false;
     const loadId = window.setTimeout(() => {
       if (cancelled) return;
+      refreshPublicData();
       if (isAuthed()) refreshClinicData();
     }, 0);
     // Font stylesheet is loaded after first paint so a slow or unreachable

@@ -31,6 +31,7 @@ import {
   Stethoscope,
   Timer,
   Trash2,
+  UploadCloud,
   Users,
   Wallet,
 } from "lucide-react";
@@ -1521,6 +1522,7 @@ function SettingsPanel() {
   });
   const [form, setForm] = useState({
     name: settings.name,
+    tagline: settings.tagline,
     phone: settings.phone,
     emergency: settings.emergency,
     whatsapp: settings.whatsapp,
@@ -1530,13 +1532,31 @@ function SettingsPanel() {
     instapay: settings.instapay,
   });
 
+  useEffect(() => {
+    setForm({
+      name: settings.name,
+      tagline: settings.tagline,
+      phone: settings.phone,
+      emergency: settings.emergency,
+      whatsapp: settings.whatsapp,
+      email: settings.email,
+      address: settings.address,
+      currency: settings.currency,
+      instapay: settings.instapay,
+    });
+  }, [settings]);
+
   const save = async () => {
     if (!form.currency.trim()) {
       toast.error(t("dash.settings.currencyEmpty"));
       return;
     }
-    await updateSettings({ ...form, currency: form.currency.trim() });
-    toast.success(t("dash.toast.saved"));
+    try {
+      await updateSettings({ ...form, currency: form.currency.trim() });
+      toast.success(t("dash.toast.saved"));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    }
   };
 
   const doSync = async () => {
@@ -1570,6 +1590,12 @@ function SettingsPanel() {
         <CardContent className="grid gap-4">
           <Field label={t("dash.settings.name")}>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </Field>
+          <Field label={t("dash.settings.tagline")}>
+            <Input
+              value={form.tagline}
+              onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+            />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t("dash.settings.phone")}>
@@ -1773,32 +1799,34 @@ const PET_TYPES = ["dog", "cat", "both"] as const;
 const LOW_STOCK_THRESHOLD = 5;
 
 const EMPTY_PRODUCT = {
-  name: "",
-  description: "",
-  price: "",
-  compareAtPrice: "",
-  stock: "",
-  image: "",
-  category: "accessories",
-  petType: "both",
-  featured: false,
-};
+    name: "",
+    description: "",
+    price: "",
+    compareAtPrice: "",
+    stock: "",
+    image: "",
+    category: "accessories",
+    petType: "both",
+    featured: false,
+    barcode: "",
+  };
 
 function ProductDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState(() =>
-    product
-      ? {
-          name: product.name,
-          description: product.description,
-          price: String(product.price),
-          compareAtPrice: product.compareAtPrice != null ? String(product.compareAtPrice) : "",
-          stock: String(product.stock),
-          image: product.image,
-          category: product.category,
-          petType: product.petType ?? "both",
-          featured: product.featured,
-        }
+product
+        ? {
+            name: product.name,
+            description: product.description,
+            price: String(product.price),
+            compareAtPrice: product.compareAtPrice != null ? String(product.compareAtPrice) : "",
+            stock: String(product.stock),
+            image: product.image,
+            category: product.category,
+            petType: product.petType ?? "both",
+            featured: product.featured,
+            barcode: product.barcode ?? "",
+          }
       : EMPTY_PRODUCT,
   );
 
@@ -1823,20 +1851,19 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
       toast.error(t("dash.form.product.requiredStock"));
       return;
     }
-    await saveProduct({
-      id: product?.id ?? `prod-${Date.now().toString(36)}`,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price,
-      compareAtPrice: compareAt,
-      stock,
-      image: form.image.trim(),
-      category: form.category || "accessories",
-      petType: form.petType,
-      featured: form.featured,
-      createdAt: product?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+await saveProduct({
+        id: product?.id ?? `prod-${Date.now().toString(36)}`,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        price,
+        compareAtPrice: compareAt,
+        stock,
+        image: form.image.trim(),
+        category: form.category || "accessories",
+        petType: form.petType,
+        featured: form.featured,
+        barcode: form.barcode.trim(),
+      });
     toast.success(t("dash.toast.saved"));
     onClose();
   };
@@ -1856,6 +1883,9 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
         <div className="grid gap-4">
           <Field label={t("dash.form.product.name")}>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </Field>
+          <Field label={t("dash.form.product.barcode")}>
+            <Input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label={t("dash.form.product.price")}>
@@ -1964,6 +1994,7 @@ function ProductsPanel() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [petType, setPetType] = useState<string>("all");
+  const [importOpen, setImportOpen] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Product, b: Product) => number> = {
     name: (a, b) => a.name.localeCompare(b.name),
@@ -1989,9 +2020,12 @@ function ProductsPanel() {
           <CardTitle className="text-base">{t("dash.products")}</CardTitle>
           <CardDescription>{t("dash.products.hint")}</CardDescription>
         </div>
-        <Button size="sm" onClick={() => setEditing("new")}>
-          <Plus className="size-4" /> {t("dash.addProduct")}
-        </Button>
+<Button size="sm" onClick={() => setEditing("new")}>
+            <Plus className="size-4" /> {t("dash.addProduct")}
+          </Button>
+          <Button size="sm" onClick={() => setImportOpen(true)}>
+            <UploadCloud className="size-4" /> {t("dash.importProducts")}
+          </Button>
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -2168,12 +2202,122 @@ function ProductsPanel() {
           />
         </div>
       </CardContent>
-      {editing && (
+{editing && (
         <ProductDialog
           product={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
         />
       )}
+
+      {/* Import Products Dialog */}
+      <Dialog open={importOpen} onOpenChange={(open) => { if (!open) setImportOpen(false); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("dash.importProducts")}</DialogTitle>
+            <DialogDescription>{t("dash.importProductsHint")}</DialogDescription>
+          </DialogHeader>
+          <DialogContent>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const file = e.target.elements.file.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = async (event) => {
+                const csvText = event.target.result;
+                // Parse CSV and import products
+                const lines = csvText.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                // Find column indices
+                const nameIdx = headers.findIndex(h => h === 'Name' || h === 'Name ');
+                const typeIdx = headers.findIndex(h => h === 'Type' || h === 'Type ');
+                const categoryIdx = headers.findIndex(h => h === 'Category' || h === 'Category ');
+                const kgIdx = headers.findIndex(h => h === 'Kg' || h === 'Kg ');
+                const priceIdx = headers.findIndex(h => h === 'Price' || h === 'Price ');
+                if (nameIdx === -1 || categoryIdx === -1 || kgIdx === -1 || priceIdx === -1) {
+                  toast.error(t("dash.importProductsMissingColumns"));
+                  return;
+                }
+                const productsToImport = [];
+                for (let i = 1; i < lines.length; i++) {
+                  const line = lines[i].trim();
+                  if (!line) continue;
+                  const values = line.split(',').map(v => v.trim());
+                  const name = values[nameIdx] || '';
+                  const type = values[typeIdx] !== undefined ? values[typeIdx] : '';
+                  const category = values[categoryIdx] || '';
+                  const kg = values[kgIdx] || '';
+                  const priceStr = values[priceIdx] || '0';
+                  if (!name || !category) continue;
+                  const price = parseFloat(priceStr);
+                  if (isNaN(price)) continue;
+                  let petType = "both";
+                  if (type) {
+                    const lowerType = type.toLowerCase();
+                    if (lowerType.includes('dog')) petType = "dog";
+                    else if (lowerType.includes('cat')) petType = "cat";
+                  }
+                  let description = '';
+                  if (kg) {
+                    description = kg;
+                  }
+                  if (type && type !== kg) {
+                    description = description ? `${description} ${type}`.trim() : type;
+                  }
+                  if (!description) {
+                    description = 'Pet food product';
+                  }
+                  productsToImport.push({
+                    name,
+                    description,
+                    price,
+                    compareAtPrice: null,
+                    image: "",
+                    category,
+                    petType,
+                    stock: 0,
+                    minStockAlert: 5,
+                    featured: false,
+                    barcode: "",
+                  });
+                }
+                // Import products
+                const importPromises = productsToImport.map(product => 
+                  saveProduct(product)
+                );
+                await Promise.all(importPromises);
+                toast.success(t("dash.importProductsSuccess", { count: productsToImport.length }));
+                setImportOpen(false);
+              };
+              reader.onerror = () => {
+                toast.error(t("dash.importProductsError"));
+              };
+              reader.readAsText(file);
+            }}>
+              <div className="space-y-4">
+                <label className="flex flex-col space-y-1">
+                  <span className="text-sm font-medium">{t("dash.uploadFile")}</span>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    id="file"
+                    required
+                    onChange={(e) => {
+                      // Reset form if needed
+                    }}
+                  />
+                </label>
+                <Button type="submit">{t("dash.import")}</Button>
+              </div>
+            </form>
+          </DialogContent>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>
+              {t("dash.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </Card>
   );
 }

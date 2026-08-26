@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ClientAuthGate } from "@/components/ClientAuthGate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -138,6 +139,14 @@ function SuccessScreen({
 }
 
 function CheckoutPage() {
+  return (
+    <ClientAuthGate>
+      <CheckoutForm />
+    </ClientAuthGate>
+  );
+}
+
+function CheckoutForm() {
   const { t } = useI18n();
   const cart = useCart();
   const { settings } = useClinicStore();

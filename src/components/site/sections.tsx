@@ -38,7 +38,6 @@ import {
   BOOKING_STEPS,
   FAQS,
   STATS,
-  TESTIMONIALS,
   upcomingAvailability,
   WHY_US,
 } from "@/lib/clinic-data";
@@ -526,14 +525,19 @@ export function Testimonials() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const { t } = useI18n();
+  const { reviews } = useClinicStore();
+  const testimonials = reviews.filter(
+    (review) => review.productId === "clinic" && review.status === "approved",
+  );
 
   useEffect(() => {
-    if (paused) return;
-    const id = window.setInterval(() => setActive((a) => (a + 1) % TESTIMONIALS.length), 5000);
+    if (paused || testimonials.length < 2) return;
+    const id = window.setInterval(() => setActive((a) => (a + 1) % testimonials.length), 5000);
     return () => window.clearInterval(id);
-  }, [paused]);
+  }, [paused, testimonials.length]);
 
-  const item = TESTIMONIALS[active] ?? TESTIMONIALS[0]!;
+  const item = testimonials[active] ?? testimonials[0];
+  if (!item) return null;
 
   return (
     <section
@@ -543,7 +547,9 @@ export function Testimonials() {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <SectionHeading center eyebrow={t("testimonials.eyebrow")} title={t("testimonials.title")} />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <SectionHeading center eyebrow="GOOGLE REVIEWS" title={t("testimonials.title")} />
+      </div>
 
       <Reveal>
         <figure className="mx-auto mt-12 max-w-3xl rounded-3xl border border-border bg-card p-8 text-center shadow-card sm:p-12">
@@ -555,7 +561,7 @@ export function Testimonials() {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="mt-6 text-lg leading-relaxed text-foreground sm:text-xl"
           >
-            "{t(`testi.${active}.quote`)}"
+            "{item.comment}"
           </motion.blockquote>
           <figcaption className="mt-8">
             <div className="flex justify-center gap-0.5">
@@ -563,18 +569,15 @@ export function Testimonials() {
                 <Star key={i} className="size-4 fill-warning text-warning" />
               ))}
             </div>
-            <p className="mt-3 text-sm font-semibold text-foreground">
-              {t(`testi.${active}.name`)}
-            </p>
-            <p className="text-sm text-muted-foreground">{t(`testi.${active}.pet`)}</p>
+            <p className="mt-3 text-sm font-semibold text-foreground">{item.author}</p>
+            <p className="text-sm text-muted-foreground">{t("reviews.googleSource")}</p>
           </figcaption>
-        </figure>
-      </Reveal>
-
+         </figure>
+       </Reveal>
       <div className="mt-8 flex justify-center gap-2">
-        {TESTIMONIALS.map((item, i) => (
+        {testimonials.map((review, i) => (
           <button
-            key={item.name}
+            key={review.id}
             onClick={() => setActive(i)}
             aria-label={`${t("testimonials.eyebrow")} ${i + 1}`}
             aria-current={i === active}

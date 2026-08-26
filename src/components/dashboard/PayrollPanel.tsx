@@ -10,33 +10,60 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, ListChecks, DollarSign, Banknote, Plus, Trash2, Edit, Check, X } from "lucide-react";
+import {
+  Calendar,
+  ListChecks,
+  DollarSign,
+  Banknote,
+  Plus,
+  Trash2,
+  Edit,
+  Check,
+  X,
+} from "lucide-react";
+
+interface PayrollRecord {
+  id: number;
+  employee?: { fullName: string } | null;
+  periodStart: string;
+  periodEnd: string;
+  totalSessions?: number;
+  totalHours?: number;
+  totalBookings?: number;
+  totalOrders?: number;
+  totalRevenue?: number;
+  basePay?: number;
+  totalBonuses?: number;
+  totalDeductions?: number;
+  netPay?: number;
+  status: string;
+}
 
 export function PayrollPanel() {
   const { t } = useI18n();
-  const [records, setRecords] = useState<any[]>([]);
+  const today = new Date().toISOString().slice(0, 10) || "";
+  const [records, setRecords] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<{
     periodStart: string;
     periodEnd: string;
   }>({
-    periodStart: new Date().toISOString().split("T")[0],
-    periodEnd: new Date().toISOString().split("T")[0],
+    periodStart: today,
+    periodEnd: today,
   });
 
   useEffect(() => {
     fetchPayrollRecords();
-  }, [filter]);
+  }, [filter, fetchPayrollRecords]);
 
   async function fetchPayrollRecords() {
     setLoading(true);
     try {
-      const response = await api.get("/api/payroll/records", {
-        params: {
-          periodStart: filter.periodStart,
-          periodEnd: filter.periodEnd,
-        },
+      const params = new URLSearchParams({
+        periodStart: filter.periodStart,
+        periodEnd: filter.periodEnd,
       });
+      const response = await api.get<PayrollRecord[]>(`/api/payroll/records?${params}`);
       if (Array.isArray(response)) {
         setRecords(response);
       }
@@ -258,15 +285,15 @@ export function PayrollPanel() {
 
 // Helper functions for updating records
 async function updateRecordStatus(id: number, status: string) {
-  try {
-    await api.patch(`/api/payroll/records/${id}/status`, { status });
-  } catch (error) {
-    console.error("Error updating payroll record status:", error);
+    try {
+      await api.patch(`/api/payroll/records/${id}/status`, { status });
+    } catch (error) {
+      console.error("Error updating payroll record status:", error);
+    }
   }
-}
 
-async function updateRecordAmount(id: number) {
-  // In a real implementation, this would open a modal to adjust amounts
-  // For now, we'll just show a toast
-  console.log("Opening amount adjustment modal for record", id);
-}
+  async function updateRecordAmount(id: number) {
+    // In a real implementation, this would open a modal to adjust amounts
+    // For now, we'll just show a toast
+    console.log("Opening amount adjustment modal for record", id);
+  }

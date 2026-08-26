@@ -12,9 +12,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users, Calendar, Clock, DollarSign, ListChecks } from "lucide-react";
 
+interface Employee {
+  id: number | string;
+  fullName: string;
+  email: string;
+  role: "admin" | "payroll" | "staff";
+  payRateType: "monthly" | "hourly";
+  monthlySalary?: number;
+  hourlyRate?: number;
+}
+
+interface EmployeeKPI {
+  sessions: number;
+  hours: number;
+  bookings: number;
+  orders: number;
+  revenue: number;
+  basePay: number;
+  grossPay: number;
+}
+
+interface EmployeeWithKPI extends Employee, EmployeeKPI {}
+
 export function StaffOverviewPanel() {
   const { t } = useI18n();
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<EmployeeWithKPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<{
     role: "all" | "admin" | "payroll" | "staff";
@@ -23,24 +45,24 @@ export function StaffOverviewPanel() {
 
   useEffect(() => {
     fetchStaffOverview();
-  }, [filter]);
+  }, [filter, fetchStaffOverview]);
 
   async function fetchStaffOverview() {
     setLoading(true);
     try {
-      const response = await api.get("/api/employees");
+      const response = await api.get<Employee[]>("/api/employees");
       if (Array.isArray(response)) {
         // Filter by role if needed
         const filtered =
           filter.role === "all"
             ? response
-            : response.filter((emp: any) => emp.role === filter.role);
+            : response.filter((emp) => emp.role === filter.role);
 
         // For each staff member, fetch their KPI data
         const staffWithKPI = await Promise.all(
-          filtered.map(async (emp: any) => {
+          filtered.map(async (emp) => {
             try {
-              const periodEnd = new Date().toISOString().split("T")[0];
+              const periodEnd = new Date().toISOString().split("T")[0] || "";
               let periodStart = "";
 
               switch (filter.period) {
@@ -50,16 +72,16 @@ export function StaffOverviewPanel() {
                 case "week":
                   const weekAgo = new Date();
                   weekAgo.setDate(weekAgo.getDate() - 7);
-                  periodStart = weekAgo.toISOString().split("T")[0];
+                  periodStart = weekAgo.toISOString().split("T")[0] || "";
                   break;
                 case "month":
                   const monthAgo = new Date();
                   monthAgo.setMonth(monthAgo.getMonth() - 1);
-                  periodStart = monthAgo.toISOString().split("T")[0];
+                  periodStart = monthAgo.toISOString().split("T")[0] || "";
                   break;
               }
 
-              const kpiResponse = await api.get(
+              const kpiResponse = await api.get<EmployeeKPI>(
                 `/api/work-sessions/me/kpi?periodStart=${periodStart}&periodEnd=${periodEnd}`,
                 {
                   headers: {
@@ -84,7 +106,7 @@ export function StaffOverviewPanel() {
                 revenue: 0,
                 basePay: 0,
                 grossPay: 0,
-              };
+              } as EmployeeWithKPI;
             }
           }),
         );

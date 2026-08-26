@@ -6,9 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, X, CheckCircle, DollarSign, ListChecks } from "lucide-react";
 
+interface Notification {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  readBy?: string[];
+  createdAt: string;
+  data?: unknown;
+}
+
 export function NotificationsPanel() {
   const { t } = useI18n();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -18,17 +28,17 @@ export function NotificationsPanel() {
 
   useEffect(() => {
     fetchNotifications();
-  }, [userId]);
+  }, [userId, fetchNotifications]);
 
   async function fetchNotifications() {
     setLoading(true);
     try {
       if (userId) {
-        const response = await api.get("/api/notifications/me");
+        const response = await api.get<Notification[]>("/api/notifications/me");
         if (Array.isArray(response)) {
           setNotifications(response);
           const unread = response.filter(
-            (n: any) => !n.readBy || !n.readBy.includes(userId.toString()),
+            (n) => !n.readBy || !n.readBy.includes(userId.toString()),
           ).length;
           setUnreadCount(unread);
         }
@@ -53,7 +63,7 @@ export function NotificationsPanel() {
     try {
       // Mark each notification as read
       await Promise.all(
-        notifications.map((n: any) => api.patch(`/api/notifications/${n.id}/read`)),
+        notifications.map((n) => api.patch(`/api/notifications/${n.id}/read`)),
       );
       await fetchNotifications(); // Refresh the list
     } catch (error) {

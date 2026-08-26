@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { DOCTORS, SERVICES, CLINIC, type Doctor } from "@/lib/clinic-data";
+import { CLINIC, CLINIC_REVIEWS, DOCTORS, SERVICES, type Doctor } from "@/lib/clinic-data";
 import { sanitizeEmail, sanitizePhone, sanitizeWhatsapp } from "@/lib/sanitize";
 import { api } from "@/lib/api";
 
@@ -35,16 +35,17 @@ export type ServiceItem = {
 };
 
 export type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  compareAtPrice?: number | null;
-  image: string;
-  category: string;
-  petType?: string;
-  stock: number;
-  featured: boolean;
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    compareAtPrice?: number | null;
+    image: string;
+    category: string;
+    petType?: string;
+    stock: number;
+    featured: boolean;
+    barcode?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -174,7 +175,13 @@ function seed(): Store {
     services: SERVICES,
     products: [],
     orders: [],
-    reviews: [],
+    reviews: CLINIC_REVIEWS.map((review, index) => ({
+      ...review,
+      id: `clinic-review-${index + 1}`,
+      productId: "clinic",
+      status: "approved" as const,
+      createdAt: new Date(0).toISOString(),
+    })),
     payments: [],
     settings: { ...CLINIC },
     workSession: null,
@@ -219,6 +226,24 @@ export function useClinicStore() {
 /** Refreshes all clinic data from the backend (no-op while one is in flight). */
 export function refreshClinicData() {
   return ensureLoaded();
+}
+
+export async function refreshPublicData() {
+  const [settings, doctors, services, products, reviews] = await Promise.all([
+    api.get<Partial<ClinicSettings>>("/settings").catch(() => null),
+    api.get<Doctor[]>("/doctors").catch(() => null),
+    api.get<ServiceItem[]>("/services").catch(() => null),
+    api.get<Product[]>("/products").catch(() => null),
+    api.get<Review[]>("/reviews").catch(() => null),
+  ]);
+  set((prev) => ({
+    ...prev,
+    settings: settings ? { ...prev.settings, ...settings } : prev.settings,
+    doctors: doctors ? doctors : prev.doctors,
+    services: services ? services : prev.services,
+    products: products ? products : prev.products,
+    reviews: reviews ? reviews : prev.reviews,
+  }));
 }
 
 async function loadAll() {
