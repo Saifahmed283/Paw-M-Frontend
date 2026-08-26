@@ -8,7 +8,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, Suspense, type ReactNode } from "react";
 import { motion } from "motion/react";
 
 import appCss from "../styles.css?url";
@@ -20,6 +20,7 @@ import { I18nProvider, type Lang, useI18n } from "@/lib/i18n";
 import { refreshClinicData, refreshPublicData } from "@/lib/clinic-store";
 import { isAuthed } from "@/lib/auth";
 import { readLangCookie } from "@/lib/lang-cookie";
+import { readThemeCookie } from "@/lib/theme-cookie";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 
 function NotFoundComponent() {
@@ -43,10 +44,20 @@ function NotFoundComponent() {
   );
 }
 
+function RouteLoadingSkeleton() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  const { t } = useI18n();
   useEffect(() => {
     reportRuntimeError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -55,9 +66,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {t("error.title")}
+          Something went wrong
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("error.desc")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          An unexpected error occurred. Please try again.
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -66,13 +79,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            {t("error.retry")}
+            Try again
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            {t("error.home")}
+            Go home
           </a>
         </div>
       </div>
@@ -83,7 +96,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 const FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: () => ({ lang: readLangCookie() }),
+  beforeLoad: () => ({ lang: readLangCookie(), dark: readThemeCookie() === "dark" }),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -117,12 +130,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  const { lang } = Route.useRouteContext();
+  const { lang, dark } = Route.useRouteContext();
+  const classes = [
+    lang === "ar" ? "lang-ar" : undefined,
+    dark ? "dark" : undefined,
+  ].filter(Boolean).join(" ") || undefined;
   return (
     <html
       lang={lang}
       dir={lang === "ar" ? "rtl" : "ltr"}
-      className={lang === "ar" ? "lang-ar" : undefined}
+      className={classes}
     >
       <head>
         <HeadContent />
@@ -186,7 +203,9 @@ function RootComponent() {
           className="min-h-screen"
         >
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
+          <Suspense fallback={<RouteLoadingSkeleton />}>
+            <Outlet />
+          </Suspense>
         </motion.main>
         {!isDashboard && <SiteFooter />}
         <Toaster position="top-center" richColors />

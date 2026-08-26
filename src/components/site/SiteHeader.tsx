@@ -12,6 +12,7 @@ import { useWishlist } from "@/lib/wishlist-store";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import { telHref } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/use-theme";
 
 function useNav() {
   const { t } = useI18n();
@@ -23,35 +24,6 @@ function useNav() {
     { to: "/about", label: t("nav.about") },
     { to: "/contact", label: t("nav.contact") },
   ] as const;
-}
-
-function useTheme() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = localStorage.getItem("paw-m:theme");
-    } catch {
-      /* storage unavailable */
-    }
-    const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const next = stored ? stored === "dark" : prefers;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-  }, []);
-  const toggle = () => {
-    setDark((d) => {
-      const next = !d;
-      document.documentElement.classList.toggle("dark", next);
-      try {
-        localStorage.setItem("paw-m:theme", next ? "dark" : "light");
-      } catch {
-        /* storage unavailable */
-      }
-      return next;
-    });
-  };
-  return { dark, toggle };
 }
 
 export function SiteHeader() {

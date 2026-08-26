@@ -1,7 +1,9 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CLINIC, CLINIC_REVIEWS, DOCTORS, SERVICES, type Doctor } from "@/lib/clinic-data";
 import { sanitizeEmail, sanitizePhone, sanitizeWhatsapp } from "@/lib/sanitize";
 import { api } from "@/lib/api";
+import { isAuthed } from "@/lib/auth";
 
 export type Status = "pending" | "confirmed" | "completed" | "cancelled";
 
@@ -35,17 +37,17 @@ export type ServiceItem = {
 };
 
 export type Product = {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    compareAtPrice?: number | null;
-    image: string;
-    category: string;
-    petType?: string;
-    stock: number;
-    featured: boolean;
-    barcode?: string;
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number | null;
+  image: string;
+  category: string;
+  petType?: string;
+  stock: number;
+  featured: boolean;
+  barcode?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -166,7 +168,38 @@ type Store = {
   workDay: WorkDayDetail | null;
 };
 
-type Listener = () => void;
+const QUERY_KEYS = {
+  doctors: ["doctors"] as const,
+  services: ["services"] as const,
+  products: ["products"] as const,
+  bookings: ["bookings"] as const,
+  orders: ["orders"] as const,
+  reviews: ["reviews"] as const,
+  payments: ["payments"] as const,
+  settings: ["settings"] as const,
+  workSession: ["work-session"] as const,
+  auditLogs: ["audit-logs"] as const,
+  workDays: ["work-days"] as const,
+} as const;
+
+const seedDefaults = {
+  doctors: DOCTORS,
+  services: SERVICES,
+  reviews: CLINIC_REVIEWS.map((review, index) => ({
+    ...review,
+    id: `clinic-review-${index + 1}`,
+    productId: "clinic",
+    status: "approved" as const,
+    createdAt: new Date(0).toISOString(),
+  })),
+  settings: { ...CLINIC } as ClinicSettings,
+  requests: [] as BookingRequest[],
+  products: [] as Product[],
+  orders: [] as Order[],
+  payments: [] as Payment[],
+  auditLogs: [] as AuditLog[],
+  workDays: [] as WorkDaySummary[],
+};
 
 function seed(): Store {
   return {
@@ -191,70 +224,127 @@ function seed(): Store {
   };
 }
 
-let state: Store = seed();
-const listeners = new Set<Listener>();
+let queryClientInstance: ReturnType<typeof useQueryClient> | null = null;
 
-/**
- * What the server rendered. `useSyncExternalStore` uses this for SSR output
- * and for the client's hydration pass, so the two always agree even if data
- * arrives from the backend while hydration is still in progress.
- */
-const serverSnapshot: Store = seed();
-
-function emit() {
-  for (const l of listeners) l();
+function getQc(): ReturnType<typeof useQueryClient> | null {
+  return queryClientInstance;
 }
 
-function set(mutator: (prev: Store) => Store) {
-  state = mutator(state);
-  emit();
+function invalidate(key: readonly unknown[]) {
+  getQc()?.invalidateQueries({ queryKey: key, exact: true });
 }
 
-function getSnapshot(): Store {
-  return state;
-}
-
-function subscribe(listener: Listener) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+function uid(prefix: string) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function useClinicStore() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => serverSnapshot);
-}
+  const qc = useQueryClient();
+  queryClientInstance = qc;
 
-/** Refreshes all clinic data from the backend (no-op while one is in flight). */
-export function refreshClinicData() {
-  return ensureLoaded();
-}
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-export async function refreshPublicData() {
-  const [settings, doctors, services, products, reviews] = await Promise.all([
-    api.get<Partial<ClinicSettings>>("/settings").catch(() => null),
-    api.get<Doctor[]>("/doctors").catch(() => null),
-    api.get<ServiceItem[]>("/services").catch(() => null),
-    api.get<Product[]>("/products").catch(() => null),
-    api.get<Review[]>("/reviews").catch(() => null),
-  ]);
-  set((prev) => ({
-    ...prev,
-    settings: settings ? { ...prev.settings, ...settings } : prev.settings,
-    doctors: doctors ? doctors : prev.doctors,
-    services: services ? services : prev.services,
-    products: products ? products : prev.products,
-    reviews: reviews ? reviews : prev.reviews,
-  }));
-}
+  const { data: doctors = seedDefaults.doctors } = useQuery({
+    queryKey: QUERY_KEYS.doctors,
+    queryFn: () => api.get<Doctor[]>("/doctors"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.doctors,
+    enabled: mounted,
+  });
 
-async function loadAll() {
-  let failed = false;
-  const markFailed = () => {
-    failed = true;
-    return [] as never[];
-  };
-  try {
-    const [
-      bookings,
+  const { data: services = seedDefaults.services } = useQuery({
+    queryKey: QUERY_KEYS.services,
+    queryFn: () => api.get<ServiceItem[]>("/services"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.services,
+    enabled: mounted,
+  });
+
+  const { data: products = seedDefaults.products } = useQuery({
+    queryKey: QUERY_KEYS.products,
+    queryFn: () => api.get<Product[]>("/products"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.products,
+    enabled: mounted,
+  });
+
+  const { data: requests = seedDefaults.requests } = useQuery({
+    queryKey: QUERY_KEYS.bookings,
+    queryFn: () => api.get<BookingRequest[]>("/bookings"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.requests,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: orders = seedDefaults.orders } = useQuery({
+    queryKey: QUERY_KEYS.orders,
+    queryFn: () => api.get<Order[]>("/orders"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.orders,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: reviews = seedDefaults.reviews } = useQuery({
+    queryKey: QUERY_KEYS.reviews,
+    queryFn: () => api.get<Review[]>("/reviews"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.reviews,
+    enabled: mounted,
+  });
+
+  const { data: payments = seedDefaults.payments } = useQuery({
+    queryKey: QUERY_KEYS.payments,
+    queryFn: () => api.get<Payment[]>("/payments"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.payments,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: settings = seedDefaults.settings } = useQuery({
+    queryKey: QUERY_KEYS.settings,
+    queryFn: () => api.get<ClinicSettings>("/settings"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.settings,
+    enabled: mounted,
+  });
+
+  const { data: workSession = null } = useQuery({
+    queryKey: QUERY_KEYS.workSession,
+    queryFn: () => api.get<WorkSession | null>("/work-session"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? null,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: auditLogs = seedDefaults.auditLogs } = useQuery({
+    queryKey: QUERY_KEYS.auditLogs,
+    queryFn: () => api.get<AuditLog[]>("/audit-logs"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.auditLogs,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: workDays = seedDefaults.workDays } = useQuery({
+    queryKey: QUERY_KEYS.workDays,
+    queryFn: () => api.get<WorkDaySummary[]>("/work-days"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.workDays,
+    enabled: mounted && isAuthed(),
+  });
+
+  const { data: workDay } = useQuery<WorkDayDetail | null>({
+    queryKey: ["work-day"],
+    queryFn: () => api.get<WorkDayDetail>("/work-days/today"),
+    staleTime: Infinity,
+    enabled: false,
+  });
+
+  return useMemo<Store>(
+    () => ({
+      requests,
       doctors,
       services,
       products,
@@ -264,91 +354,70 @@ async function loadAll() {
       settings,
       workSession,
       auditLogs,
-    ] = await Promise.all([
-      api.get<BookingRequest[]>("/bookings").catch(markFailed),
-      api.get<Doctor[]>("/doctors").catch(markFailed),
-      api.get<ServiceItem[]>("/services").catch(markFailed),
-      api.get<Product[]>("/products").catch(markFailed),
-      api.get<Order[]>("/orders").catch(markFailed),
-      api.get<Review[]>("/reviews").catch(markFailed),
-      api.get<Payment[]>("/payments").catch(markFailed),
-      api.get<Partial<ClinicSettings>>("/settings").catch(() => ({}) as Partial<ClinicSettings>),
-      api.get<WorkSession | null>("/work-session").catch(() => null),
-      api.get<AuditLog[]>("/audit-logs").catch(() => [] as AuditLog[]),
-    ]);
-    set((prev) => ({
-      ...prev,
-      requests: Array.isArray(bookings) ? (bookings as BookingRequest[]) : prev.requests,
-      doctors: Array.isArray(doctors) && doctors.length ? (doctors as Doctor[]) : prev.doctors,
-      services:
-        Array.isArray(services) && services.length ? (services as ServiceItem[]) : prev.services,
-      products: Array.isArray(products) ? (products as Product[]) : prev.products,
-      orders: Array.isArray(orders) ? (orders as Order[]) : prev.orders,
-      reviews: Array.isArray(reviews) ? (reviews as Review[]) : prev.reviews,
-      payments: Array.isArray(payments) ? (payments as Payment[]) : prev.payments,
-      settings: { ...prev.settings, ...(settings as Partial<ClinicSettings>) },
-      workSession: workSession ?? prev.workSession,
-      auditLogs: Array.isArray(auditLogs) ? (auditLogs as AuditLog[]) : prev.auditLogs,
-    }));
-    lastLoadFailed = failed;
-  } catch (err) {
-    lastLoadFailed = true;
-    console.error("Failed to load clinic data from backend", err);
-  }
+      workDays,
+      workDay: workDay ?? null,
+    }),
+    [
+      requests,
+      doctors,
+      services,
+      products,
+      orders,
+      reviews,
+      payments,
+      settings,
+      workSession,
+      auditLogs,
+      workDays,
+      workDay,
+    ],
+  );
 }
 
-let loadPromise: Promise<void> | null = null;
-let hasLoadedOnce = false;
-let lastLoadFailed = false;
-
-/**
- * Loads clinic data from the backend. A successful load is cached for the
- * session; a FAILED load (backend briefly unreachable, e.g. during startup)
- * is retried on the next call so the site never gets stuck with empty data.
- */
-function ensureLoaded() {
-  if (!loadPromise && (!hasLoadedOnce || lastLoadFailed)) {
-    hasLoadedOnce = true;
-    loadPromise = loadAll().finally(() => {
-      loadPromise = null;
-    });
-  }
-  return loadPromise ?? Promise.resolve();
+/** Refreshes all clinic data from the backend (no-op while one is in flight). */
+export function refreshClinicData() {
+  invalidate(QUERY_KEYS.bookings);
+  invalidate(QUERY_KEYS.doctors);
+  invalidate(QUERY_KEYS.services);
+  invalidate(QUERY_KEYS.products);
+  invalidate(QUERY_KEYS.orders);
+  invalidate(QUERY_KEYS.reviews);
+  invalidate(QUERY_KEYS.payments);
+  invalidate(QUERY_KEYS.settings);
+  invalidate(QUERY_KEYS.workSession);
+  invalidate(QUERY_KEYS.auditLogs);
+  invalidate(QUERY_KEYS.workDays);
 }
 
-function uid(prefix: string) {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+export async function refreshPublicData() {
+  invalidate(QUERY_KEYS.settings);
+  invalidate(QUERY_KEYS.doctors);
+  invalidate(QUERY_KEYS.services);
+  invalidate(QUERY_KEYS.products);
+  invalidate(QUERY_KEYS.reviews);
 }
 
 export async function addBookingRequest(
   input: Omit<BookingRequest, "id" | "status" | "createdAt">,
 ) {
-  await ensureLoaded();
   try {
     const created = await api.post<BookingRequest>("/bookings", {
       ...input,
       status: "pending",
       createdAt: new Date().toISOString(),
     });
-    set((s) => ({
-      ...s,
-      requests: [created, ...s.requests],
-    }));
+    invalidate(QUERY_KEYS.bookings);
+    return get();
   } catch (err) {
     console.error("Failed to add booking", err);
     throw err;
   }
-  return getSnapshot();
 }
 
 export async function setBookingStatus(id: string, status: Status) {
-  await ensureLoaded();
   try {
     const updated = await api.patch<BookingRequest>(`/bookings/${id}/status`, { status });
-    set((s) => ({
-      ...s,
-      requests: s.requests.map((r) => (r.id === id ? updated : r)),
-    }));
+    invalidate(QUERY_KEYS.bookings);
   } catch (err) {
     console.error("Failed to update booking status", err);
     throw err;
@@ -356,32 +425,33 @@ export async function setBookingStatus(id: string, status: Status) {
 }
 
 export async function deleteRequest(id: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/bookings/${id}`);
-    set((s) => ({
-      ...s,
-      requests: s.requests.filter((r) => r.id !== id),
-    }));
+    invalidate(QUERY_KEYS.bookings);
   } catch (err) {
     console.error("Failed to delete booking", err);
     throw err;
   }
 }
 
-export async function saveDoctor(doctor: Doctor) {
-  await ensureLoaded();
+export async function archiveBooking(id: string, archived: boolean) {
   try {
-    const exists = state.doctors.some((d) => d.id === doctor.id);
+    const updated = await api.patch<BookingRequest>(`/bookings/${id}/archive`, { archived });
+    invalidate(QUERY_KEYS.bookings);
+  } catch (err) {
+    console.error("Failed to archive booking", err);
+    throw err;
+  }
+}
+
+export async function saveDoctor(doctor: Doctor) {
+  try {
+    const current = getQc()?.getQueryData<Doctor[]>(QUERY_KEYS.doctors) ?? DOCTORS;
+    const exists = current.some((d) => d.id === doctor.id);
     const saved = exists
       ? await api.patch<Doctor>(`/doctors/${doctor.id}`, doctor)
       : await api.post<Doctor>("/doctors", doctor);
-    set((s) => ({
-      ...s,
-      doctors: exists
-        ? s.doctors.map((d) => (d.id === doctor.id ? saved : d))
-        : [saved, ...s.doctors],
-    }));
+    invalidate(QUERY_KEYS.doctors);
   } catch (err) {
     console.error("Failed to save doctor", err);
     throw err;
@@ -389,13 +459,9 @@ export async function saveDoctor(doctor: Doctor) {
 }
 
 export async function deleteDoctor(id: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/doctors/${id}`);
-    set((s) => ({
-      ...s,
-      doctors: s.doctors.filter((d) => d.id !== id),
-    }));
+    invalidate(QUERY_KEYS.doctors);
   } catch (err) {
     console.error("Failed to delete doctor", err);
     throw err;
@@ -403,18 +469,13 @@ export async function deleteDoctor(id: string) {
 }
 
 export async function saveService(service: ServiceItem) {
-  await ensureLoaded();
   try {
-    const exists = state.services.some((sv) => sv.slug === service.slug);
+    const current = getQc()?.getQueryData<ServiceItem[]>(QUERY_KEYS.services) ?? SERVICES;
+    const exists = current.some((sv) => sv.slug === service.slug);
     const saved = exists
       ? await api.patch<ServiceItem>(`/services/${service.slug}`, service)
       : await api.post<ServiceItem>("/services", service);
-    set((s) => ({
-      ...s,
-      services: exists
-        ? s.services.map((sv) => (sv.slug === service.slug ? saved : sv))
-        : [saved, ...s.services],
-    }));
+    invalidate(QUERY_KEYS.services);
   } catch (err) {
     console.error("Failed to save service", err);
     throw err;
@@ -422,13 +483,9 @@ export async function saveService(service: ServiceItem) {
 }
 
 export async function deleteService(slug: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/services/${slug}`);
-    set((s) => ({
-      ...s,
-      services: s.services.filter((sv) => sv.slug !== slug),
-    }));
+    invalidate(QUERY_KEYS.services);
   } catch (err) {
     console.error("Failed to delete service", err);
     throw err;
@@ -436,18 +493,13 @@ export async function deleteService(slug: string) {
 }
 
 export async function saveProduct(product: Product) {
-  await ensureLoaded();
   try {
-    const exists = state.products.some((p) => p.id === product.id);
+    const current = getQc()?.getQueryData<Product[]>(QUERY_KEYS.products) ?? [];
+    const exists = current.some((p) => p.id === product.id);
     const saved = exists
       ? await api.patch<Product>(`/products/${product.id}`, product)
       : await api.post<Product>("/products", product);
-    set((s) => ({
-      ...s,
-      products: exists
-        ? s.products.map((p) => (p.id === product.id ? saved : p))
-        : [saved, ...s.products],
-    }));
+    invalidate(QUERY_KEYS.products);
   } catch (err) {
     console.error("Failed to save product", err);
     throw err;
@@ -455,13 +507,9 @@ export async function saveProduct(product: Product) {
 }
 
 export async function deleteProduct(id: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/products/${id}`);
-    set((s) => ({
-      ...s,
-      products: s.products.filter((p) => p.id !== id),
-    }));
+    invalidate(QUERY_KEYS.products);
   } catch (err) {
     console.error("Failed to delete product", err);
     throw err;
@@ -478,13 +526,9 @@ export async function createOrder(input: {
   paymentRef?: string | undefined;
   proofImage?: string | undefined;
 }) {
-  await ensureLoaded();
   try {
     const created = await api.post<Order>("/orders", input);
-    set((s) => ({
-      ...s,
-      orders: [created, ...s.orders],
-    }));
+    invalidate(QUERY_KEYS.orders);
     return created;
   } catch (err) {
     console.error("Failed to create order", err);
@@ -493,7 +537,6 @@ export async function createOrder(input: {
 }
 
 export async function trackOrder(orderId: string, phone: string) {
-  await ensureLoaded();
   return api.get<Order>(
     `/orders/track?orderId=${encodeURIComponent(orderId)}&phone=${encodeURIComponent(phone)}`,
   );
@@ -503,13 +546,9 @@ export async function submitPaymentProof(
   id: string,
   proof: { paymentRef?: string | undefined; proofImage?: string | undefined },
 ) {
-  await ensureLoaded();
   try {
     const updated = await api.post<Order>(`/orders/${id}/payment-proof`, proof);
-    set((s) => ({
-      ...s,
-      orders: s.orders.map((o) => (o.id === id ? updated : o)),
-    }));
+    invalidate(QUERY_KEYS.orders);
     return updated;
   } catch (err) {
     console.error("Failed to submit payment proof", err);
@@ -518,15 +557,41 @@ export async function submitPaymentProof(
 }
 
 export async function setOrderPaymentStatus(id: string, paymentStatus: PaymentStatus) {
-  await ensureLoaded();
   try {
     const updated = await api.patch<Order>(`/orders/${id}/payment`, { paymentStatus });
-    set((s) => ({
-      ...s,
-      orders: s.orders.map((o) => (o.id === id ? updated : o)),
-    }));
+    invalidate(QUERY_KEYS.orders);
   } catch (err) {
     console.error("Failed to update order payment status", err);
+    throw err;
+  }
+}
+
+export async function setOrderStatus(id: string, status: Status) {
+  try {
+    const updated = await api.patch<Order>(`/orders/${id}/status`, { status });
+    invalidate(QUERY_KEYS.orders);
+  } catch (err) {
+    console.error("Failed to update order status", err);
+    throw err;
+  }
+}
+
+export async function deleteOrder(id: string) {
+  try {
+    await api.delete(`/orders/${id}`);
+    invalidate(QUERY_KEYS.orders);
+  } catch (err) {
+    console.error("Failed to delete order", err);
+    throw err;
+  }
+}
+
+export async function archiveOrder(id: string, archived: boolean) {
+  try {
+    const updated = await api.patch<Order>(`/orders/${id}/archive`, { archived });
+    invalidate(QUERY_KEYS.orders);
+  } catch (err) {
+    console.error("Failed to archive order", err);
     throw err;
   }
 }
@@ -537,13 +602,9 @@ export async function createReview(input: {
   rating: number;
   comment: string;
 }) {
-  await ensureLoaded();
   try {
     const created = await api.post<Review>("/reviews", input);
-    set((s) => ({
-      ...s,
-      reviews: [created, ...s.reviews],
-    }));
+    invalidate(QUERY_KEYS.reviews);
     return created;
   } catch (err) {
     console.error("Failed to create review", err);
@@ -552,13 +613,9 @@ export async function createReview(input: {
 }
 
 export async function setReviewStatus(id: string, status: "approved" | "rejected") {
-  await ensureLoaded();
   try {
     const updated = await api.patch<Review>(`/reviews/${id}`, { status });
-    set((s) => ({
-      ...s,
-      reviews: s.reviews.map((r) => (r.id === id ? updated : r)),
-    }));
+    invalidate(QUERY_KEYS.reviews);
   } catch (err) {
     console.error("Failed to update review", err);
     throw err;
@@ -566,13 +623,9 @@ export async function setReviewStatus(id: string, status: "approved" | "rejected
 }
 
 export async function deleteReview(id: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/reviews/${id}`);
-    set((s) => ({
-      ...s,
-      reviews: s.reviews.filter((r) => r.id !== id),
-    }));
+    invalidate(QUERY_KEYS.reviews);
   } catch (err) {
     console.error("Failed to delete review", err);
     throw err;
@@ -582,73 +635,15 @@ export async function deleteReview(id: string) {
 export async function syncGoogleReviews(
   placeId?: string,
 ): Promise<{ synced: number; total: number }> {
-  await ensureLoaded();
   try {
     const data = await api.post<{ synced: number; total: number }>(
       "/google/sync-reviews",
       placeId ? { placeId } : undefined,
     );
-    const reviews = await api.get<Review[]>("/reviews");
-    set((s) => ({ ...s, reviews: Array.isArray(reviews) ? reviews : s.reviews }));
+    invalidate(QUERY_KEYS.reviews);
     return data;
   } catch (err) {
     console.error("Failed to sync Google reviews", err);
-    throw err;
-  }
-}
-
-export async function setOrderStatus(id: string, status: Status) {
-  await ensureLoaded();
-  try {
-    const updated = await api.patch<Order>(`/orders/${id}/status`, { status });
-    set((s) => ({
-      ...s,
-      orders: s.orders.map((o) => (o.id === id ? updated : o)),
-    }));
-  } catch (err) {
-    console.error("Failed to update order status", err);
-    throw err;
-  }
-}
-
-export async function deleteOrder(id: string) {
-  await ensureLoaded();
-  try {
-    await api.delete(`/orders/${id}`);
-    set((s) => ({
-      ...s,
-      orders: s.orders.filter((o) => o.id !== id),
-    }));
-  } catch (err) {
-    console.error("Failed to delete order", err);
-    throw err;
-  }
-}
-
-export async function archiveBooking(id: string, archived: boolean) {
-  await ensureLoaded();
-  try {
-    const updated = await api.patch<BookingRequest>(`/bookings/${id}/archive`, { archived });
-    set((s) => ({
-      ...s,
-      requests: s.requests.map((r) => (r.id === id ? updated : r)),
-    }));
-  } catch (err) {
-    console.error("Failed to archive booking", err);
-    throw err;
-  }
-}
-
-export async function archiveOrder(id: string, archived: boolean) {
-  await ensureLoaded();
-  try {
-    const updated = await api.patch<Order>(`/orders/${id}/archive`, { archived });
-    set((s) => ({
-      ...s,
-      orders: s.orders.map((o) => (o.id === id ? updated : o)),
-    }));
-  } catch (err) {
-    console.error("Failed to archive order", err);
     throw err;
   }
 }
@@ -662,13 +657,9 @@ export async function createPayment(input: {
   notes?: string | undefined;
   orderId?: string | undefined;
 }) {
-  await ensureLoaded();
   try {
     const created = await api.post<Payment>("/payments", input);
-    set((s) => ({
-      ...s,
-      payments: [created, ...s.payments],
-    }));
+    invalidate(QUERY_KEYS.payments);
     return created;
   } catch (err) {
     console.error("Failed to create payment", err);
@@ -682,13 +673,9 @@ export async function updatePayment(
     Pick<Payment, "title" | "amount" | "method" | "status" | "date" | "notes" | "orderId">
   >,
 ) {
-  await ensureLoaded();
   try {
     const updated = await api.patch<Payment>(`/payments/${id}`, patch);
-    set((s) => ({
-      ...s,
-      payments: s.payments.map((p) => (p.id === id ? updated : p)),
-    }));
+    invalidate(QUERY_KEYS.payments);
     return updated;
   } catch (err) {
     console.error("Failed to update payment", err);
@@ -697,13 +684,9 @@ export async function updatePayment(
 }
 
 export async function deletePayment(id: string) {
-  await ensureLoaded();
   try {
     await api.delete(`/payments/${id}`);
-    set((s) => ({
-      ...s,
-      payments: s.payments.filter((p) => p.id !== id),
-    }));
+    invalidate(QUERY_KEYS.payments);
   } catch (err) {
     console.error("Failed to delete payment", err);
     throw err;
@@ -711,7 +694,6 @@ export async function deletePayment(id: string) {
 }
 
 export async function updateSettings(patch: Partial<ClinicSettings>) {
-  await ensureLoaded();
   const clean: Partial<ClinicSettings> = { ...patch };
   if (patch.phone !== undefined) clean.phone = sanitizePhone(patch.phone);
   if (patch.emergency !== undefined) clean.emergency = sanitizePhone(patch.emergency);
@@ -719,7 +701,7 @@ export async function updateSettings(patch: Partial<ClinicSettings>) {
   if (patch.email !== undefined) clean.email = sanitizeEmail(patch.email) ?? "";
   try {
     const updated = await api.patch<ClinicSettings>("/settings", clean);
-    set((s) => ({ ...s, settings: { ...s.settings, ...updated } }));
+    invalidate(QUERY_KEYS.settings);
   } catch (err) {
     console.error("Failed to update settings", err);
     throw err;
@@ -727,13 +709,12 @@ export async function updateSettings(patch: Partial<ClinicSettings>) {
 }
 
 export async function checkIn() {
-  await ensureLoaded();
   try {
     const result = await api.post<{
       session: WorkSession;
       archived: { bookings: number; orders: number };
     }>("/work-session/check-in", {});
-    set((s) => ({ ...s, workSession: result.session }));
+    invalidate(QUERY_KEYS.workSession);
     return result;
   } catch (err) {
     console.error("Failed to check in", err);
@@ -742,16 +723,12 @@ export async function checkIn() {
 }
 
 export async function checkOut() {
-  await ensureLoaded();
   try {
     const result = await api.post<{
       session: WorkSession;
       archived: { bookings: number; orders: number };
     }>("/work-session/check-out", {});
-    set((s) => ({
-      ...s,
-      workSession: s.workSession?.id === result.session.id ? null : s.workSession,
-    }));
+    invalidate(QUERY_KEYS.workSession);
     return result;
   } catch (err) {
     console.error("Failed to check out", err);
@@ -760,10 +737,9 @@ export async function checkOut() {
 }
 
 export async function loadAuditLogs() {
-  await ensureLoaded();
   try {
     const logs = await api.get<AuditLog[]>("/audit-logs");
-    set((s) => ({ ...s, auditLogs: Array.isArray(logs) ? logs : s.auditLogs }));
+    invalidate(QUERY_KEYS.auditLogs);
     return logs;
   } catch (err) {
     console.error("Failed to load audit logs", err);
@@ -772,10 +748,9 @@ export async function loadAuditLogs() {
 }
 
 export async function loadWorkDays() {
-  await ensureLoaded();
   try {
     const days = await api.get<WorkDaySummary[]>("/work-days");
-    set((s) => ({ ...s, workDays: Array.isArray(days) ? days : s.workDays }));
+    invalidate(QUERY_KEYS.workDays);
     return days;
   } catch (err) {
     console.error("Failed to load workday folders", err);
@@ -784,10 +759,9 @@ export async function loadWorkDays() {
 }
 
 export async function loadWorkDay(date: string) {
-  await ensureLoaded();
   try {
     const day = await api.get<WorkDayDetail>(`/work-days/${date}`);
-    set((s) => ({ ...s, workDay: day }));
+    getQc()?.setQueryData(["work-day"], day);
     return day;
   } catch (err) {
     console.error("Failed to load workday folder", err);
@@ -796,7 +770,6 @@ export async function loadWorkDay(date: string) {
 }
 
 export async function resetAll() {
-  await ensureLoaded();
   try {
     const [doctors, services, products, orders, reviews, payments, settings] = await Promise.all([
       api.get<Doctor[]>("/doctors"),
@@ -808,25 +781,54 @@ export async function resetAll() {
       api.get<ClinicSettings>("/settings"),
     ]);
     const fresh = seed();
-    set((s) => ({
-      ...s,
-      requests: [],
-      doctors: Array.isArray(doctors) && doctors.length ? doctors : fresh.doctors,
-      services: Array.isArray(services) && services.length ? services : fresh.services,
-      products: Array.isArray(products) ? products : fresh.products,
-      orders: Array.isArray(orders) ? orders : fresh.orders,
-      reviews: Array.isArray(reviews) ? reviews : fresh.reviews,
-      payments: Array.isArray(payments) ? payments : fresh.payments,
-      settings: { ...fresh.settings, ...(settings ?? {}) },
-    }));
+    const qc = getQc();
+    if (qc) {
+      qc.setQueryData(QUERY_KEYS.bookings, []);
+      qc.setQueryData(
+        QUERY_KEYS.doctors,
+        Array.isArray(doctors) && doctors.length ? doctors : fresh.doctors,
+      );
+      qc.setQueryData(
+        QUERY_KEYS.services,
+        Array.isArray(services) && services.length ? services : fresh.services,
+      );
+      qc.setQueryData(QUERY_KEYS.products, Array.isArray(products) ? products : fresh.products);
+      qc.setQueryData(QUERY_KEYS.orders, Array.isArray(orders) ? orders : fresh.orders);
+      qc.setQueryData(QUERY_KEYS.reviews, Array.isArray(reviews) ? reviews : fresh.reviews);
+      qc.setQueryData(QUERY_KEYS.payments, Array.isArray(payments) ? payments : fresh.payments);
+      qc.setQueryData(QUERY_KEYS.settings, { ...fresh.settings, ...(settings ?? {}) });
+    }
   } catch (err) {
     console.error("Failed to reset", err);
     throw err;
   }
 }
 
-export function get() {
-  return state;
+export function get(): Store {
+  const qc = getQc();
+  if (!qc) return seed();
+  return {
+    requests: qc.getQueryData<BookingRequest[]>(QUERY_KEYS.bookings) ?? [],
+    doctors: qc.getQueryData<Doctor[]>(QUERY_KEYS.doctors) ?? DOCTORS,
+    services: qc.getQueryData<ServiceItem[]>(QUERY_KEYS.services) ?? SERVICES,
+    products: qc.getQueryData<Product[]>(QUERY_KEYS.products) ?? [],
+    orders: qc.getQueryData<Order[]>(QUERY_KEYS.orders) ?? [],
+    reviews:
+      qc.getQueryData<Review[]>(QUERY_KEYS.reviews) ??
+      CLINIC_REVIEWS.map((review, index) => ({
+        ...review,
+        id: `clinic-review-${index + 1}`,
+        productId: "clinic",
+        status: "approved" as const,
+        createdAt: new Date(0).toISOString(),
+      })),
+    payments: qc.getQueryData<Payment[]>(QUERY_KEYS.payments) ?? [],
+    settings: qc.getQueryData<ClinicSettings>(QUERY_KEYS.settings) ?? { ...CLINIC },
+    workSession: qc.getQueryData<WorkSession | null>(QUERY_KEYS.workSession) ?? null,
+    auditLogs: qc.getQueryData<AuditLog[]>(QUERY_KEYS.auditLogs) ?? [],
+    workDays: qc.getQueryData<WorkDaySummary[]>(QUERY_KEYS.workDays) ?? [],
+    workDay: qc.getQueryData<WorkDayDetail>(["work-day"]) ?? null,
+  };
 }
 
 export type { Doctor };

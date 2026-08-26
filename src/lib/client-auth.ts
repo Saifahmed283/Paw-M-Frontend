@@ -30,6 +30,15 @@ export function clientIsAuthed(): boolean {
   return Boolean(readSession()?.token);
 }
 
+function getClientToken(): string | null {
+  return readSession()?.token ?? null;
+}
+
+export function authHeaders(): Record<string, string> {
+  const token = getClientToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function requestClientVerification(input: {
   fullName: string;
   email: string;
@@ -51,7 +60,15 @@ export async function loginClient(email: string, password: string) {
   return session.client;
 }
 
-export function logoutClient() {
+export async function logoutClient() {
+  const token = getClientToken();
+  if (token) {
+    try {
+      await api.post("/client-auth/logout", { token });
+    } catch {
+      // Ignore network errors during logout
+    }
+  }
   storageRemove("session", CLIENT_SESSION_KEY);
 }
 

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import { CLINIC, DOCTORS, SERVICES } from "@/lib/clinic-data";
@@ -35,6 +36,11 @@ function mockApiDefaults() {
     if (path === "/bookings") return Promise.resolve([]);
     if (path === "/products") return Promise.resolve([]);
     if (path === "/orders") return Promise.resolve([]);
+    if (path === "/reviews") return Promise.resolve([]);
+    if (path === "/payments") return Promise.resolve([]);
+    if (path === "/work-session") return Promise.resolve(null);
+    if (path === "/audit-logs") return Promise.resolve([]);
+    if (path === "/work-days") return Promise.resolve([]);
     return Promise.resolve(null);
   });
 }
@@ -53,7 +59,7 @@ afterEach(() => {
 });
 
 describe("clinic-store bookings", () => {
-  it("adds a booking request as pending and returns snapshot", async () => {
+  it("adds a booking request as pending and calls API", async () => {
     const input = {
       ownerName: "Test",
       phone: "123",
@@ -71,7 +77,7 @@ describe("clinic-store bookings", () => {
       time: "09:00",
       emergency: false,
     };
-    vi.mocked(api.post).mockImplementation((path, body) =>
+    vi.mocked(api.post).mockImplementation((_path, body) =>
       Promise.resolve({
         ...(body as object),
         id: "req-1",
@@ -79,13 +85,15 @@ describe("clinic-store bookings", () => {
         createdAt: new Date().toISOString(),
       }),
     );
-    const snap = await addBookingRequest(input);
+    await addBookingRequest(input);
     expect(api.post).toHaveBeenCalledWith(
       "/bookings",
       expect.objectContaining({ status: "pending" }),
     );
-    expect(snap.requests[0]!.status).toBe("pending");
-    expect(snap.requests[0]!.doctorName).toBe("Dr. E");
+    expect(api.post).toHaveBeenCalledWith(
+      "/bookings",
+      expect.objectContaining({ doctorName: "Dr. E" }),
+    );
   });
 
   it("transitions status and deletes requests", async () => {
@@ -112,15 +120,15 @@ describe("clinic-store bookings", () => {
       status: "pending",
       createdAt: new Date().toISOString(),
     });
-    const { requests } = await addBookingRequest(input);
+    await addBookingRequest(input);
 
-    vi.mocked(api.patch).mockResolvedValue({ ...requests[0]!, status: "confirmed" });
-    await setBookingStatus(requests[0]!.id, "confirmed");
-    expect(get().requests[0]!.status).toBe("confirmed");
+    vi.mocked(api.patch).mockResolvedValue({ id: "req-1", ...input, status: "confirmed" });
+    await setBookingStatus("req-1", "confirmed");
+    expect(api.patch).toHaveBeenCalledWith("/bookings/req-1/status", { status: "confirmed" });
 
     vi.mocked(api.delete).mockResolvedValue(undefined);
-    await deleteRequest(requests[0]!.id);
-    expect(get().requests).toHaveLength(0);
+    await deleteRequest("req-1");
+    expect(api.delete).toHaveBeenCalledWith("/bookings/req-1");
   });
 
   it("upserts doctors and services", async () => {
@@ -129,20 +137,19 @@ describe("clinic-store bookings", () => {
     vi.mocked(api.patch).mockResolvedValue(updated);
     await saveDoctor(updated);
     expect(api.patch).toHaveBeenCalledWith(`/doctors/${doc.id}`, updated);
-    expect(get().doctors.find((d) => d.id === doc.id)!.name).toBe("Dr. Updated");
 
     const svc = get().services[0]!;
     const svcUpdated = { ...svc, title: "Updated service" };
     vi.mocked(api.patch).mockResolvedValue(svcUpdated);
     await saveService(svcUpdated);
-    expect(get().services.find((s) => s.slug === svc.slug)!.title).toBe("Updated service");
+    expect(api.patch).toHaveBeenCalledWith(`/services/${svc.slug}`, svcUpdated);
 
     vi.mocked(api.delete).mockResolvedValue(undefined);
     await deleteService(svc.slug);
-    expect(get().services.find((s) => s.slug === svc.slug)).toBeUndefined();
+    expect(api.delete).toHaveBeenCalledWith(`/services/${svc.slug}`);
 
     await deleteDoctor(doc.id);
-    expect(get().doctors.find((d) => d.id === doc.id)).toBeUndefined();
+    expect(api.delete).toHaveBeenCalledWith(`/doctors/${doc.id}`);
   });
 
   it("creates new doctors via POST when the id is unknown", async () => {
@@ -164,15 +171,18 @@ describe("clinic-store bookings", () => {
   });
 
   it("sanitizes settings on update", async () => {
-    vi.mocked(api.patch).mockImplementation((path, body) => Promise.resolve(body));
+    vi.mocked(api.patch).mockImplementation((_path, body) => Promise.resolve(body));
     await updateSettings({
       phone: "+1 (415) 555 <script>",
       whatsapp: "abc+1415def",
       email: " not-valid ",
     });
-    const s = get().settings;
-    // sanitizePhone keeps dialable chars only
-    expect(s.phone).not.toContain("<script>");
-    expect(s.whatsapp).not.toContain("abc");
+    expect(api.patch).toHaveBeenCalledWith(
+      "/settings",
+      expect.objectContaining({
+        phone: expect.not.stringContaining("<script>"),
+        whatsapp: expect.not.stringContaining("abc"),
+      }),
+    );
   });
 });

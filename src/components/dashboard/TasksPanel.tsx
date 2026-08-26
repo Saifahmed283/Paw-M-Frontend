@@ -40,7 +40,7 @@ export function TasksPanel() {
   async function fetchTasks() {
     setLoading(true);
     try {
-      let url = `/api/tasks/mine`;
+      const url = `/api/tasks/mine`;
       if (userId) {
         const response = await api.get<Task[]>(url);
         if (Array.isArray(response)) {
@@ -64,7 +64,10 @@ export function TasksPanel() {
     console.log("Opening create task modal");
   }
 
-  async function updateTaskStatus(taskId: number, status: "open" | "in_progress" | "completed" | "cancelled") {
+  async function updateTaskStatus(
+    taskId: number,
+    status: "open" | "in_progress" | "completed" | "cancelled",
+  ) {
     try {
       await api.patch(`/api/tasks/${taskId}/status`, { status });
       await fetchTasks(); // Refresh the list

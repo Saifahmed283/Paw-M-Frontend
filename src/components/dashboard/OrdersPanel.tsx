@@ -1,0 +1,345 @@
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Archive, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  PaginationBar,
+  SearchBox,
+  SortChip,
+  sortedSlice,
+  useGrid,
+  useSortState,
+} from "@/components/dash-grid";
+import {
+  useClinicStore,
+  setOrderPaymentStatus,
+  setOrderStatus,
+  archiveOrder,
+  deleteOrder,
+  type Order,
+} from "@/lib/clinic-store";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { StatusBadge, STATUS_OPTIONS } from "./dashboard-helpers";
+
+export function OrdersPanel() {
+  const { t } = useI18n();
+  const { orders, settings } = useClinicStore();
+  const [proofOrder, setProofOrder] = useState<Order | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const { sort, toggle } = useSortState("newest", "desc");
+  const activeOrders = useMemo(() => orders.filter((o) => !o.archived), [orders]);
+  const comparators: Record<string, (a: Order, b: Order) => number> = {
+    newest: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    owner: (a, b) => a.customerName.localeCompare(b.customerName),
+    total: (a, b) => a.total - b.total,
+  };
+  const filtered = useMemo(
+    () =>
+      activeOrders.filter(
+        (o) =>
+          (statusFilter === "all" || o.status === statusFilter) &&
+          (paymentFilter === "all" || o.paymentStatus === paymentFilter),
+      ),
+    [activeOrders, statusFilter, paymentFilter],
+  );
+  const sorted = sortedSlice(filtered, sort, comparators);
+  const grid = useGrid(sorted, query, ["customerName", "phone", "email", "id"]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("dash.orders")}</CardTitle>
+        <CardDescription>{t("dash.orders.hint")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <SearchBox value={query} onChange={setQuery} placeholder={t("dash.search")} />
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPTIONS.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => {
+                  setStatusFilter(s.value);
+                  grid.setPage(1);
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  statusFilter === s.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t(s.key)}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "all", key: "dash.filterAll" },
+              { value: "paid", key: "pay.paid" },
+              { value: "proof_submitted", key: "pay.underReview" },
+              { value: "unpaid", key: "pay.unpaid" },
+            ].map((p) => (
+              <button
+                key={p.value}
+                onClick={() => {
+                  setPaymentFilter(p.value);
+                  grid.setPage(1);
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  paymentFilter === p.value
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t(p.key)}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <SortChip
+              label={t("dash.sort.recent")}
+              active={sort.key === "newest"}
+              dir={sort.dir}
+              onToggle={() => toggle("newest", true)}
+            />
+            <SortChip
+              label={t("dash.sort.owner")}
+              active={sort.key === "owner"}
+              dir={sort.dir}
+              onToggle={() => toggle("owner")}
+            />
+            <SortChip
+              label={t("dash.sort.total")}
+              active={sort.key === "total"}
+              dir={sort.dir}
+              onToggle={() => toggle("total", true)}
+            />
+          </div>
+        </div>
+        {grid.slice.length === 0 ? (
+          <p className="py-6 text-sm text-muted-foreground">{t("dash.empty")}</p>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {grid.slice.map((o) => (
+                <div key={o.id} className="rounded-xl border border-border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{o.customerName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {o.phone} · {o.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{o.address}</p>
+                      <p className="mt-1 text-xs font-mono text-muted-foreground">{o.id}</p>
+                    </div>
+                    <div className="text-end">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <StatusBadge status={o.status} />
+                        <Badge
+                          variant="outline"
+                          className="border-transparent bg-primary/10 text-primary"
+                        >
+                          {t(`checkout.method.${o.paymentMethod}.short`)}
+                        </Badge>
+                        {o.paymentStatus === "paid" ? (
+                          <Badge className="border-transparent bg-success/15 text-success">
+                            {t("pay.paid")}
+                          </Badge>
+                        ) : o.paymentStatus === "proof_submitted" ? (
+                          <Badge className="border-transparent bg-amber-500/15 text-amber-600">
+                            {t("pay.underReview")}
+                          </Badge>
+                        ) : (
+                          <Badge className="border-transparent bg-muted text-muted-foreground">
+                            {t("pay.unpaid")}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1.5 text-lg font-bold">
+                        {settings.currency === "$"
+                          ? `$${o.total.toFixed(2)}`
+                          : `${settings.currency} ${o.total.toFixed(2)}`}
+                      </p>
+                      {o.paymentRef && (
+                        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                          {t("track.fawryRef")}: {o.paymentRef}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {o.items.map((item) => (
+                      <span
+                        key={`${o.id}-${item.id}`}
+                        className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs"
+                      >
+                        {item.name} × {item.qty}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {o.paymentStatus !== "paid" && o.paymentMethod !== "cash" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
+                        onClick={async () => {
+                          await setOrderPaymentStatus(o.id, "paid");
+                          toast.success(t("dash.toast.paid"));
+                        }}
+                      >
+                        {t("dash.markPaid")}
+                      </Button>
+                    )}
+                    {o.paymentStatus === "proof_submitted" && (o.proofImage || o.paymentRef) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => setProofOrder(o)}
+                      >
+                        {t("dash.viewProof")}
+                      </Button>
+                    )}
+                    {o.status === "pending" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={async () => {
+                          await setOrderStatus(o.id, "confirmed");
+                          toast.success(t("dash.toast.saved"));
+                        }}
+                      >
+                        {t("dash.confirmRow")}
+                      </Button>
+                    )}
+                    {o.status !== "completed" && o.status !== "cancelled" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={async () => {
+                          await setOrderStatus(o.id, "completed");
+                          toast.success(t("dash.toast.completed"));
+                        }}
+                      >
+                        {t("dash.complete")}
+                      </Button>
+                    )}
+                    {o.status !== "cancelled" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-muted-foreground hover:text-destructive"
+                        onClick={async () => {
+                          await setOrderStatus(o.id, "cancelled");
+                          toast.success(t("dash.toast.saved"));
+                        }}
+                      >
+                        {t("dash.cancelRow")}
+                      </Button>
+                    )}
+                    {(o.status === "completed" || o.status === "cancelled") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                        aria-label={t("dash.archive")}
+                        title={t("dash.archive")}
+                        onClick={async () => {
+                          await archiveOrder(o.id, true);
+                          toast.success(t("dash.toast.archived"));
+                        }}
+                      >
+                        <Archive className="size-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                      aria-label={t("dash.delete")}
+                      onClick={async () => {
+                        await deleteOrder(o.id);
+                        toast.success(t("dash.toast.deleted"));
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <PaginationBar
+              total={grid.total}
+              page={grid.page}
+              pageSize={grid.pageSize}
+              pageCount={grid.pageCount}
+              onPage={grid.setPage}
+              onPageSize={grid.setPageSize}
+            />
+          </>
+        )}
+      </CardContent>
+
+      <Dialog open={Boolean(proofOrder)} onOpenChange={(open) => !open && setProofOrder(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("dash.paymentProof")}</DialogTitle>
+            <DialogDescription>{proofOrder?.id}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            {proofOrder?.paymentRef && (
+              <p className="rounded-xl bg-muted/50 px-4 py-2.5 font-mono text-sm">
+                {t("checkout.refNumber")}: {proofOrder.paymentRef}
+              </p>
+            )}
+            {proofOrder?.proofImage ? (
+              <a href={proofOrder.proofImage} target="_blank" rel="noreferrer">
+                <img
+                  src={proofOrder.proofImage}
+                  alt={t("track.proofImageAlt")}
+                  className="max-h-96 w-full rounded-xl border border-border object-cover"
+                />
+              </a>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("dash.noImage")}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProofOrder(null)}>
+              {t("dash.close")}
+            </Button>
+            {proofOrder && proofOrder.paymentStatus !== "paid" && (
+              <Button
+                onClick={async () => {
+                  await setOrderPaymentStatus(proofOrder.id, "paid");
+                  toast.success(t("dash.toast.paid"));
+                  setProofOrder(null);
+                }}
+              >
+                {t("dash.markPaid")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}

@@ -1,1 +1,0 @@
-var e=`paw-m:admin-session`;function t(e){try{return e===`local`?window.localStorage:window.sessionStorage}catch{return null}}function n(e,n){try{return t(e)?.getItem(n)??null}catch{return null}}function r(e,n,r){try{t(e)?.setItem(n,r)}catch{}}function i(e,n){try{t(e)?.removeItem(n)}catch{}}export{r as i,n,i as r,e as t};

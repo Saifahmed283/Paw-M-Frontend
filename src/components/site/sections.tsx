@@ -34,13 +34,7 @@ import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
 import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
 import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
-import {
-  BOOKING_STEPS,
-  FAQS,
-  STATS,
-  upcomingAvailability,
-  WHY_US,
-} from "@/lib/clinic-data";
+import { BOOKING_STEPS, FAQS, STATS, upcomingAvailability, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -273,7 +267,7 @@ export function Hero() {
 
 export function ServicesGrid({ limit }: { limit?: number }) {
   const { services } = useClinicStore();
-  const { t } = useI18n();
+  const { tOr } = useI18n();
   const items = limit ? services.slice(0, limit) : services;
   return (
     <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -285,9 +279,11 @@ export function ServicesGrid({ limit }: { limit?: number }) {
               <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-5" />
               </span>
-              <h3 className="mt-5 text-base font-semibold">{t(`svc.${service.slug}.title`)}</h3>
+              <h3 className="mt-5 text-base font-semibold">
+                {tOr(`svc.${service.slug}.title`, service.title)}
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {t(`svc.${service.slug}.desc`)}
+                {tOr(`svc.${service.slug}.desc`, service.description)}
               </p>
             </article>
           </Reveal>
@@ -572,8 +568,8 @@ export function Testimonials() {
             <p className="mt-3 text-sm font-semibold text-foreground">{item.author}</p>
             <p className="text-sm text-muted-foreground">{t("reviews.googleSource")}</p>
           </figcaption>
-         </figure>
-       </Reveal>
+        </figure>
+      </Reveal>
       <div className="mt-8 flex justify-center gap-2">
         {testimonials.map((review, i) => (
           <button

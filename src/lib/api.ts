@@ -1,3 +1,5 @@
+import { authHeaders } from "@/lib/client-auth";
+
 const API_BASE =
   (typeof import.meta !== "undefined" &&
     (import.meta as { env?: Record<string, string | undefined> }).env?.["VITE_API_URL"]) ||
@@ -8,6 +10,7 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
 
   const headers = new Headers({
     "Content-Type": "application/json",
+    ...authHeaders(),
     ...(init?.headers ?? {}),
   });
 
@@ -21,7 +24,11 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
     throw new Error(`API ${res.status}: ${text || res.statusText}`);
   }
   if (res.status === 204) return undefined;
-  return res.json();
+  const json = await res.json();
+  if (json && typeof json === "object" && "data" in json && "pagination" in json && Array.isArray(json.data)) {
+    return json.data;
+  }
+  return json;
 }
 
 export const api = {

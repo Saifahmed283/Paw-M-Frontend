@@ -236,6 +236,13 @@ const EN: Dict = {
   "logs.action.product_update": "Product updated",
   "logs.action.product_delete": "Product deleted",
   "logs.action.review_status": "Review moderated",
+  "dash.audit": "Audit Log",
+  "dash.audit.desc": "System activity log showing all actions performed.",
+  "audit.action": "Action",
+  "audit.entity": "Entity",
+  "audit.detail": "Detail",
+  "audit.date": "Date",
+  "audit.noLogs": "No audit logs yet.",
   "reviews.badge.google": "Google Review",
   "reviews.googleSource": "Imported from Google Places",
   "dash.settings.googleSync": "Sync Google Reviews",
@@ -935,6 +942,21 @@ const EN: Dict = {
   "dash.taskCancelled": "Cancelled",
   "dash.markComplete": "Mark complete",
   "dash.markInProgress": "Mark in progress",
+
+  // Password reset
+  "auth.forgotPassword": "Forgot Password",
+  "auth.forgotPasswordDesc": "Enter your username and we'll send you a reset code.",
+  "auth.sendResetCode": "Send Reset Code",
+  "auth.sending": "Sending...",
+  "auth.resetCodeSent": "Reset Code Sent",
+  "auth.resetCodeSentDesc": "Check your email for the verification code.",
+  "auth.goToReset": "Enter Reset Code",
+  "auth.resetPassword": "Reset Password",
+  "auth.resetPasswordDesc": "Enter your username, the code from your email, and your new password.",
+  "auth.resetCode": "Verification Code",
+  "auth.resetting": "Resetting...",
+  "auth.passwordReset": "Password has been reset successfully!",
+  "auth.resetFailed": "Failed to reset password. Check your code and try again.",
 };
 
 const AR: Dict = {
@@ -1151,6 +1173,13 @@ const AR: Dict = {
   "logs.action.product_update": "تعديل منتج",
   "logs.action.product_delete": "حذف منتج",
   "logs.action.review_status": "إدارة التقييمات",
+  "dash.audit": "سجل المراجعة",
+  "dash.audit.desc": "سجل نشاط النظام يعرض جميع الإجراءات المنفذة.",
+  "audit.action": "الإجراء",
+  "audit.entity": "الكيان",
+  "audit.detail": "التفاصيل",
+  "audit.date": "التاريخ",
+  "audit.noLogs": "لا توجد سجلات مراجعة بعد.",
   "reviews.badge.google": "تقييم Google",
   "reviews.googleSource": "مستورد من Google Places",
   "dash.settings.googleSync": "مزامنة تقييمات Google",
@@ -1831,6 +1860,21 @@ const AR: Dict = {
   "dash.taskCancelled": "ملغاة",
   "dash.markComplete": "تحديد كمكتملة",
   "dash.markInProgress": "بدء التنفيذ",
+
+  // Password reset
+  "auth.forgotPassword": "نسيت كلمة المرور",
+  "auth.forgotPasswordDesc": "أدخل اسم المستخدم وسنرسل لك رمز إعادة التعيين.",
+  "auth.sendResetCode": "إرسال رمز إعادة التعيين",
+  "auth.sending": "جاري الإرسال...",
+  "auth.resetCodeSent": "تم إرسال رمز إعادة التعيين",
+  "auth.resetCodeSentDesc": "تحقق من بريدك الإلكتروني للحصول على رمز التحقق.",
+  "auth.goToReset": "إدخال رمز إعادة التعيين",
+  "auth.resetPassword": "إعادة تعيين كلمة المرور",
+  "auth.resetPasswordDesc": "أدخل اسم المستخدم والرمز من بريدك الإلكتروني وكلمة المرور الجديدة.",
+  "auth.resetCode": "رمز التحقق",
+  "auth.resetting": "جاري إعادة التعيين...",
+  "auth.passwordReset": "تمت إعادة تعيين كلمة المرور بنجاح!",
+  "auth.resetFailed": "فشلت إعادة تعيين كلمة المرور. تحقق من الرمز وحاول مرة أخرى.",
 };
 
 const DICTS: Record<Lang, Dict> = { en: EN, ar: AR };

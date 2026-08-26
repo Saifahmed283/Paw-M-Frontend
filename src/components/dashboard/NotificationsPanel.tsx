@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, X, CheckCircle, DollarSign, ListChecks } from "lucide-react";
+import {
+  Bell,
+  CheckCircle,
+  DollarSign,
+  ListChecks,
+  ShoppingBag,
+  CalendarCheck,
+} from "lucide-react";
+import { isAuthed } from "@/lib/auth";
 
 interface Notification {
   id: number;
@@ -14,6 +21,56 @@ interface Notification {
   readBy?: string[];
   createdAt: string;
   data?: unknown;
+}
+
+const POLL_INTERVAL = 30_000;
+
+const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  payroll: DollarSign,
+  task: ListChecks,
+  system: CheckCircle,
+  approval: CheckCircle,
+  broadcast: Bell,
+  order: ShoppingBag,
+  booking: CalendarCheck,
+};
+
+export function useNotificationCount() {
+  const [count, setCount] = useState(0);
+  const userId = useRef<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("paw-m:admin-session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        userId.current = String(parsed.id);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const fetchCount = useCallback(async () => {
+    if (!userId.current || !isAuthed()) return;
+    try {
+      const res = await api.get<Notification[]>("/notifications/me");
+      if (Array.isArray(res)) {
+        const unread = res.filter((n) => !n.readBy || !n.readBy.includes(userId.current!)).length;
+        setCount(unread);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCount();
+    const id = setInterval(fetchCount, POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [fetchCount]);
+
+  return count;
 }
 
 export function NotificationsPanel() {
@@ -27,10 +84,9 @@ export function NotificationsPanel() {
     : null;
 
   const fetchNotifications = useCallback(async () => {
-    setLoading(true);
     try {
       if (userId) {
-        const response = await api.get<Notification[]>("/api/notifications/me");
+        const response = await api.get<Notification[]>("/notifications/me");
         if (Array.isArray(response)) {
           setNotifications(response);
           const unread = response.filter(
@@ -48,12 +104,14 @@ export function NotificationsPanel() {
 
   useEffect(() => {
     fetchNotifications();
+    const id = setInterval(fetchNotifications, POLL_INTERVAL);
+    return () => clearInterval(id);
   }, [fetchNotifications]);
 
   async function markAsRead(notificationId: number) {
     try {
-      await api.patch(`/api/notifications/${notificationId}/read`);
-      await fetchNotifications(); // Refresh the list
+      await api.patch(`/notifications/${notificationId}/read`);
+      await fetchNotifications();
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -61,9 +119,8 @@ export function NotificationsPanel() {
 
   async function markAllAsRead() {
     try {
-      // Mark each notification as read
-      await Promise.all(notifications.map((n) => api.patch(`/api/notifications/${n.id}/read`)));
-      await fetchNotifications(); // Refresh the list
+      await Promise.all(notifications.map((n) => api.patch(`/notifications/${n.id}/read`)));
+      await fetchNotifications();
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -102,56 +159,37 @@ export function NotificationsPanel() {
         <p className="text-center py-8 text-muted-foreground">{t("dash.noNotifications")}</p>
       ) : (
         <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="border rounded-xl p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  {notification.type === "payroll" && (
-                    <DollarSign className="h-4 w-4 text-success" />
-                  )}
-                  {notification.type === "task" && (
-                    <ListChecks className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  {notification.type === "system" && (
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  {notification.type === "approval" && (
-                    <CheckCircle className="h-4 w-4 text-success" />
-                  )}
-                  {notification.type === "broadcast" && (
-                    <Bell className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <div>
-                    <p className="font-medium">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(notification.createdAt)}
-                    </p>
+          {notifications.map((notification) => {
+            const Icon = TYPE_ICON[notification.type] ?? Bell;
+            return (
+              <div key={notification.id} className="border rounded-xl p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{notification.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(notification.createdAt)}
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => markAsRead(notification.id)}
+                    className={
+                      notification.readBy && notification.readBy.includes(userId.toString())
+                        ? "text-muted-foreground"
+                        : "text-primary"
+                    }
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => markAsRead(notification.id)}
-                  className={
-                    notification.readBy && notification.readBy.includes(userId.toString())
-                      ? "text-muted-foreground"
-                      : "text-primary"
-                  }
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+                <p className="text-sm">{notification.body}</p>
               </div>
-              <p className="text-sm">{notification.body}</p>
-              {notification.data && (
-                <div className="mt-3 p-3 bg-muted rounded">
-                  <p className="text-xs font-medium">{t("dash.details")}</p>
-                  <pre className="text-xs mt-1 whitespace-pre-wrap">
-                    {JSON.stringify(notification.data, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

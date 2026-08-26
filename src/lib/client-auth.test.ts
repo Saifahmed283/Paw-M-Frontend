@@ -92,7 +92,8 @@ describe("client-auth", () => {
 
   it("logoutClient clears session", async () => {
     store[`session:${CLIENT_SESSION_KEY}`] = JSON.stringify(mockSession);
-    logoutClient();
+    vi.mocked(api.post).mockResolvedValue(undefined);
+    await logoutClient();
     expect(currentClient()).toBeNull();
     expect(clientIsAuthed()).toBe(false);
   });
