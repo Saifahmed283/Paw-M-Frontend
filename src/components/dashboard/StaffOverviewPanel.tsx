@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -43,52 +43,34 @@ export function StaffOverviewPanel() {
     period: "today" | "week" | "month";
   }>({ role: "all", period: "week" });
 
-  useEffect(() => {
-    fetchStaffOverview();
-  }, [filter, fetchStaffOverview]);
-
-  async function fetchStaffOverview() {
+  const fetchStaffOverview = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get<Employee[]>("/api/employees");
       if (Array.isArray(response)) {
-        // Filter by role if needed
         const filtered =
-          filter.role === "all"
-            ? response
-            : response.filter((emp) => emp.role === filter.role);
+          filter.role === "all" ? response : response.filter((emp) => emp.role === filter.role);
 
-        // For each staff member, fetch their KPI data
         const staffWithKPI = await Promise.all(
           filtered.map(async (emp) => {
             try {
               const periodEnd = new Date().toISOString().split("T")[0] || "";
               let periodStart = "";
 
-              switch (filter.period) {
-                case "today":
-                  periodStart = periodEnd;
-                  break;
-                case "week":
-                  const weekAgo = new Date();
-                  weekAgo.setDate(weekAgo.getDate() - 7);
-                  periodStart = weekAgo.toISOString().split("T")[0] || "";
-                  break;
-                case "month":
-                  const monthAgo = new Date();
-                  monthAgo.setMonth(monthAgo.getMonth() - 1);
-                  periodStart = monthAgo.toISOString().split("T")[0] || "";
-                  break;
+              if (filter.period === "today") {
+                periodStart = periodEnd;
+              } else if (filter.period === "week") {
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                periodStart = weekAgo.toISOString().split("T")[0] || "";
+              } else {
+                const monthAgo = new Date();
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                periodStart = monthAgo.toISOString().split("T")[0] || "";
               }
 
               const kpiResponse = await api.get<EmployeeKPI>(
-                `/api/work-sessions/me/kpi?periodStart=${periodStart}&periodEnd=${periodEnd}`,
-                {
-                  headers: {
-                    "x-user-id": emp.id.toString(),
-                    "x-user-role": emp.role,
-                  },
-                },
+                `/api/work-sessions/admin/kpi?userId=${emp.id}&periodStart=${periodStart}&periodEnd=${periodEnd}`,
               );
 
               return {
@@ -118,7 +100,11 @@ export function StaffOverviewPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filter]);
+
+  useEffect(() => {
+    fetchStaffOverview();
+  }, [fetchStaffOverview]);
 
   if (loading) {
     return (

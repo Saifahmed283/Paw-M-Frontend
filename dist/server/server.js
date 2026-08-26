@@ -107,7 +107,7 @@ var SECURITY_HEADERS = {
 				const url = {
 					"BASE_URL": "/",
 					"DEV": false,
-					"MODE": "production",
+					"MODE": "development",
 					"PROD": true,
 					"SSR": true,
 					"TSS_DEV_SERVER": "false",
@@ -135,7 +135,7 @@ var SECURITY_HEADERS = {
 };
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-B88OJboK.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-D13b4sB7.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response) {

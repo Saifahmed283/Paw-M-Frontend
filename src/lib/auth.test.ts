@@ -73,7 +73,7 @@ describe("auth", () => {
     vi.mocked(api.post).mockResolvedValue({ ok: false });
     expect(await login("admin", "wrongpass")).toBe(false);
 
-    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    vi.mocked(api.post).mockResolvedValue({ ok: true, role: "admin" });
     expect(await login("admin", "staffpass")).toBe(true);
   });
 
@@ -84,7 +84,7 @@ describe("auth", () => {
   });
 
   it("login sends the credentials to the API", async () => {
-    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    vi.mocked(api.post).mockResolvedValue({ ok: true, role: "staff" });
     await login("Admin ", "staffpass");
     expect(api.post).toHaveBeenCalledWith("/auth/login", {
       username: "Admin",
@@ -114,15 +114,17 @@ describe("auth", () => {
       await login("admin", "wrong");
     }
     expect(isLocked()).toBe(true);
-    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    vi.mocked(api.post).mockResolvedValue({ ok: true, role: "staff" });
     expect(await login("admin", "staffpass")).toBe(false);
   });
 
-  it("logout clears the session", async () => {
-    vi.mocked(api.post).mockResolvedValue({ ok: true });
+  it("logout calls the API and clears the session", async () => {
+    vi.mocked(api.post).mockResolvedValue({ ok: true, role: "admin" });
     await login("admin", "staffpass");
     expect(isAuthed()).toBe(true);
-    logout();
+
+    vi.mocked(api.post).mockResolvedValue({ ok: true });
+    await logout();
     expect(isAuthed()).toBe(false);
   });
 

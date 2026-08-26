@@ -2216,8 +2216,7 @@ function ProductsPanel() {
             <DialogTitle>{t("dash.importProducts")}</DialogTitle>
             <DialogDescription>{t("dash.importProductsHint")}</DialogDescription>
           </DialogHeader>
-          <DialogContent>
-            <form onSubmit={async (e) => {
+          <form onSubmit={async (e) => {
               e.preventDefault();
               const file = e.target.elements.file.files[0];
               if (!file) return;
@@ -2275,7 +2274,6 @@ function ProductsPanel() {
                     category,
                     petType,
                     stock: 0,
-                    minStockAlert: 5,
                     featured: false,
                     barcode: "",
                   });
@@ -2309,7 +2307,6 @@ function ProductsPanel() {
                 <Button type="submit">{t("dash.import")}</Button>
               </div>
             </form>
-          </DialogContent>
           <DialogFooter>
             <Button variant="outline" onClick={() => setImportOpen(false)}>
               {t("dash.cancel")}

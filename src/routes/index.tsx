@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 
-const title = "Paw-M — Veterinary Clinic in San Francisco";
+const title = "Paw-M — Veterinary Clinic in Cairo, Egypt";
 const description =
   "Same-day diagnostics, transparent estimates and a 24/7 emergency team. Book your pet's appointment with Paw-M in under a minute.";
 
@@ -43,9 +43,9 @@ export const Route = createFileRoute("/")({
           url: "/",
           address: {
             "@type": "PostalAddress",
-            addressLocality: "San Francisco",
-            addressRegion: "CA",
-            addressCountry: "US",
+            addressLocality: "Cairo",
+            addressRegion: "Cairo Governorate",
+            addressCountry: "EG",
           },
         }),
       },

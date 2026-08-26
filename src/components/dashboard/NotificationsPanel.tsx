@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -26,11 +26,7 @@ export function NotificationsPanel() {
     ? JSON.parse(localStorage.getItem("paw-m:admin-session") || "{}").id
     : null;
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [userId, fetchNotifications]);
-
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       if (userId) {
@@ -48,7 +44,11 @@ export function NotificationsPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   async function markAsRead(notificationId: number) {
     try {
@@ -62,9 +62,7 @@ export function NotificationsPanel() {
   async function markAllAsRead() {
     try {
       // Mark each notification as read
-      await Promise.all(
-        notifications.map((n) => api.patch(`/api/notifications/${n.id}/read`)),
-      );
+      await Promise.all(notifications.map((n) => api.patch(`/api/notifications/${n.id}/read`)));
       await fetchNotifications(); // Refresh the list
     } catch (error) {
       console.error("Error marking all notifications as read:", error);

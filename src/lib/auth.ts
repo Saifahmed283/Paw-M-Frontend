@@ -13,8 +13,6 @@ export const MIN_PASSWORD = 6;
 type Session = {
   username: string;
   role: string;
-  id: number;
-  token: string;
   expiresAt: number;
 };
 
@@ -22,20 +20,6 @@ type AttemptRecord = {
   count: number;
   lockedUntil: number;
 };
-
-function randomHex(bytes: number): string {
-  const buf = new Uint8Array(bytes);
-  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
-    crypto.getRandomValues(buf);
-  } else {
-    for (let i = 0; i < buf.length; i++) {
-      buf[i] = Math.floor(Math.random() * 256);
-    }
-  }
-  return Array.from(buf)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 export async function isAuthConfigured(): Promise<boolean> {
   try {
@@ -62,7 +46,7 @@ export async function register(username: string, password: string): Promise<void
 export async function login(username: string, password: string): Promise<boolean> {
   if (isLocked()) return false;
   try {
-    const r = await api.post<{ ok: boolean; role?: string; id?: number }>("/auth/login", {
+    const r = await api.post<{ ok: boolean; role?: string }>("/auth/login", {
       username: username.trim(),
       password,
     });
@@ -74,8 +58,6 @@ export async function login(username: string, password: string): Promise<boolean
     const session: Session = {
       username: username.trim(),
       role: r.role ?? "staff",
-      id: r.id ?? 0,
-      token: randomHex(24),
       expiresAt: Date.now() + SESSION_TTL_MS,
     };
     storageSet("session", SESSION_KEY, JSON.stringify(session));
@@ -171,6 +153,11 @@ export function isAuthed(): boolean {
   return readSession() !== null;
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // Cookie may already be cleared server-side
+  }
   storageRemove("session", SESSION_KEY);
 }

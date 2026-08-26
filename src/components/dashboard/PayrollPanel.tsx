@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -52,11 +52,7 @@ export function PayrollPanel() {
     periodEnd: today,
   });
 
-  useEffect(() => {
-    fetchPayrollRecords();
-  }, [filter, fetchPayrollRecords]);
-
-  async function fetchPayrollRecords() {
+  const fetchPayrollRecords = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -72,7 +68,11 @@ export function PayrollPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filter.periodStart, filter.periodEnd]);
+
+  useEffect(() => {
+    fetchPayrollRecords();
+  }, [fetchPayrollRecords]);
 
   const handleDateChange = (type: "start" | "end", dateStr: string) => {
     setFilter((prev) => ({
@@ -285,15 +285,13 @@ export function PayrollPanel() {
 
 // Helper functions for updating records
 async function updateRecordStatus(id: number, status: string) {
-    try {
-      await api.patch(`/api/payroll/records/${id}/status`, { status });
-    } catch (error) {
-      console.error("Error updating payroll record status:", error);
-    }
+  try {
+    await api.patch(`/api/payroll/records/${id}/status`, { status });
+  } catch (error) {
+    console.error("Error updating payroll record status:", error);
   }
+}
 
-  async function updateRecordAmount(id: number) {
-    // In a real implementation, this would open a modal to adjust amounts
-    // For now, we'll just show a toast
-    console.log("Opening amount adjustment modal for record", id);
-  }
+async function updateRecordAmount(id: number) {
+  console.log("Opening amount adjustment modal for record", id);
+}

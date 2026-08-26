@@ -69,11 +69,12 @@ export function useCartCount() {
 }
 
 export function addToCart(product: Product, qty = 1) {
+  const safeQty = Math.max(1, qty);
   const existing = state.find((i) => i.id === product.id);
   if (existing) {
     commit(
       state.map((i) =>
-        i.id === product.id ? { ...i, qty: Math.min(i.qty + qty, Math.max(1, i.stock)) } : i,
+        i.id === product.id ? { ...i, qty: Math.min(i.qty + safeQty, Math.max(1, i.stock)) } : i,
       ),
     );
   } else {
@@ -84,7 +85,7 @@ export function addToCart(product: Product, qty = 1) {
         name: product.name,
         price: product.price,
         image: product.image,
-        qty,
+        qty: safeQty,
         stock: product.stock,
       },
     ]);
