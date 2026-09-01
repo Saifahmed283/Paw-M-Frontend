@@ -94,6 +94,7 @@ import {
   remainingLockMs,
 } from "@/lib/auth";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
+import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
@@ -470,6 +471,22 @@ function DashboardPage() {
     window.location.href = "/";
   };
 
+  const orderCount = store.orders.filter((o) => !o.archived).length;
+  const pendingRequestCount = store.requests.filter((r) => !r.archived && r.status === "pending").length;
+
+  useNotificationSound({
+    enabled: authed,
+    interval: 30_000,
+    getCount: () => orderCount + pendingRequestCount,
+    onNewItems: (newCount, prevCount) => {
+      const newOrders = store.orders.filter((o) => !o.archived).length;
+      const newPending = store.requests.filter((r) => !r.archived && r.status === "pending").length;
+      if (newOrders > prevCount || newPending > prevCount) {
+        toast.info("New order or booking received!");
+      }
+    },
+  });
+
   const pendingCount = store.requests.filter((r) => !r.archived && r.status === "pending").length;
   const confirmedCount = store.requests.filter(
     (r) => !r.archived && r.status === "confirmed",
@@ -561,6 +578,12 @@ function DashboardPage() {
                   {pendingCount}
                 </span>
               )}
+              {item.id === "orders" &&
+                store.orders.filter((o) => !o.archived).length > 0 && (
+                  <span className="ms-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
+                    {store.orders.filter((o) => !o.archived).length}
+                  </span>
+                )}
               {item.id === "reviews" &&
                 store.reviews.filter((r) => r.status === "pending").length > 0 && (
                   <span className="ms-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-600">

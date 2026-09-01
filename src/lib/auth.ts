@@ -2,11 +2,8 @@ import { SESSION_KEY, storageGet, storageRemove, storageSet } from "@/lib/storag
 import { api } from "@/lib/api";
 
 export { SESSION_KEY } from "@/lib/storage";
-const LOCK_KEY = "paw-m:admin-attempts";
 
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-export const MAX_ATTEMPTS = 5;
-export const LOCKOUT_MS = 10 * 60 * 1000;
 export const MIN_USERNAME = 3;
 export const MIN_PASSWORD = 6;
 
@@ -14,11 +11,6 @@ type Session = {
   username: string;
   role: string;
   expiresAt: number;
-};
-
-type AttemptRecord = {
-  count: number;
-  lockedUntil: number;
 };
 
 export async function isAuthConfigured(): Promise<boolean> {
@@ -44,17 +36,14 @@ export async function register(username: string, password: string): Promise<void
 
 /** Sign in with staff credentials; opens a session on success. */
 export async function login(username: string, password: string): Promise<boolean> {
-  if (isLocked()) return false;
   try {
     const r = await api.post<{ ok: boolean; role?: string }>("/auth/login", {
       username: username.trim(),
       password,
     });
     if (!r.ok) {
-      recordFailedAttempt();
       return false;
     }
-    clearAttempts();
     const session: Session = {
       username: username.trim(),
       role: r.role ?? "staff",
@@ -87,34 +76,14 @@ export async function changeCredentials(input: {
   });
 }
 
-function readAttempts(): AttemptRecord {
-  const raw = storageGet("local", LOCK_KEY);
-  if (!raw) return { count: 0, lockedUntil: 0 };
-  try {
-    const parsed = JSON.parse(raw) as AttemptRecord;
-    return parsed && typeof parsed.count === "number" ? parsed : { count: 0, lockedUntil: 0 };
-  } catch {
-    return { count: 0, lockedUntil: 0 };
-  }
-}
-
+/** @deprecated Lockout removed — always returns false */
 export function isLocked(): boolean {
-  return readAttempts().lockedUntil > Date.now();
+  return false;
 }
 
+/** @deprecated Lockout removed — always returns 0 */
 export function remainingLockMs(): number {
-  return Math.max(0, readAttempts().lockedUntil - Date.now());
-}
-
-function recordFailedAttempt() {
-  const attempts = readAttempts();
-  const count = attempts.count + 1;
-  const lockedUntil = count >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : attempts.lockedUntil;
-  storageSet("local", LOCK_KEY, JSON.stringify({ count, lockedUntil }));
-}
-
-function clearAttempts() {
-  storageRemove("local", LOCK_KEY);
+  return 0;
 }
 
 function readSession(): Session | null {

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { clearCart, removeFromCart, setCartQty, useCart } from "@/lib/cart-store";
+import { currentClient } from "@/lib/client-auth";
 import { createOrder, useClinicStore, type PaymentMethod } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -150,7 +151,13 @@ function CheckoutForm() {
   const { t } = useI18n();
   const cart = useCart();
   const { settings } = useClinicStore();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
+  const client = currentClient();
+  const [form, setForm] = useState({
+    name: client?.fullName ?? "",
+    phone: client?.phone ?? "",
+    email: client?.email ?? "",
+    address: "",
+  });
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [ref, setRef] = useState("");
   const [proofImage, setProofImage] = useState("");
@@ -167,8 +174,13 @@ function CheckoutForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || !form.address.trim()) {
+    const isDeliveryRequired = method !== "cash";
+    if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
       toast.error(t("checkout.required"));
+      return;
+    }
+    if (isDeliveryRequired && !form.address.trim()) {
+      toast.error(t("checkout.addressRequiredError"));
       return;
     }
     if (method === "instapay" && !settings.instapay) {
@@ -222,7 +234,9 @@ function CheckoutForm() {
           <ChevronLeft className="size-4" /> {t("store.back")}
         </Link>
         <h1 className="mt-4 text-3xl font-bold">{t("checkout.title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("checkout.desc")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {method === "cash" ? t("checkout.descCollect") : t("checkout.descDelivery")}
+        </p>
 
         {cart.length === 0 ? (
           <div className="mt-10 rounded-3xl border border-border bg-card p-10 text-center shadow-card">
@@ -272,7 +286,11 @@ function CheckoutForm() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="co-address">{t("checkout.address")}</Label>
+                  <Label htmlFor="co-address">
+                    {method === "cash"
+                      ? t("checkout.addressOptional")
+                      : t("checkout.addressRequired")}
+                  </Label>
                   <Textarea
                     id="co-address"
                     rows={2}
@@ -280,7 +298,13 @@ function CheckoutForm() {
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     className="mt-1.5"
+                    placeholder={t("checkout.addressHint")}
                   />
+                  {method === "cash" && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("checkout.collectInClinic")}
+                    </p>
+                  )}
                 </div>
               </div>
 

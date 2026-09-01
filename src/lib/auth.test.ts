@@ -108,14 +108,14 @@ describe("auth", () => {
     expect(hasMinRole("admin")).toBe(false);
   });
 
-  it("locks after MAX_ATTEMPTS failed attempts", async () => {
+  it("allows unlimited login attempts without lockout", async () => {
     vi.mocked(api.post).mockResolvedValue({ ok: false });
-    for (let i = 0; i < 5; i++) {
-      await login("admin", "wrong");
+    for (let i = 0; i < 10; i++) {
+      expect(await login("admin", "wrong")).toBe(false);
+      expect(isLocked()).toBe(false);
     }
-    expect(isLocked()).toBe(true);
     vi.mocked(api.post).mockResolvedValue({ ok: true, role: "staff" });
-    expect(await login("admin", "staffpass")).toBe(false);
+    expect(await login("admin", "staffpass")).toBe(true);
   });
 
   it("logout calls the API and clears the session", async () => {

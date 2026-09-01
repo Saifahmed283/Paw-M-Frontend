@@ -21,6 +21,7 @@ import { refreshClinicData, refreshPublicData } from "@/lib/clinic-store";
 import { isAuthed } from "@/lib/auth";
 import { readLangCookie } from "@/lib/lang-cookie";
 import { readThemeCookie } from "@/lib/theme-cookie";
+import { ThemeProvider } from "@/lib/use-theme";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 
 function NotFoundComponent() {
@@ -193,22 +194,24 @@ function RootComponent() {
   return (
     <I18nProvider initialLang={lang}>
       <QueryClientProvider client={queryClient}>
-        {!isDashboard && <IntroAnimation />}
-        {!isDashboard && <SiteHeader />}
-        <motion.main
-          key={pathname}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="min-h-screen"
-        >
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Suspense fallback={<RouteLoadingSkeleton />}>
-            <Outlet />
-          </Suspense>
-        </motion.main>
-        {!isDashboard && <SiteFooter />}
-        <Toaster position="top-center" richColors />
+        <ThemeProvider>
+          {!isDashboard && <IntroAnimation />}
+          {!isDashboard && <SiteHeader />}
+          <motion.main
+            key={pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="min-h-screen"
+          >
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Suspense fallback={<RouteLoadingSkeleton />}>
+              <Outlet />
+            </Suspense>
+          </motion.main>
+          {!isDashboard && <SiteFooter />}
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
       </QueryClientProvider>
     </I18nProvider>
   );
