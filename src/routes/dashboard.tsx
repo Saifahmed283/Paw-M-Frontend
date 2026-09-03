@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
@@ -21,7 +21,6 @@ import {
   Moon,
   Package,
   Radio,
-  ScrollText,
   Settings,
   ShoppingBag,
   Stethoscope,
@@ -51,7 +50,6 @@ import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
 import { TasksPanel } from "@/components/dashboard/TasksPanel";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import { useNotificationCount } from "@/lib/use-notification-count";
-import { AuditLogPanel } from "@/components/dashboard/AuditLogPanel";
 import { ShiftBanner } from "@/components/dashboard/ShiftBanner";
 import { DoctorsPanel } from "@/components/dashboard/DoctorsPanel";
 import { ServicesPanel } from "@/components/dashboard/ServicesPanel";
@@ -242,7 +240,6 @@ const NAV_ITEMS: {
   { id: "workdays", icon: FolderOpen, roles: ["payroll", "admin"] },
   { id: "archive", icon: Archive, roles: ["payroll", "admin"] },
   { id: "logs", icon: History, roles: ["admin"] },
-  { id: "audit", icon: ScrollText, roles: ["admin"] },
   { id: "settings", icon: Settings, roles: ["admin"] },
 ];
 
@@ -380,9 +377,7 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
 
         {!setup && (
           <div className="mt-3 text-center">
-            <Link to="/forgot-password" className="text-sm text-primary underline">
-              {t("auth.forgotPassword")}?
-            </Link>
+            <span className="text-xs text-muted-foreground">{t("auth.signInHelp")}</span>
           </div>
         )}
 
@@ -960,7 +955,6 @@ function DashboardPage() {
             {tab === "workdays" && <WorkdaysPanel />}
             {tab === "archive" && <ArchivePanel />}
             {tab === "logs" && <LogsPanel />}
-            {tab === "audit" && <AuditLogPanel />}
             {tab === "settings" && <SettingsPanel />}
           </motion.div>
         </AnimatePresence>

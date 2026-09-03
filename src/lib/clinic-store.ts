@@ -48,6 +48,7 @@ export type Product = {
   stock: number;
   featured: boolean;
   barcode?: string;
+  barcodeImage?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -342,36 +343,43 @@ export function useClinicStore() {
     enabled: false,
   });
 
-  return useMemo<Store>(
-    () => ({
-      requests,
-      doctors,
-      services,
-      products,
-      orders,
-      reviews,
-      payments,
-      settings,
-      workSession,
-      auditLogs,
-      workDays,
-      workDay: workDay ?? null,
-    }),
-    [
-      requests,
-      doctors,
-      services,
-      products,
-      orders,
-      reviews,
-      payments,
-      settings,
-      workSession,
-      auditLogs,
-      workDays,
-      workDay,
-    ],
-  );
+  // While the app is not yet mounted (the SSR/hydration phase), always expose
+  // the seed defaults — never cache-fetched data, regardless of how fast any
+  // fetch resolves or when the deferred refresh fires. This keeps the client's
+  // first (hydration) render byte-identical to the server render so React never
+  // sees a hydration mismatch on the public site data. After mount, flip to the
+  // real data.
+  return useMemo<Store>(() => {
+    const gated = <T>(value: T, seed: T): T => (mounted ? value : seed);
+    return {
+      requests: gated(requests, seedDefaults.requests),
+      doctors: gated(doctors, seedDefaults.doctors),
+      services: gated(services, seedDefaults.services),
+      products: gated(products, seedDefaults.products),
+      orders: gated(orders, seedDefaults.orders),
+      reviews: gated(reviews, seedDefaults.reviews),
+      payments: gated(payments, seedDefaults.payments),
+      settings: gated(settings, seedDefaults.settings),
+      workSession: gated(workSession, null),
+      auditLogs: gated(auditLogs, seedDefaults.auditLogs),
+      workDays: gated(workDays, seedDefaults.workDays),
+      workDay: gated(workDay ?? null, null),
+    };
+  }, [
+    mounted,
+    requests,
+    doctors,
+    services,
+    products,
+    orders,
+    reviews,
+    payments,
+    settings,
+    workSession,
+    auditLogs,
+    workDays,
+    workDay,
+  ]);
 }
 
 /** Refreshes all clinic data from the backend (no-op while one is in flight). */

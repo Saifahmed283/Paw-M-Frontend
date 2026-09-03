@@ -74,6 +74,7 @@ export function LogsPanel() {
                   <TableRow>
                     <TableHead className="w-44">{t("logs.time")}</TableHead>
                     <TableHead className="w-52">{t("logs.action")}</TableHead>
+                    <TableHead className="w-40">{t("logs.entity")}</TableHead>
                     <TableHead>{t("logs.detail")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -91,6 +92,7 @@ export function LogsPanel() {
                           {tOr(`logs.action.${log.action}`, log.action)}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{log.target}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{log.detail}</TableCell>
                     </TableRow>
                   ))}

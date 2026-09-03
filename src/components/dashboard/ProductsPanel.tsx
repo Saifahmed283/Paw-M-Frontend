@@ -50,6 +50,7 @@ const EMPTY_PRODUCT = {
   petType: "both",
   featured: false,
   barcode: "",
+  barcodeImage: "",
 };
 
 function ProductDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
@@ -67,6 +68,7 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
           petType: product.petType ?? "both",
           featured: product.featured,
           barcode: product.barcode ?? "",
+          barcodeImage: product.barcodeImage ?? "",
         }
       : EMPTY_PRODUCT,
   );
@@ -104,6 +106,7 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
       petType: form.petType,
       featured: form.featured,
       barcode: form.barcode.trim(),
+      barcodeImage: form.barcodeImage,
       createdAt: product?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -205,6 +208,38 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
               className="h-32 w-full rounded-xl border border-border object-cover"
             />
           )}
+          <Field label={t("dash.form.product.qrCode")}>
+            <Input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setForm((f) => ({ ...f, barcodeImage: String(reader.result ?? "") }));
+                reader.readAsDataURL(file);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">{t("dash.form.product.qrHint")}</p>
+            {form.barcodeImage && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={form.barcodeImage}
+                  alt=""
+                  className="h-20 w-20 rounded-lg border border-border object-contain"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setForm((f) => ({ ...f, barcodeImage: "" }))}
+                >
+                  {t("dash.remove")}
+                </Button>
+              </div>
+            )}
+          </Field>
           <Field label={t("dash.form.product.desc")}>
             <Textarea
               rows={3}
@@ -336,6 +371,7 @@ export function ProductsPanel() {
                 <TableHead>{t("dash.form.product.name")}</TableHead>
                 <TableHead>{t("dash.form.product.category")}</TableHead>
                 <TableHead>{t("dash.form.product.petType")}</TableHead>
+                <TableHead>{t("dash.form.product.barcode")}</TableHead>
                 <TableHead>{t("dash.form.product.price")}</TableHead>
                 <TableHead>{t("dash.form.product.stock")}</TableHead>
                 <TableHead>{t("dash.form.product.featured")}</TableHead>
@@ -362,6 +398,9 @@ export function ProductsPanel() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {t(`store.pet.${p.petType ?? "both"}`)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    {p.barcode ? <span className="font-mono">{p.barcode}</span> : "—"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm font-semibold">
                     {settings.currency === "$"

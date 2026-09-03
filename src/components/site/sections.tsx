@@ -122,10 +122,13 @@ export function Hero() {
   const firstDoctor = doctors[0];
   const nextDay = useMemo(
     () =>
-      firstDoctor
+      // Availability depends on today's date, which differs between the server
+      // render and the browser. Only compute it after mount so the hydration
+      // pass renders the same fallback on both sides.
+      mounted && firstDoctor
         ? upcomingAvailability(firstDoctor, 1, new Date(), requests, lang === "ar" ? "ar" : "en-US")
         : [],
-    [firstDoctor, requests, lang],
+    [mounted, firstDoctor, requests, lang],
   );
 
   useEffect(() => {
