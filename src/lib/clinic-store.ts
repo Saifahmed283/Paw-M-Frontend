@@ -4,6 +4,7 @@ import { CLINIC, CLINIC_REVIEWS, DOCTORS, SERVICES, type Doctor } from "@/lib/cl
 import { sanitizeEmail, sanitizePhone, sanitizeWhatsapp } from "@/lib/sanitize";
 import { api } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
+import type { RolePermissions } from "@/lib/roles";
 
 export type Status = "pending" | "confirmed" | "completed" | "cancelled";
 
@@ -113,6 +114,7 @@ export type ClinicSettings = {
   address: string;
   currency: string;
   instapay: string;
+  rolePermissions?: RolePermissions;
 };
 
 export type WorkSession = {

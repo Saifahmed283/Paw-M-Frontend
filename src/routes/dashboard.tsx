@@ -90,6 +90,7 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/lib/i18n-components";
 import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
+import { allowedTabsForRole } from "@/lib/roles";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -401,16 +402,30 @@ function DashboardPage() {
     if (isAuthed()) {
       setAuthed(true);
       setRole(currentRole());
-      const firstAllowed = NAV_ITEMS.find(
-        (i) => i.roles.includes("all") || i.roles.includes(currentRole()),
+      const firstAllowed = NAV_ITEMS.find((i) =>
+        allowedTabsForRole(store.settings?.rolePermissions, currentRole()).includes(i.id),
       );
       if (firstAllowed) setTab(firstAllowed.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [tab, setTab] = useState<string>("overview");
   const [query, setQuery] = useState("");
   const [resQuery, setResQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+
+  const canAccess = (tabId: string) =>
+    allowedTabsForRole(store.settings?.rolePermissions, role).includes(tabId);
+
+  // Intentionally re-runs each render; no-ops once the tab is restored to an accessible one.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (authed && !canAccess(tab)) {
+      const fallback = NAV_ITEMS.find((i) => canAccess(i.id));
+      const next = fallback ? fallback.id : "overview";
+      if (next !== tab) setTab(next);
+    }
+  });
 
   const currentNav = NAV_ITEMS.find((i) => i.id === tab) ?? NAV_ITEMS[0]!;
 
@@ -548,9 +563,7 @@ function DashboardPage() {
           <PawMLogo />
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
-          {NAV_ITEMS.filter(
-            (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
-          ).map((item) => (
+          {NAV_ITEMS.filter((item) => canAccess(item.id)).map((item) => (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
@@ -659,9 +672,7 @@ function DashboardPage() {
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
                 aria-label={t("dash.title")}
               >
-                {NAV_ITEMS.filter(
-                  (item) => item.roles.includes("all") || item.roles.includes(currentRole()),
-                ).map((item) => (
+                {NAV_ITEMS.filter((item) => canAccess(item.id)).map((item) => (
                   <option key={item.id} value={item.id}>
                     {t(`dash.${item.id}`)}
                   </option>

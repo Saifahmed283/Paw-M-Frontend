@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   useClinicStore,
@@ -14,6 +15,13 @@ import { useI18n, type Lang } from "@/lib/i18n";
 import { changeCredentials, MIN_PASSWORD, MIN_USERNAME } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import {
+  ALL_TAB_IDS,
+  DEFAULT_ROLE_PERMISSIONS,
+  ROLE_ORDER,
+  type Role,
+  type RolePermissions,
+} from "@/lib/roles";
 
 export function SettingsPanel() {
   const { t, lang, setLang } = useI18n();
@@ -38,6 +46,11 @@ export function SettingsPanel() {
     currency: settings.currency,
     instapay: settings.instapay,
   });
+  const [perms, setPerms] = useState<RolePermissions>(() =>
+    settings.rolePermissions && Object.keys(settings.rolePermissions).length
+      ? settings.rolePermissions
+      : DEFAULT_ROLE_PERMISSIONS,
+  );
 
   useEffect(() => {
     setForm({
@@ -51,7 +64,29 @@ export function SettingsPanel() {
       currency: settings.currency,
       instapay: settings.instapay,
     });
+    if (settings.rolePermissions && Object.keys(settings.rolePermissions).length) {
+      setPerms(settings.rolePermissions);
+    }
   }, [settings]);
+
+  const toggleRoleTab = (role: Role, tab: string, checked: boolean) => {
+    if (role === "admin") return;
+    setPerms((prev) => {
+      const list = new Set(prev[role] ?? []);
+      if (checked) list.add(tab);
+      else list.delete(tab);
+      return { ...prev, [role]: [...list] };
+    });
+  };
+
+  const savePerms = async () => {
+    try {
+      await updateSettings({ rolePermissions: perms });
+      toast.success(t("dash.toast.saved"));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    }
+  };
 
   const save = async () => {
     if (!form.currency.trim()) {
@@ -295,6 +330,59 @@ export function SettingsPanel() {
             </span>
           )}
           {gsError && <span className="text-xs text-destructive">{gsError}</span>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t("dash.settings.roles")}</CardTitle>
+          <CardDescription>{t("dash.settings.rolesDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border text-start">
+                  <th className="py-2 pe-4 text-start font-medium text-muted-foreground">
+                    {t("dash.settings.rolesAccess")}
+                  </th>
+                  {ROLE_ORDER.map((r) => (
+                    <th key={r} className="px-3 py-2 text-center font-medium text-muted-foreground">
+                      {t(`auth.role.${r}`)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ALL_TAB_IDS.map((tab) => (
+                  <tr key={tab} className="border-b border-border/60">
+                    <td className="py-2 pe-4 text-start">{t(`dash.${tab}`)}</td>
+                    {ROLE_ORDER.map((r) => {
+                      const isAdmin = r === "admin";
+                      const checked = isAdmin || (perms[r] ?? []).includes(tab);
+                      return (
+                        <td key={r} className="px-3 py-2 text-center">
+                          <Checkbox
+                            checked={checked}
+                            disabled={isAdmin}
+                            onCheckedChange={(v) => toggleRoleTab(r, tab, v === true)}
+                            aria-label={`${t(`dash.${tab}`)} — ${t(`auth.role.${r}`)}`}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("dash.settings.rolesNote")}</p>
+          <div className="flex items-center gap-3">
+            <Button onClick={savePerms}>{t("dash.save")}</Button>
+            <Button variant="outline" onClick={() => setPerms({ ...DEFAULT_ROLE_PERMISSIONS })}>
+              {t("dash.settings.rolesReset")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
