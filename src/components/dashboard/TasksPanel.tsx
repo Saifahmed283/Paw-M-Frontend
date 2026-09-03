@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -33,11 +33,7 @@ export function TasksPanel() {
     ? JSON.parse(localStorage.getItem("paw-m:admin-session") || "{}").id
     : null;
 
-  useEffect(() => {
-    fetchTasks();
-  }, [filter, userId]);
-
-  async function fetchTasks() {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const url = `/api/tasks/mine`;
@@ -56,7 +52,11 @@ export function TasksPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [userId, filter.status]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [filter, userId, fetchTasks]);
 
   async function createTask() {
     // In a real implementation, this would open a modal

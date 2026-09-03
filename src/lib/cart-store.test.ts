@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { StorageKey } from "./storage";
 
 vi.mock("./storage", () => {
   const store: Record<string, string> = {};
@@ -11,7 +10,6 @@ vi.mock("./storage", () => {
     storageRemove: vi.fn((_scope: string, key: string) => {
       delete store[key];
     }),
-    StorageKey: {},
   };
 });
 
@@ -34,10 +32,9 @@ const mockProduct: Product = {
   stock: 10,
   category: "grooming",
   description: "test",
-  sku: "SKU-001",
-  skuPrefix: "GRO",
-  lowStockThreshold: 3,
+  featured: false,
   createdAt: "2026-01-01",
+  updatedAt: "2026-01-01",
 };
 
 const mockProduct2: Product = {
@@ -62,8 +59,8 @@ describe("cart-store", () => {
     addToCart(mockProduct, 2);
     const cart = getCart();
     expect(cart).toHaveLength(1);
-    expect(cart[0].id).toBe("prod-1");
-    expect(cart[0].qty).toBe(2);
+    expect(cart[0]!.id).toBe("prod-1");
+    expect(cart[0]!.qty).toBe(2);
     expect(cartCount()).toBe(2);
     expect(cartTotal()).toBe(50);
   });
@@ -72,36 +69,36 @@ describe("cart-store", () => {
     addToCart(mockProduct, 1);
     addToCart(mockProduct, 3);
     expect(getCart()).toHaveLength(1);
-    expect(getCart()[0].qty).toBe(4);
+    expect(getCart()[0]!.qty).toBe(4);
   });
 
   it("caps quantity at stock", () => {
     addToCart(mockProduct, 8);
     addToCart(mockProduct, 5);
-    expect(getCart()[0].qty).toBe(10);
+    expect(getCart()[0]!.qty).toBe(10);
   });
 
   it("does not allow qty below 1", () => {
     addToCart(mockProduct, 0);
-    expect(getCart()[0].qty).toBe(1);
+    expect(getCart()[0]!.qty).toBe(1);
   });
 
   it("sets quantity for a product", () => {
     addToCart(mockProduct, 1);
     setCartQty("prod-1", 5);
-    expect(getCart()[0].qty).toBe(5);
+    expect(getCart()[0]!.qty).toBe(5);
   });
 
   it("caps setCartQty at stock", () => {
     addToCart(mockProduct, 1);
     setCartQty("prod-1", 99);
-    expect(getCart()[0].qty).toBe(10);
+    expect(getCart()[0]!.qty).toBe(10);
   });
 
   it("floors setCartQty at 1", () => {
     addToCart(mockProduct, 1);
     setCartQty("prod-1", -5);
-    expect(getCart()[0].qty).toBe(1);
+    expect(getCart()[0]!.qty).toBe(1);
   });
 
   it("removes a product", () => {
@@ -109,7 +106,7 @@ describe("cart-store", () => {
     addToCart(mockProduct2, 1);
     removeFromCart("prod-1");
     expect(getCart()).toHaveLength(1);
-    expect(getCart()[0].id).toBe("prod-2");
+    expect(getCart()[0]!.id).toBe("prod-2");
   });
 
   it("clears the entire cart", () => {

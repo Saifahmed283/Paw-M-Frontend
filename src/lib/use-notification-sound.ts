@@ -1,7 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 
 function createNotificationSound() {
-  const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  const audioContext = new (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+  )();
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
 
@@ -65,10 +68,11 @@ export function useNotificationSound({
 
     checkForUpdates();
     const id = setInterval(checkForUpdates, interval);
+    const ctx = audioContextRef.current;
     return () => {
       clearInterval(id);
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
+      if (ctx) {
+        ctx.close().catch(() => {});
       }
     };
   }, [enabled, interval, getCount, onNewItems, playSound]);

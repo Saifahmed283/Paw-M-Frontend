@@ -132,16 +132,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   const { lang, dark } = Route.useRouteContext();
-  const classes = [
-    lang === "ar" ? "lang-ar" : undefined,
-    dark ? "dark" : undefined,
-  ].filter(Boolean).join(" ") || undefined;
+  const classes =
+    [lang === "ar" ? "lang-ar" : undefined, dark ? "dark" : undefined].filter(Boolean).join(" ") ||
+    undefined;
   return (
-    <html
-      lang={lang}
-      dir={lang === "ar" ? "rtl" : "ltr"}
-      className={classes}
-    >
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={classes}>
       <head>
         <HeadContent />
       </head>
@@ -154,7 +149,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient, lang } = Route.useRouteContext();
+  const { queryClient, lang, dark } = Route.useRouteContext();
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
 
@@ -194,7 +189,7 @@ function RootComponent() {
   return (
     <I18nProvider initialLang={lang}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
+        <ThemeProvider initialDark={dark}>
           {!isDashboard && <IntroAnimation />}
           {!isDashboard && <SiteHeader />}
           <motion.main

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
 // Falls back to empty string (relative URLs) if not configured
-const BASE_URL = import.meta.env.VITE_SITE_URL || "";
+const BASE_URL = import.meta.env["VITE_SITE_URL"] || "";
 
 interface SitemapEntry {
   path: string;

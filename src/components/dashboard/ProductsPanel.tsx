@@ -104,6 +104,8 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
       petType: form.petType,
       featured: form.featured,
       barcode: form.barcode.trim(),
+      createdAt: product?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     toast.success(t("dash.toast.saved"));
     onClose();
@@ -466,31 +468,41 @@ export function ProductsPanel() {
             <DialogDescription>{t("dash.importProductsHint")}</DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={async (e) => {
+            onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
-              const file = e.target.elements.file.files[0];
+              const formEl = e.currentTarget;
+              const fileInput = formEl.elements.namedItem("file") as HTMLInputElement | null;
+              const file = fileInput?.files?.[0];
               if (!file) return;
               const reader = new FileReader();
               reader.onload = async (event) => {
-                const csvText = event.target.result;
+                const csvText =
+                  typeof event.target?.result === "string" ? event.target.result : null;
+                if (!csvText) return;
                 // Parse CSV and import products
                 const lines = csvText.trim().split("\n");
-                const headers = lines[0].split(",").map((h) => h.trim());
+                const headerLine = lines[0];
+                if (!headerLine) return;
+                const headers = headerLine.split(",").map((h: string) => h.trim());
                 // Find column indices
-                const nameIdx = headers.findIndex((h) => h === "Name" || h === "Name ");
-                const typeIdx = headers.findIndex((h) => h === "Type" || h === "Type ");
-                const categoryIdx = headers.findIndex((h) => h === "Category" || h === "Category ");
-                const kgIdx = headers.findIndex((h) => h === "Kg" || h === "Kg ");
-                const priceIdx = headers.findIndex((h) => h === "Price" || h === "Price ");
+                const nameIdx = headers.findIndex((h: string) => h === "Name" || h === "Name ");
+                const typeIdx = headers.findIndex((h: string) => h === "Type" || h === "Type ");
+                const categoryIdx = headers.findIndex(
+                  (h: string) => h === "Category" || h === "Category ",
+                );
+                const kgIdx = headers.findIndex((h: string) => h === "Kg" || h === "Kg ");
+                const priceIdx = headers.findIndex((h: string) => h === "Price" || h === "Price ");
                 if (nameIdx === -1 || categoryIdx === -1 || kgIdx === -1 || priceIdx === -1) {
                   toast.error(t("dash.importProductsMissingColumns"));
                   return;
                 }
-                const productsToImport = [];
+                const productsToImport: Product[] = [];
                 for (let i = 1; i < lines.length; i++) {
-                  const line = lines[i].trim();
+                  const rawLine = lines[i];
+                  if (!rawLine) continue;
+                  const line = rawLine.trim();
                   if (!line) continue;
-                  const values = line.split(",").map((v) => v.trim());
+                  const values = line.split(",").map((v: string) => v.trim());
                   const name = values[nameIdx] || "";
                   const type = values[typeIdx] !== undefined ? values[typeIdx] : "";
                   const category = values[categoryIdx] || "";
@@ -515,7 +527,9 @@ export function ProductsPanel() {
                   if (!description) {
                     description = "Pet food product";
                   }
+                  const now = new Date().toISOString();
                   productsToImport.push({
+                    id: `prod-${Date.now().toString(36)}-${i}`,
                     name,
                     description,
                     price,
@@ -526,12 +540,16 @@ export function ProductsPanel() {
                     stock: 0,
                     featured: false,
                     barcode: "",
+                    createdAt: now,
+                    updatedAt: now,
                   });
                 }
                 // Import products
                 const importPromises = productsToImport.map((product) => saveProduct(product));
                 await Promise.all(importPromises);
-                toast.success(t("dash.importProductsSuccess", { count: productsToImport.length }));
+                toast.success(
+                  t("dash.importProductsSuccess", { count: String(productsToImport.length) }),
+                );
                 setImportOpen(false);
               };
               reader.onerror = () => {

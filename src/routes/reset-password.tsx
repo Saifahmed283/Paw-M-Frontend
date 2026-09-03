@@ -27,8 +27,9 @@ function ResetPasswordPage() {
       await api.post("/auth/reset-password", { username, code, newPassword: password });
       toast.success(t("auth.passwordReset"));
       navigate({ to: "/dashboard" });
-    } catch (err: any) {
-      toast.error(err?.message || t("auth.resetFailed"));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      toast.error(message || t("auth.resetFailed"));
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,12 @@ function ResetPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">{t("auth.username")}</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="code">{t("auth.resetCode")}</Label>
@@ -53,7 +59,14 @@ function ResetPasswordPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">{t("auth.newPassword")}</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? t("auth.resetting") : t("auth.resetPassword")}

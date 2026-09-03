@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useRouteContext } from "@tanstack/react-router";
 import { writeThemeCookie } from "./theme-cookie";
 
 type ThemeContextValue = {
@@ -9,9 +8,13 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { dark: initialDark } = useRouteContext();
-
+export function ThemeProvider({
+  children,
+  initialDark = false,
+}: {
+  children: ReactNode;
+  initialDark?: boolean;
+}) {
   const [dark, setDark] = useState(initialDark);
 
   useEffect(() => {
@@ -25,16 +28,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       writeThemeCookie(next ? "dark" : "light");
       try {
         localStorage.setItem("paw-m:theme", next ? "dark" : "light");
-      } catch { /* storage unavailable */ }
+      } catch {
+        /* storage unavailable */
+      }
       return next;
     });
   };
 
-  return (
-    <ThemeContext.Provider value={{ dark, toggle }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ dark, toggle }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

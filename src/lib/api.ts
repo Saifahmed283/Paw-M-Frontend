@@ -25,7 +25,13 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
   }
   if (res.status === 204) return undefined;
   const json = await res.json();
-  if (json && typeof json === "object" && "data" in json && "pagination" in json && Array.isArray(json.data)) {
+  if (
+    json &&
+    typeof json === "object" &&
+    "data" in json &&
+    "pagination" in json &&
+    Array.isArray(json.data)
+  ) {
     return json.data;
   }
   return json;

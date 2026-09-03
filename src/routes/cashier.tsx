@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Barcode,
@@ -20,7 +20,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { createOrder, useClinicStore, type OrderItem, type PaymentMethod } from "@/lib/clinic-store";
+import {
+  createOrder,
+  useClinicStore,
+  type OrderItem,
+  type PaymentMethod,
+} from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -107,6 +112,51 @@ function CashierApp() {
   const total = cart.reduce((n, i) => n + i.qty * i.price, 0);
   const itemCount = cart.reduce((n, i) => n + i.qty, 0);
 
+  const processBarcode = useCallback(
+    (code: string) => {
+      const cleanCode = code.trim();
+      if (!cleanCode) return;
+
+      const product = products.find((p) => p.barcode === cleanCode);
+      if (!product) {
+        toast.error(t("cashier.productNotFound", { code: cleanCode }));
+        return;
+      }
+
+      if (product.stock <= 0) {
+        toast.error(t("cashier.outOfStock", { name: product.name }));
+        return;
+      }
+
+      setCart((prev) => {
+        const existing = prev.find((i) => i.id === product.id);
+        if (existing) {
+          if (existing.qty >= product.stock) {
+            toast.error(
+              t("cashier.maxStockReached", { name: product.name, stock: String(product.stock) }),
+            );
+            return prev;
+          }
+          return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + 1 } : i));
+        }
+        return [
+          ...prev,
+          {
+            id: product.id,
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            qty: 1,
+            stock: product.stock,
+            image: product.image,
+          },
+        ];
+      });
+      toast.success(t("cashier.added", { name: product.name }));
+    },
+    [products, t],
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -131,64 +181,23 @@ function CashierApp() {
       window.removeEventListener("keydown", handleKeyDown);
       if (barcodeTimeout) clearTimeout(barcodeTimeout);
     };
-  }, [barcodeBuffer, barcodeTimeout]);
-
-  const processBarcode = (code: string) => {
-    const cleanCode = code.trim();
-    if (!cleanCode) return;
-
-    const product = products.find((p) => p.barcode === cleanCode);
-    if (!product) {
-      toast.error(t("cashier.productNotFound", { code: cleanCode }));
-      return;
-    }
-
-    if (product.stock <= 0) {
-      toast.error(t("cashier.outOfStock", { name: product.name }));
-      return;
-    }
-
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === product.id);
-      if (existing) {
-        if (existing.qty >= product.stock) {
-          toast.error(t("cashier.maxStockReached", { name: product.name, stock: product.stock }));
-          return prev;
-        }
-        return prev.map((i) =>
-          i.id === product.id ? { ...i, qty: i.qty + 1 } : i
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: product.id,
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          qty: 1,
-          stock: product.stock,
-          image: product.image,
-        },
-      ];
-    });
-    toast.success(t("cashier.added", { name: product.name }));
-  };
+  }, [barcodeBuffer, barcodeTimeout, processBarcode]);
 
   const updateQty = (productId: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((i) => {
-          if (i.id !== productId) return i;
-          const newQty = i.qty + delta;
-          if (newQty <= 0) return null;
-          if (newQty > i.stock) {
-            toast.error(t("cashier.maxStockReached", { name: i.name, stock: i.stock }));
-            return i;
-          }
-          return { ...i, qty: newQty };
-        })
-        .filter(Boolean) as CartItem[]
+    setCart(
+      (prev) =>
+        prev
+          .map((i) => {
+            if (i.id !== productId) return i;
+            const newQty = i.qty + delta;
+            if (newQty <= 0) return null;
+            if (newQty > i.stock) {
+              toast.error(t("cashier.maxStockReached", { name: i.name, stock: String(i.stock) }));
+              return i;
+            }
+            return { ...i, qty: newQty };
+          })
+          .filter(Boolean) as CartItem[],
     );
   };
 
@@ -245,7 +254,9 @@ function CashierApp() {
         </div>
         <h2 className="text-2xl font-bold">{t("cashier.successTitle")}</h2>
         <p className="text-muted-foreground">{t("cashier.successDesc")}</p>
-        <p className="font-mono text-lg">{t("cashier.orderId")}: {result.id}</p>
+        <p className="font-mono text-lg">
+          {t("cashier.orderId")}: {result.id}
+        </p>
         {result.paymentMethod === "fawry" && (
           <div className="rounded-xl border border-primary/25 bg-primary/8 p-4 text-center">
             <p className="text-xs font-semibold text-primary">{t("checkout.fawryRefTitle")}</p>
@@ -314,7 +325,7 @@ function CashierApp() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">
-              {t("cashier.cart", { count: itemCount })}
+              {t("cashier.cart", { count: String(itemCount) })}
             </CardTitle>
             {cart.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
@@ -468,7 +479,9 @@ function CashierApp() {
             </div>
             <Button
               type="button"
-              onClick={() => document.getElementById("cashier-form")?.requestSubmit()}
+              onClick={() =>
+                (document.getElementById("cashier-form") as HTMLFormElement | null)?.requestSubmit()
+              }
               size="lg"
               disabled={busy || cart.length === 0}
               className="w-full shadow-glow"

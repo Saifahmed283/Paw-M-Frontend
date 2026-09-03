@@ -229,8 +229,8 @@ export function StaffOverviewPanel() {
                   </td>
                   <td className="py-3">
                     {emp.payRateType === "monthly"
-                      ? `${t("dash.egp")}${emp.monthlySalary.toLocaleString()}/${t("dash.month")}`
-                      : `${t("dash.egp")}${emp.hourlyRate.toLocaleString()}/${t("dash.hour")}`}
+                      ? `${t("dash.egp")}${(emp.monthlySalary ?? 0).toLocaleString()}/${t("dash.month")}`
+                      : `${t("dash.egp")}${(emp.hourlyRate ?? 0).toLocaleString()}/${t("dash.hour")}`}
                   </td>
                   <td className="py-3 text-center">{emp.sessions?.toLocaleString() ?? "0"}</td>
                   <td className="py-3 text-right">
