@@ -1,12 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { writeThemeCookie } from "./theme-cookie";
-
-type ThemeContextValue = {
-  dark: boolean;
-  toggle: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+import { ThemeContext } from "./use-theme-hook";
 
 export function ThemeProvider({
   children,
@@ -36,12 +30,4 @@ export function ThemeProvider({
   };
 
   return <ThemeContext.Provider value={{ dark, toggle }}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
 }

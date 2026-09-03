@@ -41,13 +41,8 @@ import {
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import {
-  Field,
-  PaymentMethodBadge,
-  PaymentStatusBadge,
-  formatMoney,
-  formatDate,
-} from "./dashboard-helpers";
+import { Field, PaymentMethodBadge, PaymentStatusBadge } from "./dashboard-helpers";
+import { formatMoney, formatDate } from "./dashboard-format";
 
 function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
   const { t } = useI18n();

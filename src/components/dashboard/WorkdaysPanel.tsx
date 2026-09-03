@@ -30,13 +30,8 @@ import {
   archiveOrder,
 } from "@/lib/clinic-store";
 import { useI18n, type Lang } from "@/lib/i18n";
-import {
-  StatusBadge,
-  formatMoney,
-  formatTime,
-  PaymentMethodBadge,
-  PaymentStatusBadge,
-} from "./dashboard-helpers";
+import { StatusBadge, PaymentMethodBadge, PaymentStatusBadge } from "./dashboard-helpers";
+import { formatMoney, formatTime } from "./dashboard-format";
 
 function formatDayName(dateISO: string, lang: Lang) {
   if (!dateISO) return "—";

@@ -30,13 +30,8 @@ import {
   type Order,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
-import {
-  StatusBadge,
-  formatDate,
-  formatMoney,
-  PaymentMethodBadge,
-  PaymentStatusBadge,
-} from "./dashboard-helpers";
+import { StatusBadge, PaymentMethodBadge, PaymentStatusBadge } from "./dashboard-helpers";
+import { formatDate, formatMoney } from "./dashboard-format";
 
 export function ArchivePanel() {
   const { t, lang } = useI18n();

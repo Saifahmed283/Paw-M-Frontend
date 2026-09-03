@@ -50,7 +50,7 @@ import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
 import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
 import { TasksPanel } from "@/components/dashboard/TasksPanel";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
-import { useNotificationCount } from "@/components/dashboard/NotificationsPanel";
+import { useNotificationCount } from "@/lib/use-notification-count";
 import { AuditLogPanel } from "@/components/dashboard/AuditLogPanel";
 import { ShiftBanner } from "@/components/dashboard/ShiftBanner";
 import { DoctorsPanel } from "@/components/dashboard/DoctorsPanel";
@@ -64,14 +64,9 @@ import { ReviewsPanel } from "@/components/dashboard/ReviewsPanel";
 import { WorkdaysPanel } from "@/components/dashboard/WorkdaysPanel";
 import { LogsPanel } from "@/components/dashboard/LogsPanel";
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
-import { useTheme } from "@/lib/use-theme";
-import {
-  StatusBadge,
-  STATUS_OPTIONS,
-  formatDate,
-  formatTime,
-  Field,
-} from "@/components/dashboard/dashboard-helpers";
+import { useTheme } from "@/lib/use-theme-hook";
+import { StatusBadge, Field } from "@/components/dashboard/dashboard-helpers";
+import { STATUS_OPTIONS, formatDate, formatTime } from "@/components/dashboard/dashboard-format";
 import {
   archiveBooking,
   deleteRequest,
@@ -93,7 +88,8 @@ import {
   register,
   remainingLockMs,
 } from "@/lib/auth";
-import { useI18n, LanguageToggle } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
+import { LanguageToggle } from "@/lib/i18n-components";
 import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
 

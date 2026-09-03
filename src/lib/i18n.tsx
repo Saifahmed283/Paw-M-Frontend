@@ -1,22 +1,12 @@
-﻿import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-
-import { writeLangCookie } from "./lang-cookie";
+﻿import { createContext, useContext } from "react";
 
 export type Lang = "en" | "ar";
 
-const LANG_KEY = "paw-m:lang";
+export const LANG_KEY = "paw-m:lang";
 
 type Dict = Record<string, string>;
 
-const EN: Dict = {
+export const EN: Dict = {
   // General / nav
   "nav.home": "Home",
   "nav.services": "Services",
@@ -1940,9 +1930,9 @@ const AR: Dict = {
   "auth.resetFailed": "فشلت إعادة تعيين كلمة المرور. تحقق من الرمز وحاول مرة أخرى.",
 };
 
-const DICTS: Record<Lang, Dict> = { en: EN, ar: AR };
+export const DICTS: Record<Lang, Dict> = { en: EN, ar: AR };
 
-type I18nValue = {
+export type I18nValue = {
   lang: Lang;
   dir: "ltr" | "rtl";
   t: (key: string, params?: Record<string, string>) => string;
@@ -1951,7 +1941,7 @@ type I18nValue = {
   toggleLang: () => void;
 };
 
-const I18nContext = createContext<I18nValue | null>(null);
+export const I18nContext = createContext<I18nValue | null>(null);
 
 export function applyLang(lang: Lang) {
   if (typeof document === "undefined") return;
@@ -1960,105 +1950,8 @@ export function applyLang(lang: Lang) {
   document.documentElement.classList.toggle("lang-ar", lang === "ar");
 }
 
-export function I18nProvider({
-  children,
-  initialLang = "en",
-}: {
-  children: ReactNode;
-  initialLang?: Lang;
-}) {
-  // `initialLang` comes from the SSR cookie (via the root route's beforeLoad),
-  // so the server HTML, the client hydration pass and the first client render
-  // all agree on the same language — no hydration mismatch and no English
-  // flash. localStorage is still kept in sync as a fallback.
-  const [lang, setLangState] = useState<Lang>(initialLang);
-
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = window.localStorage.getItem(LANG_KEY);
-    } catch {
-      /* storage unavailable */
-    }
-    if (stored === "ar") {
-      setLangState("ar");
-      writeLangCookie("ar");
-    }
-  }, []);
-
-  useEffect(() => {
-    applyLang(lang);
-    try {
-      window.localStorage.setItem(LANG_KEY, lang);
-    } catch {
-      /* storage unavailable */
-    }
-  }, [lang]);
-
-  const setLang = useCallback((next: Lang) => {
-    setLangState(next);
-    applyLang(next);
-    writeLangCookie(next);
-  }, []);
-
-  const t = useCallback(
-    (key: string, params?: Record<string, string>) => {
-      let str = DICTS[lang][key] ?? EN[key] ?? key;
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          str = str.replace(`{${k}}`, v);
-        }
-      }
-      return str;
-    },
-    [lang],
-  );
-
-  const tOr = useCallback(
-    (key: string, fallback: string, params?: Record<string, string>) => {
-      const found = DICTS[lang][key] ?? EN[key];
-      let str = found ?? fallback;
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          str = str.replace(`{${k}}`, v);
-        }
-      }
-      return str;
-    },
-    [lang],
-  );
-
-  const value = useMemo<I18nValue>(
-    () => ({
-      lang,
-      dir: lang === "ar" ? "rtl" : "ltr",
-      t,
-      tOr,
-      setLang,
-      toggleLang: () => setLang(lang === "en" ? "ar" : "en"),
-    }),
-    [lang, t, tOr, setLang],
-  );
-
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-
 export function useI18n(): I18nValue {
   const ctx = useContext(I18nContext);
   if (!ctx) throw new Error("useI18n must be used within <I18nProvider>");
   return ctx;
-}
-
-export function LanguageToggle({ className = "" }: { className?: string }) {
-  const { lang, toggleLang } = useI18n();
-  return (
-    <button
-      type="button"
-      onClick={toggleLang}
-      aria-label={lang === "en" ? "Switch to العربية" : "Switch to English"}
-      className={`grid size-9 place-items-center rounded-lg text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${className}`}
-    >
-      {lang === "en" ? "ع" : "EN"}
-    </button>
-  );
 }

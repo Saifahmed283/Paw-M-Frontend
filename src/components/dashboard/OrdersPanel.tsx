@@ -30,7 +30,8 @@ import {
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { StatusBadge, STATUS_OPTIONS } from "./dashboard-helpers";
+import { StatusBadge } from "./dashboard-helpers";
+import { STATUS_OPTIONS } from "./dashboard-format";
 
 export function OrdersPanel() {
   const { t } = useI18n();

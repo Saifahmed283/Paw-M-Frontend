@@ -13,7 +13,7 @@ import {
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 import { useClinicStore, loadAuditLogs } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
-import { formatTime } from "./dashboard-helpers";
+import { formatTime } from "./dashboard-format";
 
 export function LogsPanel() {
   const { t, tOr, lang } = useI18n();

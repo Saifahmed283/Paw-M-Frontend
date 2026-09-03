@@ -9,10 +9,11 @@ import { CartDrawer } from "@/components/site/CartDrawer";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useCartCount } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
-import { LanguageToggle, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
+import { LanguageToggle } from "@/lib/i18n-components";
 import { telHref } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/lib/use-theme";
+import { useTheme } from "@/lib/use-theme-hook";
 
 function useNav() {
   const { t } = useI18n();
