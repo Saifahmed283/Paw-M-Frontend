@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/site/ProductCard";
 import {
   BookingTimeline,
-  CtaBand,
   DoctorCard,
   Faq,
   Hero,
@@ -124,8 +123,6 @@ function Index() {
       <BookingTimeline />
       <Testimonials />
       <Faq />
-
-      <CtaBand />
     </>
   );
 }

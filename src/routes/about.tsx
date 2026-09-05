@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { CtaBand, SectionHeading } from "@/components/site/sections";
+import { SectionHeading } from "@/components/site/sections";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { STATS, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
@@ -105,8 +105,6 @@ function AboutPage() {
           ))}
         </div>
       </section>
-
-      <CtaBand />
     </>
   );
 }

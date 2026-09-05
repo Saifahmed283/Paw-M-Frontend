@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { CtaBand, SectionHeading, ServicesGrid } from "@/components/site/sections";
+import { SectionHeading, ServicesGrid } from "@/components/site/sections";
 import { useI18n } from "@/lib/i18n";
 
 const title = "Veterinary Services — Paw-M";
@@ -40,8 +40,6 @@ function ServicesPage() {
       <section className="mx-auto max-w-6xl px-5 pb-8 pt-4 sm:px-8">
         <ServicesGrid />
       </section>
-
-      <CtaBand />
     </>
   );
 }

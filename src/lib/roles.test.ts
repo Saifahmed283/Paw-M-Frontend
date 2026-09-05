@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  ALL_TAB_IDS,
-  DEFAULT_ROLE_PERMISSIONS,
-  allowedTabsForRole,
-} from "@/lib/roles";
+import { ALL_TAB_IDS, DEFAULT_ROLE_PERMISSIONS, allowedTabsForRole } from "@/lib/roles";
 
 describe("roles permissions", () => {
   it("gives admin full access to every tab", () => {
@@ -29,8 +25,10 @@ describe("roles permissions", () => {
 
   it("defaults include shared tabs plus role-specific tabs", () => {
     expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("overview");
-    expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("tasks");
+    expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("reservations");
     expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("payroll");
+    expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("tasks");
+    expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("notifications");
     expect(DEFAULT_ROLE_PERMISSIONS.payroll).toContain("archive");
     expect(DEFAULT_ROLE_PERMISSIONS.payroll).not.toContain("tasks");
   });

@@ -29,6 +29,7 @@ import {
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 
 export const Route = createFileRoute("/cashier")({
   head: () => ({
@@ -318,6 +319,16 @@ function CashierApp() {
                 <Barcode className="size-5" />
                 <span>{barcodeBuffer || t("cashier.waitingForScan")}</span>
               </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">{t("cashier.phoneScanner")}</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {t("cashier.phoneScannerDesc")}
+              </p>
+              <PhoneScannerMode onScan={processBarcode} />
             </div>
           </CardContent>
         </Card>

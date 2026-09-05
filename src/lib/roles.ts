@@ -7,8 +7,6 @@ export const ALL_TAB_IDS = [
   "requests",
   "staff-overview",
   "payroll",
-  "tasks",
-  "notifications",
   "reservations",
   "doctors",
   "services",
@@ -21,7 +19,7 @@ export const ALL_TAB_IDS = [
   "settings",
 ] as const;
 
-export const SHARED_TAB_IDS: string[] = ["overview", "requests", "notifications"];
+export const SHARED_TAB_IDS: string[] = ["overview", "requests"];
 
 export const ROLE_ORDER: Role[] = ["staff", "payroll", "admin"];
 
@@ -32,7 +30,6 @@ export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
   payroll: [
     "overview",
     "requests",
-    "notifications",
     "reservations",
     "payroll",
     "doctors",
@@ -43,7 +40,7 @@ export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
     "workdays",
     "archive",
   ],
-  staff: ["overview", "requests", "notifications", "tasks", "reservations"],
+  staff: ["overview", "requests", "reservations"],
 };
 
 export function allowedTabsForRole(perms: RolePermissions | undefined, role: string): string[] {

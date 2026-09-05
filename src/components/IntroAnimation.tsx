@@ -37,7 +37,8 @@ export function IntroAnimation() {
 
   useEffect(() => {
     if (!ENABLE_INTRO_ANIMATION) return;
-    // Show the splash on every load (remove sessionStorage check for reloads)
+    if (hasSeenIntro()) return;
+    markIntroSeen();
     setVisible(true);
 
     const start = performance.now();

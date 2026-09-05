@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, PackageSearch } from "lucide-react";
 
 import { ProductCard } from "@/components/site/ProductCard";
-import { CtaBand, SectionHeading } from "@/components/site/sections";
+import { SectionHeading } from "@/components/site/sections";
 import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -70,8 +70,6 @@ function WishlistPage() {
           </>
         )}
       </section>
-
-      <CtaBand />
     </>
   );
 }

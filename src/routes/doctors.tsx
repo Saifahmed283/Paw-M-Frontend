@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { CtaBand, DoctorCard, SectionHeading } from "@/components/site/sections";
+import { DoctorCard, SectionHeading } from "@/components/site/sections";
 import { ANIMAL_TYPES } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -158,8 +158,6 @@ function DoctorsPage() {
           </motion.div>
         )}
       </section>
-
-      <CtaBand />
     </>
   );
 }

@@ -149,7 +149,6 @@ export function Hero() {
     <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
       <div className="hero-gradient absolute inset-0 -z-10" />
       <AmbientGlobs className="-z-[5]" />
-      <div className="grid-lines absolute inset-x-0 top-0 -z-10 h-[420px] opacity-25" />
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
@@ -183,7 +182,12 @@ export function Hero() {
                 <ArrowRight className="size-4 rtl:rotate-180" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="group">
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="group hover:border-destructive/60 hover:bg-destructive/10 hover:text-foreground"
+            >
               <a href={telHref(settings.emergency) ?? undefined}>
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-70" />
@@ -235,7 +239,7 @@ export function Hero() {
             initial={mounted ? { opacity: 0, y: 14 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease, delay: 0.45 }}
-            className="glass absolute -bottom-6 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8"
+            className="glass absolute -bottom-10 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8"
           >
             <p className="text-xs font-medium text-muted-foreground">{t("hero.triage")}</p>
             <p className="mt-1 text-2xl font-bold text-foreground">4m 12s</p>
@@ -248,7 +252,7 @@ export function Hero() {
             initial={mounted ? { opacity: 0, y: 14 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease, delay: 0.6 }}
-            className="glass absolute -right-4 top-8 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-4 rtl:sm:-left-8"
+            className="glass absolute -right-10 -top-12 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-10 rtl:sm:-left-8"
           >
             <p className="text-xs font-medium text-muted-foreground">{t("hero.nextAvailable")}</p>
             {nextDay[0] ? (
@@ -415,40 +419,40 @@ export function DoctorCard({
   return (
     <Reveal delay={(index % 3) * 0.06}>
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:-translate-y-1 hover:shadow-raised">
-        <div className="flex h-36 items-end justify-between bg-primary/8 p-5">
-          <span className="grid size-16 place-items-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+        <div className="flex h-32 items-end justify-between bg-primary/8 p-4">
+          <span className="grid size-14 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground">
             {doctor.initials}
           </span>
-          <span className="flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-foreground shadow-card">
+          <span className="flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-foreground shadow-card">
             <Star className="size-3 fill-warning text-warning" />
             {doctor.rating.toFixed(1)}
           </span>
         </div>
-        <div className="flex flex-1 flex-col p-5">
-          <h3 className="text-base font-semibold">{t(`doc.${doctor.id}.name`)}</h3>
-          <p className="text-sm text-primary">{t(`doc.${doctor.id}.spec`)}</p>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        <div className="flex flex-1 flex-col p-4">
+          <h3 className="text-sm font-semibold">{t(`doc.${doctor.id}.name`)}</h3>
+          <p className="text-xs text-primary">{t(`doc.${doctor.id}.spec`)}</p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {t(`doc.${doctor.id}.bio`)}
           </p>
 
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1">
             {doctor.tags.map((tag, j) => (
               <span
                 key={tag}
-                className="rounded-full border border-primary/25 bg-primary/8 px-2 py-0.5 text-[11px] font-medium text-primary"
+                className="rounded-full border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[10px] font-medium text-primary"
               >
                 {t(`doc.${doctor.id}.tag.${j}`)}
               </span>
             ))}
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <PawPrint className="size-3.5 text-muted-foreground" aria-hidden />
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <PawPrint className="size-3 text-muted-foreground" aria-hidden />
             <span className="sr-only">{t("availability.treats")}</span>
             {doctor.pets.map((pet) => (
               <span
                 key={pet}
-                className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
               >
                 {t(`animal.${pet}`)}
               </span>
@@ -458,11 +462,11 @@ export function DoctorCard({
           {detailed ? (
             <DoctorAvailability doctor={doctor} />
           ) : (
-            <div className="mt-4 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-1">
               {doctor.days.map((d) => (
                 <span
                   key={d}
-                  className="rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground"
+                  className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
                 >
                   {t(`day.${d}`)}
                 </span>
@@ -470,11 +474,11 @@ export function DoctorCard({
             </div>
           )}
 
-          <div className="mt-5 flex items-center justify-between pt-1">
-            <span className="text-xs text-muted-foreground">
+          <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-3">
+            <span className="text-[11px] text-muted-foreground">
               {t(`doc.${doctor.id}.exp`)} {t("availability.experience")}
             </span>
-            <Button asChild size="sm" variant="secondary">
+            <Button asChild size="sm" variant="secondary" className="h-7 px-2 text-xs">
               <Link to="/book" search={{ doctor: doctor.id }}>
                 {t("availability.book")}
               </Link>

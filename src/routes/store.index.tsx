@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ArrowDownWideNarrow, PackageSearch, Search, ShoppingBag } from "lucide-react";
 
 import { ProductCard } from "@/components/site/ProductCard";
-import { CtaBand, SectionHeading } from "@/components/site/sections";
+import { SectionHeading } from "@/components/site/sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
@@ -233,8 +233,6 @@ function StorePage() {
           </Button>
         </div>
       </section>
-
-      <CtaBand />
     </>
   );
 }

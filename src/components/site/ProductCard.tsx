@@ -1,12 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Check, Dog, Heart, Plus, Sparkles } from "lucide-react";
+import { Dog, Heart, Minus, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "motion/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { addToCart } from "@/lib/cart-store";
+import { addToCart, removeFromCart, setCartQty, useCart } from "@/lib/cart-store";
 import { useClinicStore, type Product } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -23,8 +21,9 @@ export function AddToCartButton({
   compact?: boolean;
 }) {
   const { t } = useI18n();
-  const [added, setAdded] = useState(false);
+  const cart = useCart();
   const out = product.stock <= 0;
+  const inCart = cart.find((i) => i.id === product.id);
   if (out) {
     return (
       <Button size="sm" disabled className={cn("w-full", compact && "h-8")}>
@@ -32,21 +31,60 @@ export function AddToCartButton({
       </Button>
     );
   }
+  if (inCart) {
+    return (
+      <div
+        className={cn(
+          "flex w-full items-stretch overflow-hidden rounded-lg border bg-background",
+          compact ? "h-8" : "h-9",
+        )}
+      >
+        <button
+          type="button"
+          aria-label={t("store.decreaseQty")}
+          title={t("store.decreaseQty")}
+          onClick={(e) => {
+            e.preventDefault();
+            if (inCart.qty <= 1) {
+              removeFromCart(product.id);
+            } else {
+              setCartQty(product.id, inCart.qty - 1);
+            }
+          }}
+          className="grid w-8 shrink-0 place-items-center bg-muted text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive active:scale-95"
+        >
+          <Minus className="size-4" />
+        </button>
+        <span className="flex min-w-8 flex-1 items-center justify-center border-x border-border/60 text-sm font-semibold text-foreground">
+          {inCart.qty}
+        </span>
+        <button
+          type="button"
+          aria-label={t("store.increaseQty")}
+          title={t("store.increaseQty")}
+          disabled={inCart.qty >= Math.max(1, inCart.stock)}
+          onClick={(e) => {
+            e.preventDefault();
+            addToCart(product);
+          }}
+          className="grid w-8 shrink-0 place-items-center bg-muted text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+    );
+  }
   return (
     <Button
       size="sm"
-      variant={added ? "outline" : "default"}
-      className={cn("w-full", compact && "h-8")}
+      className={cn("w-full transition-transform hover:scale-[1.03]", compact && "h-8")}
       onClick={(e) => {
         e.preventDefault();
         addToCart(product);
-        setAdded(true);
-        toast.success(t("store.added"));
-        window.setTimeout(() => setAdded(false), 1500);
       }}
     >
-      {added ? <Check className="size-4" /> : <Plus className="size-4" />}
-      {added ? t("store.added") : t("store.addToCart")}
+      <Plus className="size-4" />
+      {t("store.addToCart")}
     </Button>
   );
 }
@@ -91,10 +129,12 @@ export function ProductPrice({ product }: { product: Product }) {
   const { settings } = useClinicStore();
   const sale = product.compareAtPrice != null && product.compareAtPrice > product.price;
   return (
-    <span className="flex items-baseline gap-2">
-      <span className="text-lg font-bold">{formatPrice(product.price, settings.currency)}</span>
+    <span className="flex flex-col self-start">
+      <span className="text-lg font-bold tracking-tight text-foreground">
+        {formatPrice(product.price, settings.currency)}
+      </span>
       {sale && (
-        <span className="text-xs text-muted-foreground line-through">
+        <span className="text-xs font-medium text-muted-foreground line-through">
           {formatPrice(product.compareAtPrice ?? 0, settings.currency)}
         </span>
       )}
@@ -106,44 +146,29 @@ export function ProductCard({ product }: { product: Product }) {
   const { t } = useI18n();
   const out = product.stock <= 0;
   const lowStock = !out && product.stock <= 5;
-  const onSale = product.compareAtPrice != null && product.compareAtPrice > product.price;
   const PetIcon = PET_ICON[product.petType ?? "both"] ?? Dog;
 
   return (
     <Link
       to="/store/$productId"
       params={{ productId: product.id }}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-raised"
+      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/30 hover:shadow-raised"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <Badge className="border border-border/60 bg-background/60 text-foreground backdrop-blur-md dark:bg-background/80 dark:text-foreground">
-            {t(`store.cat.${product.category}`)}
+        {product.featured && (
+          <Badge className="absolute left-3 top-3 border-0 bg-primary/90 text-primary-foreground shadow-sm backdrop-blur-md">
+            <Sparkles className="mr-1 size-3" />
+            {t("store.featured")}
           </Badge>
-          {onSale && product.compareAtPrice != null && (
-            <Badge className="border-amber-300/60 bg-amber-400 text-amber-900 backdrop-blur-md dark:border-amber-400/40 dark:bg-amber-500/90 dark:text-amber-50">
-              -
-              {Math.round(
-                ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100,
-              )}
-              %
-            </Badge>
-          )}
-          {product.featured && (
-            <Badge className="border border-amber-300/60 bg-amber-500 text-amber-900 backdrop-blur-md dark:border-amber-400/50 dark:bg-amber-400/90 dark:text-amber-950">
-              <Sparkles className="mr-1 size-3" />
-              {t("store.featured")}
-            </Badge>
-          )}
-        </div>
+        )}
 
         <WishlistButton productId={product.id} className="absolute right-3 top-3" />
 
@@ -154,46 +179,43 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.3 }}
-            className="absolute bottom-3 right-3"
+          <span
+            className={cn(
+              "pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-md",
+              lowStock
+                ? "border-amber-400/60 bg-amber-400/90 text-amber-900 dark:text-amber-950"
+                : "border-white/20 bg-white/90 text-emerald-700 dark:border-white/10 dark:bg-foreground/90 dark:text-background",
+            )}
           >
             <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-md border",
-                lowStock
-                  ? "border-amber-400/60 bg-amber-400/90 text-amber-900 dark:text-amber-950"
-                  : "border-success/60 bg-success/90 text-success-foreground dark:text-success-foreground",
-              )}
-            >
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  lowStock ? "bg-amber-700" : "bg-success-foreground",
-                )}
-              />
-              {lowStock ? `${product.stock} left` : "In stock"}
-            </span>
-          </motion.div>
+              className={cn("size-1.5 rounded-full", lowStock ? "bg-amber-700" : "bg-emerald-500")}
+            />
+            {lowStock ? t("store.left", { count: String(product.stock) }) : t("store.inStock")}
+          </span>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-            <PetIcon className="size-3" />
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <PetIcon className="size-3.5" />
             {t(`store.pet.${product.petType ?? "both"}`)}
           </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span>{t(`store.cat.${product.category}`)}</span>
         </div>
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</h3>
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+
+        <h3 className="mt-2.5 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400">
+          {product.name}
+        </h3>
+
+        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {product.description}
         </p>
-        <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/60 pt-3.5">
           <ProductPrice product={product} />
-          <div className="w-32">
+          <div className="w-28 shrink-0">
             <AddToCartButton product={product} compact />
           </div>
         </div>

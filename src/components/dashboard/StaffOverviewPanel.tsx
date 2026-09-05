@@ -25,6 +25,7 @@ interface Employee {
 }
 
 interface EmployeeKPI {
+  employeeId?: number | string;
   sessions: number;
   hours: number;
   bookings: number;
@@ -92,27 +93,21 @@ export function StaffOverviewPanel() {
     setLoading(true);
     setError(false);
     try {
-      const response = await api.get<Employee[] | { data: Employee[] }>("/api/employees");
-      const employees = Array.isArray(response) ? response : (response?.data ?? []);
       const range = periodRange(period);
-
-      const results = await Promise.allSettled(
-        employees.map((emp) =>
-          api.get<EmployeeKPI>(
-            `/api/work-sessions/admin/kpi?userId=${encodeURIComponent(String(emp.id))}` +
-              `&periodStart=${range.start}&periodEnd=${range.end}`,
-          ),
+      const [employeesRes, kpisRes] = await Promise.all([
+        api.get<Employee[] | { data: Employee[] }>("/api/employees"),
+        api.get<EmployeeKPI[] | { data: EmployeeKPI[] }>(
+          `/api/work-sessions/admin/kpis?periodStart=${range.start}&periodEnd=${range.end}`,
         ),
-      );
+      ]);
+      const employees = Array.isArray(employeesRes) ? employeesRes : (employeesRes?.data ?? []);
+      const kpis = Array.isArray(kpisRes) ? kpisRes : (kpisRes?.data ?? []);
+      const kpiByEmployee = new Map(kpis.map((k) => [String(k.employeeId), k]));
 
-      const enriched: EmployeeWithKPI[] = employees.map((emp, i) => {
-        const settled = results[i];
-        const kpi =
-          settled && settled.status === "fulfilled"
-            ? { ...EMPTY_KPI, ...settled.value }
-            : EMPTY_KPI;
-        return { ...emp, ...kpi };
-      });
+      const enriched: EmployeeWithKPI[] = employees.map((emp) => ({
+        ...emp,
+        ...(kpiByEmployee.get(String(emp.id)) ?? EMPTY_KPI),
+      }));
       setStaff(enriched);
     } catch (err) {
       console.error("Error fetching staff overview:", err);

@@ -125,7 +125,7 @@ export function PayrollPanel() {
         toast.success(t("dash.toast.statusUpdated"));
       } catch (err) {
         console.error("Error updating payroll record status:", err);
-        toast.error(t("dash.toast.statusUpdated") + " — " + t("dash.errorLoad"));
+        toast.error(t("dash.errorLoad"));
       } finally {
         setActingId(null);
         await fetchPayrollRecords();
@@ -152,7 +152,7 @@ export function PayrollPanel() {
         toast.success(t("dash.toast.adjusted"));
       } catch (err) {
         console.error("Error adjusting payroll amount:", err);
-        toast.error(t("dash.toast.adjusted") + " — " + t("dash.errorLoad"));
+        toast.error(t("dash.errorLoad"));
       } finally {
         setActingId(null);
         await fetchPayrollRecords();
@@ -176,7 +176,6 @@ export function PayrollPanel() {
           recordCount: records.length,
         },
       });
-      await api.post("/api/payments/broadcast");
       toast.success(t("dash.toast.notified"));
     } catch (err) {
       console.error("Error broadcasting payroll:", err);
