@@ -551,7 +551,11 @@ export function Testimonials() {
       onBlur={() => setPaused(false)}
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading center eyebrow="GOOGLE REVIEWS" title={t("testimonials.title")} />
+        <SectionHeading
+          center
+          eyebrow={t("homepage.clinicReviews.eyebrow")}
+          title={t("testimonials.title")}
+        />
       </div>
 
       <Reveal>

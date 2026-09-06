@@ -79,6 +79,9 @@ export type Order = {
   proofImage: string;
   paidAt?: string | null;
   archived?: boolean;
+  source?: string;
+  discountAmount?: number;
+  discountLabel?: string;
   createdAt: string;
 };
 
@@ -535,6 +538,9 @@ export async function createOrder(input: {
   paymentMethod: PaymentMethod;
   paymentRef?: string | undefined;
   proofImage?: string | undefined;
+  source?: "pos" | "store" | undefined;
+  discountAmount?: number | undefined;
+  discountLabel?: string | undefined;
 }) {
   try {
     const created = await api.post<Order>("/orders", input);

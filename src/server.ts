@@ -7,7 +7,7 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-const API_ORIGIN = ((): string => {
+function resolveApiOrigin(request: Request): string {
   try {
     const env = (import.meta as { env?: Record<string, string | undefined> }).env;
     const url = env?.["VITE_API_URL"];
@@ -15,28 +15,40 @@ const API_ORIGIN = ((): string => {
   } catch {
     /* ignore */
   }
+  // Client-side api.ts calls the page host on the sibling port 3001 when
+  // VITE_API_URL is unset, so the CSP must allow that same origin.
+  try {
+    const url = new URL(request.url);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return `${url.protocol}//${url.hostname}:3001`;
+    }
+  } catch {
+    /* ignore */
+  }
   return "http://localhost:3001";
-})();
+}
 
-const SECURITY_HEADERS: Record<string, string> = {
-  "Content-Security-Policy": [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: https:",
-    `connect-src 'self' ${API_ORIGIN}`,
-    "frame-src https://www.openstreetmap.org",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join("; "),
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-};
+function buildSecurityHeaders(apiOrigin: string): Record<string, string> {
+  return {
+    "Content-Security-Policy": [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: https:",
+      `connect-src 'self' ${apiOrigin}`,
+      "frame-src https://www.openstreetmap.org",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  };
+}
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
@@ -49,8 +61,9 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-function applySecurityHeaders(response: Response): Response {
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+function applySecurityHeaders(response: Response, apiOrigin: string): Response {
+  const securityHeaders = buildSecurityHeaders(apiOrigin);
+  for (const [name, value] of Object.entries(securityHeaders)) {
     response.headers.set(name, value);
   }
   return response;
@@ -88,14 +101,15 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      return applySecurityHeaders(normalized);
+      const apiOrigin = resolveApiOrigin(request);
+      return applySecurityHeaders(normalized, apiOrigin);
     } catch (error) {
       console.error(error);
       const response = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });
-      return applySecurityHeaders(response);
+      return applySecurityHeaders(response, resolveApiOrigin(request));
     }
   },
 };

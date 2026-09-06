@@ -701,7 +701,7 @@ function DashboardPage() {
       const newOrders = store.orders.filter((o) => !o.archived).length;
       const newPending = store.requests.filter((r) => !r.archived && r.status === "pending").length;
       if (newOrders > prevCount || newPending > prevCount) {
-        toast.info("New order or booking received!");
+        toast.info(t("dash.notificationNew"));
       }
     },
   });

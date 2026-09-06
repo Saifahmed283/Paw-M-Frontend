@@ -66,7 +66,7 @@ export function DashboardSidebar({
           size="icon"
           className="ms-auto size-7 shrink-0 text-muted-foreground hover:text-foreground"
           onClick={onToggleCollapse}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
         >
           {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
         </Button>

@@ -564,7 +564,7 @@ export function ProductsPanel() {
                     description = description ? `${description} ${type}`.trim() : type;
                   }
                   if (!description) {
-                    description = "Pet food product";
+                    description = t("dash.importProductsDefaultDesc");
                   }
                   const now = new Date().toISOString();
                   productsToImport.push({

@@ -151,7 +151,7 @@ function OrderCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) =
           </p>
           {order.paymentMethod === "instapay" && settings.instapay && (
             <p className="mt-2 rounded-lg bg-background px-3 py-2 font-mono text-sm font-bold">
-              InstaPay: {settings.instapay}
+              {t("checkout.method.instapay.short")}: {settings.instapay}
             </p>
           )}
 

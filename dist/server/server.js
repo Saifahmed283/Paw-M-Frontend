@@ -95,51 +95,59 @@ function renderErrorPage() {
 }
 //#endregion
 //#region src/server.ts
-var SECURITY_HEADERS = {
-	"Content-Security-Policy": [
-		"default-src 'self'",
-		"script-src 'self' 'unsafe-inline'",
-		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-		"font-src 'self' https://fonts.gstatic.com data:",
-		"img-src 'self' data: https:",
-		`connect-src 'self' ${(() => {
-			try {
-				const url = {
-					"BASE_URL": "/",
-					"DEV": false,
-					"MODE": "production",
-					"PROD": true,
-					"SSR": true,
-					"TSS_DEV_SERVER": "false",
-					"TSS_DEV_SSR_STYLES_BASEPATH": "/",
-					"TSS_DEV_SSR_STYLES_ENABLED": "true",
-					"TSS_DISABLE_CSRF_MIDDLEWARE_WARNING": "false",
-					"TSS_INLINE_CSS_ENABLED": "false",
-					"TSS_ROUTER_BASEPATH": "",
-					"TSS_SERVER_FN_BASE": "/_serverFn/"
-				}["VITE_API_URL"];
-				if (url) return new URL(url).origin;
-			} catch {}
-			return "http://localhost:3001";
-		})()}`,
-		"frame-src https://www.openstreetmap.org",
-		"frame-ancestors 'none'",
-		"object-src 'none'",
-		"base-uri 'self'",
-		"form-action 'self'"
-	].join("; "),
-	"X-Content-Type-Options": "nosniff",
-	"X-Frame-Options": "DENY",
-	"Referrer-Policy": "strict-origin-when-cross-origin",
-	"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
-};
+function resolveApiOrigin(request) {
+	try {
+		const url = {
+			"BASE_URL": "/",
+			"DEV": false,
+			"MODE": "production",
+			"PROD": true,
+			"SSR": true,
+			"TSS_DEV_SERVER": "false",
+			"TSS_DEV_SSR_STYLES_BASEPATH": "/",
+			"TSS_DEV_SSR_STYLES_ENABLED": "true",
+			"TSS_DISABLE_CSRF_MIDDLEWARE_WARNING": "false",
+			"TSS_INLINE_CSS_ENABLED": "false",
+			"TSS_ROUTER_BASEPATH": "",
+			"TSS_SERVER_FN_BASE": "/_serverFn/"
+		}["VITE_API_URL"];
+		if (url) return new URL(url).origin;
+	} catch {}
+	try {
+		const url = new URL(request.url);
+		if (url.protocol === "http:" || url.protocol === "https:") return `${url.protocol}//${url.hostname}:3001`;
+	} catch {}
+	return "http://localhost:3001";
+}
+function buildSecurityHeaders(apiOrigin) {
+	return {
+		"Content-Security-Policy": [
+			"default-src 'self'",
+			"script-src 'self' 'unsafe-inline'",
+			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+			"font-src 'self' https://fonts.gstatic.com data:",
+			"img-src 'self' data: https:",
+			`connect-src 'self' ${apiOrigin}`,
+			"frame-src https://www.openstreetmap.org",
+			"frame-ancestors 'none'",
+			"object-src 'none'",
+			"base-uri 'self'",
+			"form-action 'self'"
+		].join("; "),
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options": "DENY",
+		"Referrer-Policy": "strict-origin-when-cross-origin",
+		"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
+	};
+}
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-CKjxnaVE.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-DcI1tOtu.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
-function applySecurityHeaders(response) {
-	for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
+function applySecurityHeaders(response, apiOrigin) {
+	const securityHeaders = buildSecurityHeaders(apiOrigin);
+	for (const [name, value] of Object.entries(securityHeaders)) response.headers.set(name, value);
 	return response;
 }
 async function normalizeCatastrophicSsrResponse(response) {
@@ -163,13 +171,13 @@ function isH3SwallowedErrorBody(body) {
 }
 var server_default = { async fetch(request, env, ctx) {
 	try {
-		return applySecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)));
+		return applySecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)), resolveApiOrigin(request));
 	} catch (error) {
 		console.error(error);
 		return applySecurityHeaders(new Response(renderErrorPage(), {
 			status: 500,
 			headers: { "content-type": "text/html; charset=utf-8" }
-		}));
+		}), resolveApiOrigin(request));
 	}
 } };
 //#endregion

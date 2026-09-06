@@ -112,7 +112,7 @@ function SuccessScreen({
         {paymentMethod === "instapay" && (
           <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4 text-left">
             <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-              <Smartphone className="size-4" /> InstaPay
+              <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
             </p>
             <p className="mt-1 font-mono text-lg font-bold">{instapay}</p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
@@ -359,7 +359,7 @@ function CheckoutForm() {
                   <div className="mt-4 space-y-4">
                     <div className="rounded-xl border border-primary/25 bg-primary/8 p-4">
                       <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-                        <Smartphone className="size-4" /> InstaPay
+                        <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
                       </p>
                       <p className="mt-1.5 font-mono text-sm font-bold">
                         {settings.instapay || t("checkout.instapayMissing")}

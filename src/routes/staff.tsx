@@ -44,7 +44,7 @@ function StaffPage() {
   if (!authed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5 py-32">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-sm text-muted-foreground">{t("loading")}</div>
       </div>
     );
   }
@@ -81,7 +81,7 @@ function StaffPage() {
                 {currentUsername() || t("auth.staff")}
               </span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                Staff
+                {t("role.staff")}
               </Badge>
             </div>
             <div className="flex items-center gap-1 shrink-0">
