@@ -7,7 +7,16 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [tanstackStart(), react(), tailwindcss()],
+  plugins: [
+    tanstackStart({
+      prerender: {
+        enabled: true,
+        failOnError: false,
+      },
+    }),
+    react(),
+    tailwindcss(),
+  ],
   server: {
     // Bind to 0.0.0.0 and accept any Host header so LAN access and
     // port-forwarding tunnels (ngrok, cloudflared, VPN, etc.) work out of
