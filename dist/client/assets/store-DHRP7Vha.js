@@ -1,1 +1,0 @@
-import{a as e}from"./motion-DK1Z23GL.js";import{Pt as t}from"./index-CiCaW1ud.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as component};
