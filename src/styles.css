@@ -50,6 +50,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-brass: var(--brass);
   --color-brass-foreground: var(--brass-foreground);
+  --color-brass-strong: var(--brass-strong);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-border: var(--border);
@@ -114,6 +115,7 @@
   --success-foreground: oklch(0.992 0.008 95);
   --brass: oklch(0.76 0.15 75);
   --brass-foreground: oklch(0.2 0.04 257);
+  --brass-strong: oklch(0.32 0.11 60);
 
   --border: oklch(0.91 0.008 257);
   --input: oklch(0.91 0.008 257);
@@ -190,6 +192,7 @@
   --success-foreground: oklch(0.2 0.03 165);
   --brass: oklch(0.72 0.14 75);
   --brass-foreground: oklch(0.18 0.03 257);
+  --brass-strong: oklch(0.72 0.14 75);
 
   --border: oklch(0.3 0.03 257);
   --input: oklch(0.3 0.03 257);

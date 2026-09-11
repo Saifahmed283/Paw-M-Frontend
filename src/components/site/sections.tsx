@@ -75,7 +75,7 @@ export function SectionHeading({
       <Reveal>
         <span
           className={cn(
-            "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass",
+            "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass-strong",
             center && "justify-center",
           )}
         >
@@ -201,17 +201,15 @@ export function Hero() {
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
             {STATS.map((stat, i) => (
               <Reveal key={stat.label} delay={i * 0.06}>
-                <div>
-                  <dt className="text-2xl font-bold tracking-tight text-foreground">
-                    <CountUp
-                      value={i === 1 ? doctors.length : stat.value}
-                      suffix={i === 1 ? "" : stat.suffix}
-                    />
-                  </dt>
-                  <dd className="mt-1 text-xs leading-snug text-muted-foreground">
-                    {t(`stats.${i}`)}
-                  </dd>
-                </div>
+                <dt className="text-2xl font-bold tracking-tight text-foreground">
+                  <CountUp
+                    value={i === 1 ? doctors.length : stat.value}
+                    suffix={i === 1 ? "" : stat.suffix}
+                  />
+                </dt>
+                <dd className="mt-1 text-xs leading-snug text-muted-foreground">
+                  {t(`stats.${i}`)}
+                </dd>
               </Reveal>
             ))}
           </dl>
@@ -326,21 +324,23 @@ export function WhyUs() {
           />
           <ul className="mt-8 space-y-5">
             {WHY_US.map((item, i) => (
-              <Reveal key={item.title} delay={i * 0.05}>
-                <li className="flex gap-4">
-                  <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-success/15 text-success">
-                    <Check className="size-3.5" strokeWidth={3} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {t(`whyitem.${i}.title`)}
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {t(`whyitem.${i}.detail`)}
-                    </p>
+              <li key={item.title}>
+                <Reveal delay={i * 0.05}>
+                  <div className="flex gap-4">
+                    <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-success/15 text-success">
+                      <Check className="size-3.5" strokeWidth={3} />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t(`whyitem.${i}.title`)}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        {t(`whyitem.${i}.detail`)}
+                      </p>
+                    </div>
                   </div>
-                </li>
-              </Reveal>
+                </Reveal>
+              </li>
             ))}
           </ul>
         </div>
@@ -503,8 +503,8 @@ export function BookingTimeline() {
         />
         <ol className="mt-14 grid gap-8 md:grid-cols-5">
           {BOOKING_STEPS.map((step, i) => (
-            <Reveal key={step.title} delay={i * 0.08}>
-              <li className="relative">
+            <li key={step.title} className="relative">
+              <Reveal delay={i * 0.08}>
                 <div className="flex items-center gap-3 md:block">
                   <span className="grid size-10 place-items-center rounded-full border-2 border-primary bg-background text-sm font-bold text-primary">
                     {i + 1}
@@ -515,8 +515,8 @@ export function BookingTimeline() {
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {t(`step.${i}.detail`)}
                 </p>
-              </li>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
         </ol>
       </div>
@@ -581,19 +581,23 @@ export function Testimonials() {
           </figcaption>
         </figure>
       </Reveal>
-      <div className="mt-8 flex justify-center gap-2">
+      <div className="mt-8 flex justify-center gap-1">
         {testimonials.map((review, i) => (
           <button
             key={review.id}
             onClick={() => setActive(i)}
             aria-label={`${t("testimonials.eyebrow")} ${i + 1}`}
             aria-current={i === active}
-            className={
-              i === active
-                ? "h-1.5 w-8 rounded-full bg-primary transition-all"
-                : "h-1.5 w-3 rounded-full bg-border transition-all hover:bg-muted-foreground"
-            }
-          />
+            className="grid h-7 min-w-7 place-items-center px-1"
+          >
+            <span
+              className={
+                i === active
+                  ? "block h-1.5 w-5 rounded-full bg-primary transition-all"
+                  : "block h-1.5 w-3 rounded-full bg-border transition-all hover:bg-muted-foreground"
+              }
+            />
+          </button>
         ))}
       </div>
     </section>
