@@ -1,1 +1,0 @@
-import{pt as e}from"./clinic-store-l7ha5607.js";var t=e(`chevron-right`,[[`path`,{d:`m9 18 6-6-6-6`,key:`mthhwq`}]]);export{t};

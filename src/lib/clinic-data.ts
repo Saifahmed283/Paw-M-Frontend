@@ -9,13 +9,13 @@ export const CLINIC = {
   currency: "EGP",
   instapay: "",
   hours: [
-    { day: "Tuesday (Mawlid)", time: "09:00 – 23:30", note: "Holiday hours" },
-    { day: "Wednesday (Mawlid)", time: "09:00 – 23:30", note: "Holiday hours" },
-    { day: "Thursday", time: "09:00 – 23:30" },
     { day: "Friday", time: "09:00 – 23:30" },
     { day: "Saturday", time: "09:00 – 23:30" },
     { day: "Sunday", time: "09:00 – 23:30" },
     { day: "Monday", time: "09:00 – 23:30" },
+    { day: "Tuesday", time: "09:00 – 23:30" },
+    { day: "Wednesday", time: "09:00 – 23:30" },
+    { day: "Thursday", time: "09:00 – 23:30" },
   ],
 };
 

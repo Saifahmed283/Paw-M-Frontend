@@ -648,10 +648,13 @@ export const EN: Dict = {
   "contact.hours": "Opening hours",
   "contact.address": "Address",
   "contact.map": "Paw-M clinic location map",
-  "hour.0": "Monday – Friday",
+  "hour.0": "Friday",
   "hour.1": "Saturday",
   "hour.2": "Sunday",
-  "hour.3": "Emergency line",
+  "hour.3": "Monday",
+  "hour.4": "Tuesday",
+  "hour.5": "Wednesday",
+  "hour.6": "Thursday",
 
   // Misc
   "dash.statusCol": "Status",
@@ -1729,10 +1732,13 @@ const AR: Dict = {
   "contact.hours": "ساعات العمل",
   "contact.address": "العنوان",
   "contact.map": "موقع عيادة باو-إم",
-  "hour.0": "الاثنين – الجمعة",
+  "hour.0": "الجمعة",
   "hour.1": "السبت",
   "hour.2": "الأحد",
-  "hour.3": "خط الطوارئ",
+  "hour.3": "الاثنين",
+  "hour.4": "الثلاثاء",
+  "hour.5": "الأربعاء",
+  "hour.6": "الخميس",
 
   // متفرقات
   "dash.statusCol": "الحالة",
