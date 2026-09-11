@@ -170,7 +170,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         {product.featured && (
-          <Badge className="absolute left-3 top-3 border-0 bg-primary/90 text-primary-foreground shadow-sm backdrop-blur-md">
+          <Badge className="absolute left-6 top-6 border-0 bg-primary/90 text-primary-foreground shadow-sm backdrop-blur-md">
             <Sparkles className="mr-1 size-3" />
             {t("store.featured")}
           </Badge>
