@@ -402,6 +402,8 @@ export const EN: Dict = {
   // Footer
   "footer.tagline":
     "A boutique veterinary hospital built around clear diagnostics, honest estimates and records you actually own.",
+  "footer.address":
+    "Paw Clinic Madinaty, Craft Zoon, Second New Cairo, Cairo Governorate 19519",
   "footer.accred": "AAHA accredited · Fear Free certified · ISO 9001 quality managed",
   "footer.clinic": "Clinic",
   "footer.care": "Care",
@@ -1500,6 +1502,8 @@ const AR: Dict = {
 
   "footer.tagline":
     "مستشفى بيطري متخصص مبني على تشخيصات واضحة وتقديرات صادقة وسجلات طبية تملكها أنت بالفعل.",
+  "footer.address":
+    "باو كلينك مدينتي، كرافت زون، القاهرة الجديدة، محافظة القاهرة 19519",
   "footer.clinic": "العيادة",
   "footer.care": "الرعاية",
   "footer.services": "الخدمات",

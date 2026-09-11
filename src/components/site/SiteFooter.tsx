@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarHeart, LayoutDashboard, PawPrint, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarHeart, LayoutDashboard, MapPin, PawPrint, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 
 import { PawMLogo } from "@/components/PawMMark";
@@ -117,6 +117,15 @@ export function SiteFooter() {
                 <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
                   {t("footer.tagline")}
                 </p>
+                <a
+                  href="https://maps.app.goo.gl/uGR5EibNi28JSVmP7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group mt-4 flex max-w-sm items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-primary transition-transform group-hover:scale-110" />
+                  <span>{t("footer.address")}</span>
+                </a>
               </div>
             </Reveal>
           </div>
