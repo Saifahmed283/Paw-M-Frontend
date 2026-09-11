@@ -135,7 +135,7 @@ function buildSecurityHeaders(apiOrigin) {
 			"font-src 'self' https://fonts.gstatic.com data:",
 			"img-src 'self' data: https:",
 			`connect-src 'self' ${apiOrigin}${(typeof process !== "undefined" ? false : false) ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
-			"frame-src https://www.openstreetmap.org",
+			"frame-src https://www.openstreetmap.org https://www.google.com/maps",
 			"frame-ancestors 'none'",
 			"object-src 'none'",
 			"base-uri 'self'",
@@ -149,7 +149,7 @@ function buildSecurityHeaders(apiOrigin) {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-DtSB6BVJ.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-Bscd4Krd.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response, apiOrigin) {

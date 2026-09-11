@@ -107,10 +107,11 @@ function ContactPage() {
             <div className="overflow-hidden rounded-2xl border border-border shadow-card">
               <iframe
                 title={t("contact.map")}
-                src="https://www.openstreetmap.org/export/embed.html?bbox=31.4594%2C30.0214%2C31.4874%2C30.0414&layer=mapnik&marker=30.0314%2C31.4734"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3452.744861831012!2d31.66746777507489!3d30.0728470172253!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1457f5c79b7ae3ed%3A0x95e26a47780b144a!2sPaw%20Clinic%20Madinaty!5e0!3m2!1sen!2seg!4v1789144957782!5m2!1sen!2seg"
                 className="h-[420px] w-full border-0"
                 loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
               />
             </div>
           </Reveal>

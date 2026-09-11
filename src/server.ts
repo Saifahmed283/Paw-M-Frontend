@@ -41,7 +41,7 @@ function buildSecurityHeaders(apiOrigin: string): Record<string, string> {
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https:",
     `connect-src 'self' ${apiOrigin}${isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
-    "frame-src https://www.openstreetmap.org",
+    "frame-src https://www.openstreetmap.org https://www.google.com/maps",
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
