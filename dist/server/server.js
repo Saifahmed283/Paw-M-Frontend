@@ -116,7 +116,9 @@ function resolveApiOrigin(request) {
 			"TSS_DISABLE_CSRF_MIDDLEWARE_WARNING": "false",
 			"TSS_INLINE_CSS_ENABLED": "false",
 			"TSS_ROUTER_BASEPATH": "",
-			"TSS_SERVER_FN_BASE": "/_serverFn/"
+			"TSS_SERVER_FN_BASE": "/_serverFn/",
+			"VITE_API_URL": "https://paw-backend-9jwod.ondigitalocean.app/api",
+			"VITE_SITE_URL": "https://pawmclinnic.com"
 		}["VITE_API_URL"];
 		if (url) return new URL(url).origin;
 	} catch {}
@@ -149,7 +151,7 @@ function buildSecurityHeaders(apiOrigin) {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/tanstack-D1G4tft0.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/tanstack-dksufsie.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response, apiOrigin) {
