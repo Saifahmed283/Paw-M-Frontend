@@ -1,28 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Mail, MapPin, MessageCircle, Phone, Siren } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { Reveal } from "@/components/motion-primitives";
 import { SectionHeading } from "@/components/site/sections";
 import { CLINIC } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { mailtoHref, telHref, waMeHref } from "@/lib/sanitize";
 
 const title = "Contact Paw-M — Hours, Location & Emergency Line";
 const description =
-  "Call, message or visit Paw-M Veterinary Clinic in San Francisco. Emergency line answered 24/7, seven days a week.";
+  "Call, message or visit Paw-M Veterinary Clinic in New Cairo, Egypt. Emergency line answered 24/7, seven days a week.";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/contact" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/contact" }],
+    meta: ogMeta(title, description, "/contact"),
+    links: [{ rel: "canonical", href: withSiteUrl("/contact") }],
   }),
   component: ContactPage,
 });
@@ -69,8 +64,9 @@ function ContactPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.contact"), to: "/contact" }]} />
           <SectionHeading
             eyebrow={t("page.contact.eyebrow")}
             title={t("page.contact.title")}
@@ -111,7 +107,7 @@ function ContactPage() {
             <div className="overflow-hidden rounded-2xl border border-border shadow-card">
               <iframe
                 title={t("contact.map")}
-                src="https://www.openstreetmap.org/export/embed.html?bbox=-122.4300%2C37.7450%2C-122.4000%2C37.7650&layer=mapnik"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=31.4594%2C30.0214%2C31.4874%2C30.0414&layer=mapnik&marker=30.0314%2C31.4734"
                 className="h-[420px] w-full border-0"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

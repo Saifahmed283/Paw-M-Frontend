@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronLeft, Minus, Plus, ShoppingBag, Star, StarHalf } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard, WishlistButton } from "@/components/site/ProductCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,14 +14,17 @@ import { addToCart } from "@/lib/cart-store";
 import { createReview, useClinicStore, type Product } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { SITE_URL, withSiteUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/store/$productId")({
-  head: () => ({
+  head: ({ params }) => ({
     meta: [
-      { title: "Product — Paw-M Store" },
-      { name: "description", content: "Pet supplies from Paw-M Veterinary Clinic." },
+      { title: `Pet Product — Paw-M Store` },
+      { name: "description", content: "Browse and buy pet supplies from Paw-M Veterinary Clinic." },
       { name: "robots", content: "index,follow" },
+      { property: "og:url", content: withSiteUrl(`/store/${params.productId}`) },
     ],
+    links: [{ rel: "canonical", href: withSiteUrl(`/store/${params.productId}`) }],
   }),
   component: ProductPage,
 });
@@ -239,6 +243,12 @@ function ProductPage() {
     setQty(1);
   }, [productId]);
 
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.name} — Paw-M Store`;
+    }
+  }, [product?.name]);
+
   if (!product) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-5 pt-32">
@@ -255,10 +265,35 @@ function ProductPage() {
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 4);
 
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.image ? withSiteUrl(product.image) : `${SITE_URL}/og-image.png`,
+    brand: { "@type": "Brand", name: "Paw-M" },
+    offers: {
+      "@type": "Offer",
+      url: withSiteUrl(`/store/${product.id}`),
+      priceCurrency: settings.currency,
+      price: product.price,
+      availability: out ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: "Paw-M Veterinary Clinic" },
+    },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs
+            items={[
+              { label: t("crumb.home"), to: "/" },
+              { label: t("crumb.store"), to: "/store" },
+              { label: product.name, to: `/store/${product.id}` },
+            ]}
+          />
           <div className="flex items-center justify-between">
             <Link
               to="/store"
@@ -270,11 +305,15 @@ function ProductPage() {
           </div>
           <div className="mt-6 grid gap-10 lg:grid-cols-2">
             <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-card">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="aspect-square size-full object-cover"
-              />
+              {product.image ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="aspect-square size-full object-cover"
+                />
+              ) : (
+                <div className="aspect-square size-full bg-muted" />
+              )}
               {onSale && product.compareAtPrice != null && (
                 <Badge className="absolute left-4 top-4 bg-destructive/90 text-destructive-foreground">
                   {t("store.sale")} −

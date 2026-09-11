@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ClientAuthGate } from "@/components/ClientAuthGate";
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,11 +14,12 @@ import { Switch } from "@/components/ui/switch";
 import { ANIMAL_TYPES, TIME_SLOTS, bookedSlotsFor } from "@/lib/clinic-data";
 import { addBookingRequest, useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
-const title = "Book an Appointment — Paw-M";
+const title = "Book an Appointment — Paw-M Veterinary Clinic";
 const description =
-  "Book your pet's veterinary appointment at Paw-M in under a minute. Live availability across every clinician, with instant confirmation.";
+  "Book your pet's veterinary appointment at Paw-M in New Cairo in under a minute. Live availability across every clinician, with instant confirmation.";
 
 const DRAFT_KEY = "paw-m:booking-draft";
 
@@ -60,15 +62,8 @@ export const Route = createFileRoute("/book")({
   validateSearch: (search: Record<string, unknown>): { doctor?: string } =>
     typeof search["doctor"] === "string" ? { doctor: search["doctor"] as string } : {},
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/book" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/book" }],
+    meta: ogMeta(title, description, "/book"),
+    links: [{ rel: "canonical", href: withSiteUrl("/book") }],
   }),
   component: BookPage,
 });
@@ -189,6 +184,7 @@ function BookingForm() {
   return (
     <section className="hero-gradient min-h-screen pb-24 pt-32 sm:pt-40">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.book"), to: "/book" }]} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

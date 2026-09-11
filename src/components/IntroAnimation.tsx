@@ -47,9 +47,19 @@ export function IntroAnimation() {
 
     // Real load signal: fonts + first paint, capped by the hard duration budget.
     let fontsDone = false;
-    document.fonts?.ready.then(() => {
+    let fontBudgetTimer = 0;
+    Promise.resolve(document.fonts?.ready)
+      .then(() => {
+        fontsDone = true;
+        window.clearTimeout(fontBudgetTimer);
+      })
+      .catch(() => {
+        fontsDone = true;
+        window.clearTimeout(fontBudgetTimer);
+      });
+    fontBudgetTimer = window.setTimeout(() => {
       fontsDone = true;
-    });
+    }, 6000);
 
     const tick = () => {
       const elapsed = performance.now() - start;
@@ -77,6 +87,7 @@ export function IntroAnimation() {
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(skipTimer);
+      window.clearTimeout(fontBudgetTimer);
       window.removeEventListener("keydown", finish);
       window.removeEventListener("pointerdown", finish);
     };

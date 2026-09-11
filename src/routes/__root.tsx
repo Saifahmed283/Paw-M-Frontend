@@ -13,9 +13,11 @@ import { motion } from "motion/react";
 
 import appCss from "../styles.css?url";
 import { IntroAnimation } from "@/components/IntroAnimation";
+import { PawMMark } from "@/components/PawMMark";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
 import { I18nProvider } from "@/lib/i18n-components";
 import { type Lang, useI18n } from "@/lib/i18n";
 import { refreshClinicData, refreshPublicData } from "@/lib/clinic-store";
@@ -28,21 +30,24 @@ import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 function NotFoundComponent() {
   const { t } = useI18n();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("notfound.title")}</h2>
+    <section className="hero-gradient flex min-h-[70vh] items-center justify-center px-5 pb-24 pt-32 sm:pt-40">
+      <div className="w-full max-w-md text-center">
+        <span className="mx-auto grid size-16 place-items-center rounded-3xl bg-primary/10 text-primary">
+          <PawMMark className="h-8 w-8" />
+        </span>
+        <h1 className="mt-6 text-5xl font-bold tracking-tight text-foreground">404</h1>
+        <h2 className="mt-3 text-xl font-semibold text-foreground">{t("notfound.title")}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{t("notfound.desc")}</p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            {t("notfound.home")}
-          </Link>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button asChild className="shadow-glow">
+            <Link to="/">{t("notfound.home")}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/contact">{t("notfound.contact")}</Link>
+          </Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -67,9 +72,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <section className="hero-gradient flex min-h-[70vh] items-center justify-center bg-background px-5 pb-24 pt-32">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
+        <span className="mx-auto grid size-14 place-items-center rounded-3xl bg-primary/10 text-primary">
+          <PawMMark className="h-7 w-7" />
+        </span>
+        <h1 className="mt-6 text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("error.desc")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -81,18 +89,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             {t("error.retry")}
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            {t("error.home")}
-          </a>
+          <Button asChild variant="outline">
+            <a href="/">{t("error.home")}</a>
+          </Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
+const SITE_URL = import.meta.env["VITE_SITE_URL"] || "https://pawmclinnic.com";
 const FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -105,22 +111,85 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Paw-M is a boutique veterinary hospital: same-day diagnostics, transparent estimates and 24/7 emergency care.",
+          "Paw-M is a boutique veterinary hospital in New Cairo, Egypt: same-day diagnostics, transparent estimates and 24/7 emergency care for dogs, cats, birds, rabbits and exotic pets.",
       },
       { name: "author", content: "Paw-M Veterinary Clinic" },
-      { property: "og:site_name", content: "Paw-M" },
+      { property: "og:site_name", content: "Paw-M Veterinary Clinic" },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/og-image.png" },
+      { property: "og:image", content: `${SITE_URL}/og-image.png` },
+      { property: "og:url", content: SITE_URL },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/og-image.png" },
+      { name: "twitter:image", content: `${SITE_URL}/og-image.png` },
       { name: "theme-color", content: "#7BA882" },
+      { name: "robots", content: "index, follow" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "canonical", href: SITE_URL },
+      { rel: "alternate", hrefLang: "en", href: SITE_URL },
+      { rel: "alternate", hrefLang: "ar", href: `${SITE_URL}?lang=ar` },
+      { rel: "alternate", hrefLang: "x-default", href: SITE_URL },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "@id": `${SITE_URL}/#clinic`,
+          name: "Paw-M Veterinary Clinic",
+          alternateName: "Paw Clinic Madinaty",
+          description:
+            "Boutique veterinary hospital in New Cairo providing same-day diagnostics, transparent estimates and 24/7 emergency care.",
+          url: SITE_URL,
+          telephone: "+201210105624",
+          email: "paw.mclinic@gmail.com",
+          image: `${SITE_URL}/og-image.png`,
+          logo: `${SITE_URL}/favicon.svg`,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Craft Zoon, Second New Cairo",
+            addressLocality: "Cairo",
+            addressRegion: "Cairo Governorate",
+            postalCode: "19519",
+            addressCountry: "EG",
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: 30.0444,
+            longitude: 31.3594,
+          },
+          openingHoursSpecification: [
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+              opens: "09:00",
+              closes: "23:30",
+            },
+          ],
+          priceRange: "$$",
+          areaServed: {
+            "@type": "City",
+            name: "Cairo",
+          },
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Veterinary Services",
+            itemListElement: [
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "General Checkup" } },
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "Vaccination" } },
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "Surgery" } },
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "Emergency Care" } },
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "Dental Care" } },
+            ],
+          },
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,

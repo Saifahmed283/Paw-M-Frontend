@@ -1,27 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { SectionHeading } from "@/components/site/sections";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { STATS, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import clinicImage from "@/assets/clinic-interior.jpg";
 
-const title = "About Paw-M — A Boutique Veterinary Hospital";
+const title = "About Paw-M — A Boutique Veterinary Hospital in Cairo";
 const description =
-  "Paw-M was built around clear diagnostics, honest estimates and medical records pet owners actually own. Meet the practice behind the care.";
+  "Paw-M was built around clear diagnostics, honest estimates and medical records pet owners actually own. Our licensed veterinarians care for dogs, cats and exotic pets in New Cairo.";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/about" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/about" }],
+    meta: ogMeta(title, description, "/about"),
+    links: [{ rel: "canonical", href: withSiteUrl("/about") }],
   }),
   component: AboutPage,
 });
@@ -32,8 +27,9 @@ function AboutPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.about"), to: "/about" }]} />
           <SectionHeading
             eyebrow={t("page.about.eyebrow")}
             title={t("page.about.title")}

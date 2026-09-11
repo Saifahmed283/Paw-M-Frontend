@@ -1,4 +1,10 @@
 User-agent: *
 Disallow: /dashboard
+Disallow: /staff
+Disallow: /cashier
 Disallow: /booking/success
+Disallow: /store/checkout
+Disallow: /store/track
 Allow: /
+
+Sitemap: https://pawmclinnic.com/sitemap.xml

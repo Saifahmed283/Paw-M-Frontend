@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, PackageSearch } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard } from "@/components/site/ProductCard";
 import { SectionHeading } from "@/components/site/sections";
 import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { useWishlist } from "@/lib/wishlist-store";
 
 const title = "Your Wishlist — Paw-M";
@@ -13,15 +15,8 @@ const description = "All the products you saved at Paw-M Veterinary Clinic, back
 
 export const Route = createFileRoute("/store/wishlist")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/store/wishlist" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/store/wishlist" }],
+    meta: ogMeta(title, description, "/store/wishlist"),
+    links: [{ rel: "canonical", href: withSiteUrl("/store/wishlist") }],
   }),
   component: WishlistPage,
 });
@@ -35,8 +30,9 @@ function WishlistPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.store"), to: "/store" }, { label: t("page.wishlist.title"), to: "/store/wishlist" }]} />
           <SectionHeading
             eyebrow={t("page.wishlist.eyebrow")}
             title={t("page.wishlist.title")}

@@ -222,30 +222,30 @@ export const BOOKING_STEPS = [
 export const TESTIMONIALS = [
   {
     quote:
-      "Our terrier was triaged in under four minutes at 2am. The follow-up notes were in my inbox before we got home.",
-    name: "Hannah Doyle",
-    pet: "Rufus · Border Terrier",
+      "Had such a great experience with Dr. Mirna. She was so kind and patient with my cat, and took her time to check him and explain everything.",
+    name: "Mariem Mahmoud",
+    pet: "Cat",
     rating: 5,
   },
   {
     quote:
-      "They explained every line of the estimate before touching anything. That kind of honesty is rare.",
-    name: "Marcus Bell",
-    pet: "Nala · Maine Coon",
+      "My cat had a critical case of bladder blockage and Dr. Mirna was really professional in diagnosing the case and following up with me every day.",
+    name: "Nahla Sherif",
+    pet: "Cat",
     rating: 5,
   },
   {
     quote:
-      "The vaccination reminders alone are worth it. I have never missed a booster since switching.",
-    name: "Aisha Rahman",
-    pet: "Kobi · Shiba Inu",
+      "Perfect hospitality for my dog when I was out of my country, and every product I need for my dog is available at their shop.",
+    name: "Marina Emad",
+    pet: "Dog",
     rating: 5,
   },
   {
     quote:
-      "Dr. Lindqvist is the only vet in the city my rabbit doesn't panic around. Genuinely gentle people.",
-    name: "Theo Marchetti",
-    pet: "Bramble · Lionhead Rabbit",
+      "Amazing clinic, very professional and extremely caring. After a surgery, the team kept checking in to make sure everything was fine.",
+    name: "Hatem El Mandarawi",
+    pet: "Dog",
     rating: 5,
   },
 ];
@@ -265,7 +265,7 @@ export const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "All major cards, bank transfer and most pet insurance providers via direct billing. Written estimates are provided before any procedure begins.",
+    a: "Cash, Fawry and InstaPay. Written estimates are provided before any procedure begins, and online store orders can be paid with proof of transfer submitted on the order tracking page.",
   },
   {
     q: "Do you treat animals other than cats and dogs?",

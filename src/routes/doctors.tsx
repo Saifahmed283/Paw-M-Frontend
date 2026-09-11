@@ -2,27 +2,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { DoctorCard, SectionHeading } from "@/components/site/sections";
 import { ANIMAL_TYPES } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 const title = "Our Veterinarians — Paw-M";
 const description =
-  "Meet the Paw-M veterinary team: internal medicine, surgery, emergency care, dentistry, dermatology and exotics specialists, with live availability.";
+  "Meet the Paw-M veterinary team in New Cairo: internal medicine, surgery, emergency care, dentistry and exotics specialists, with live availability.";
 
 export const Route = createFileRoute("/doctors")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/doctors" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/doctors" }],
+    meta: ogMeta(title, description, "/doctors"),
+    links: [{ rel: "canonical", href: withSiteUrl("/doctors") }],
   }),
   component: DoctorsPage,
 });
@@ -81,8 +76,9 @@ function DoctorsPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.doctors"), to: "/doctors" }]} />
           <SectionHeading
             eyebrow={t("page.doctors.eyebrow")}
             title={t("page.doctors.title")}

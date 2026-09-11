@@ -2,29 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowDownWideNarrow, PackageSearch, Search, ShoppingBag } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard } from "@/components/site/ProductCard";
 import { SectionHeading } from "@/components/site/sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { useClinicStore, type Product } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
 
 const title = "Pet Supply Store — Paw-M";
 const description =
-  "Food, treats, toys, grooming, health and accessories for dogs and cats, available at Paw-M Veterinary Clinic.";
+  "Food, treats, toys, grooming, health and accessories for dogs and cats, available at Paw-M Veterinary Clinic in New Cairo, Egypt.";
 
 export const Route = createFileRoute("/store/")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/store" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/store" }],
+    meta: ogMeta(title, description, "/store"),
+    links: [{ rel: "canonical", href: withSiteUrl("/store") }],
   }),
   component: StorePage,
 });
@@ -93,8 +88,9 @@ function StorePage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
+      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.store"), to: "/store" }]} />
           <SectionHeading
             eyebrow={t("page.store.eyebrow")}
             title={t("page.store.title")}

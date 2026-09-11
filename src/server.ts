@@ -29,20 +29,27 @@ function resolveApiOrigin(request: Request): string {
 }
 
 function buildSecurityHeaders(apiOrigin: string): Record<string, string> {
+  const isDev =
+    typeof process !== "undefined"
+      ? process.env.NODE_ENV !== "production"
+      : false;
+
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: https:",
+    `connect-src 'self' ${apiOrigin}${isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
+    "frame-src https://www.openstreetmap.org",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+
   return {
-    "Content-Security-Policy": [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: https:",
-      `connect-src 'self' ${apiOrigin}`,
-      "frame-src https://www.openstreetmap.org",
-      "frame-ancestors 'none'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join("; "),
+    "Content-Security-Policy": cspDirectives.join("; "),
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",

@@ -614,11 +614,15 @@ function CashierApp() {
                           : "border-border",
                       )}
                     >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="size-14 shrink-0 rounded-lg border border-border object-cover"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="size-14 shrink-0 rounded-lg border border-border object-cover"
+                        />
+                      ) : (
+                        <div className="size-14 shrink-0 rounded-lg border border-border bg-muted" />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">

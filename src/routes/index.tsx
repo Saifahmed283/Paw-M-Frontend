@@ -15,37 +15,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { ogMeta, withSiteUrl, SITE_URL } from "@/lib/seo";
 
 const title = "Paw-M — Veterinary Clinic in Cairo, Egypt";
 const description =
-  "Same-day diagnostics, transparent estimates and a 24/7 emergency team. Book your pet's appointment with Paw-M in under a minute.";
+  "Same-day diagnostics, transparent estimates and a 24/7 emergency team in New Cairo. Book your pet's appointment with Paw-M in under a minute.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "/" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "/" }],
+    meta: ogMeta(title, description, "/"),
+    links: [{ rel: "canonical", href: withSiteUrl("/") }],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "VeterinaryCare",
+          "@id": `${SITE_URL}/#veterinary-care`,
           name: "Paw-M Veterinary Clinic",
           description,
-          url: "/",
+          url: SITE_URL,
+          telephone: "+201210105624",
           address: {
             "@type": "PostalAddress",
+            streetAddress: "Craft Zoon, Second New Cairo",
             addressLocality: "Cairo",
             addressRegion: "Cairo Governorate",
+            postalCode: "19519",
             addressCountry: "EG",
           },
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: 30.0314,
+            longitude: 31.4734,
+          },
+          priceRange: "$$",
+          medicalSpecialty: "https://schema.org/VeterinaryCare",
         }),
       },
     ],

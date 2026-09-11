@@ -60,11 +60,15 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                 <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
                   {cart.map((item) => (
                     <div key={item.id} className="flex gap-3">
-                      <img
-                        src={item.image}
-                        alt=""
-                        className="size-16 shrink-0 rounded-xl border border-border object-cover"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt=""
+                          className="size-16 shrink-0 rounded-xl border border-border object-cover"
+                        />
+                      ) : (
+                        <div className="size-16 shrink-0 rounded-xl border border-border bg-muted" />
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-medium leading-snug">{item.name}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">

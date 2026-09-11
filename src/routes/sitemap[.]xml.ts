@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-// Falls back to empty string (relative URLs) if not configured
-const BASE_URL = import.meta.env["VITE_SITE_URL"] || "";
+// Production domain fallback so the sitemap stays correct even when
+// VITE_SITE_URL is not configured at build time.
+const BASE_URL = import.meta.env["VITE_SITE_URL"] || "https://pawmclinnic.com";
 
 interface SitemapEntry {
   path: string;
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/contact", changefreq: "yearly", priority: "0.7" },
           { path: "/book", changefreq: "monthly", priority: "0.9" },
           { path: "/store", changefreq: "weekly", priority: "0.8" },
+          { path: "/store/wishlist", changefreq: "monthly", priority: "0.4" },
         ];
 
         const urls = entries.map((e) =>

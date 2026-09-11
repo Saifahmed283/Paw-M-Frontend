@@ -432,11 +432,15 @@ function CheckoutForm() {
               <div className="mt-4 space-y-3">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-3">
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="size-14 shrink-0 rounded-xl border border-border object-cover"
-                    />
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt=""
+                        className="size-14 shrink-0 rounded-xl border border-border object-cover"
+                      />
+                    ) : (
+                      <div className="size-14 shrink-0 rounded-xl border border-border bg-muted" />
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{item.name}</p>
                       <p className="text-xs text-muted-foreground">
