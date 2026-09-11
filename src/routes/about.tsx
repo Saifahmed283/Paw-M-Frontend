@@ -47,8 +47,8 @@ function AboutPage() {
                 src={clinicImage}
                 alt={t("img.clinic")}
                 loading="lazy"
-                width={1200}
-                height={1008}
+                width={1036}
+                height={870}
                 className="h-full w-full object-cover"
               />
             </div>

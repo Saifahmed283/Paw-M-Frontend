@@ -101,6 +101,19 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 const SITE_URL = import.meta.env["VITE_SITE_URL"] || "https://pawmclinnic.com";
 const FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap";
 
+function apiOrigin(): string | null {
+  try {
+    const url = import.meta.env["VITE_API_URL"];
+    if (!url) return null;
+    const parsed = new URL(url);
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+const API_ORIGIN = apiOrigin();
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: () => ({ lang: readLangCookie(), dark: readThemeCookie() === "dark" }),
   head: () => ({
@@ -127,6 +140,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      ...(API_ORIGIN
+        ? [{ rel: "preconnect", href: API_ORIGIN }, { rel: "dns-prefetch", href: API_ORIGIN }]
+        : []),
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },

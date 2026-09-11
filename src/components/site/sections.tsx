@@ -227,8 +227,9 @@ export function Hero() {
             <img
               src={heroImage}
               alt={t("img.hero")}
-              width={1408}
-              height={1200}
+              width={1002}
+              height={854}
+              fetchPriority="high"
               className="h-full w-full object-cover"
             />
           </div>
@@ -309,8 +310,8 @@ export function WhyUs() {
               src={clinicImage}
               alt={t("img.clinic")}
               loading="lazy"
-              width={1200}
-              height={1008}
+              width={1036}
+              height={870}
               className="h-full w-full object-cover"
             />
           </div>

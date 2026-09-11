@@ -2,37 +2,33 @@
 
 > Paw-M is a boutique veterinary hospital in New Cairo, Egypt. We provide same-day diagnostics, transparent estimates and 24/7 emergency care for dogs, cats, birds, rabbits and exotic pets.
 
-## Services
+## Paw-M Main Pages
 
-- General Checkup — full physical exams with written wellness plans
-- Vaccination — core and lifestyle vaccines with automatic reminders
-- Surgery — soft tissue and orthopaedic procedures in a sterile theatre
-- Emergency Care — 24/7 triage with on-call critical care staff
-- Laboratory — in-house bloodwork and cytology with same-visit results
-- Dental Care — scaling, polishing and extractions under monitored anaesthesia
-- Pharmacy — on-site dispensing verified against your pet's chart
-- Grooming — medicated baths and coat care supervised by clinical staff
-- Nutrition — weight and diet programmes built around measurable targets
-- Digital X-Ray — low-dose digital radiography read within the same appointment
-- Ultrasound — abdominal and cardiac imaging by certified sonographers
-- Digital Records — every visit, result and prescription in one shareable history
+- [Home](https://pawmclinnic.com/): Boutique veterinary hospital in New Cairo — same-day diagnostics, transparent estimates and 24/7 emergency care.
+- [About](https://pawmclinnic.com/about): How Paw-M works — clear diagnostics, honest estimates and medical records pet owners own.
+- [Doctors](https://pawmclinnic.com/doctors): Licensed veterinarians with an average of 12 years of practice across five specialties.
+- [Services](https://pawmclinnic.com/services): Full list of clinical services with pricing — checkups, vaccination, surgery, emergency, lab, dental, X-ray and ultrasound.
+- [Book an Appointment](https://pawmclinnic.com/book): Online appointment booking in under a minute for dogs, cats, birds, rabbits and exotic pets.
+- [Contact](https://pawmclinnic.com/contact): Clinic address, phone, email and opening hours in New Cairo.
+- [Pet Store](https://pawmclinnic.com/store): Online pet supply store — food, treats, toys, grooming supplies and health accessories for dogs and cats.
+
+## Core Services
+
+- [General Checkup](https://pawmclinnic.com/services#checkup): Full physical exams with written wellness plans.
+- [Vaccination](https://pawmclinnic.com/services#vaccination): Core and lifestyle vaccines with automatic reminders.
+- [Surgery](https://pawmclinnic.com/services#surgery): Soft tissue and orthopaedic procedures in a sterile theatre.
+- [Emergency Care](https://pawmclinnic.com/services#emergency): 24/7 triage with on-call critical care staff.
+- [Laboratory](https://pawmclinnic.com/services#laboratory): In-house bloodwork and cytology with same-visit results.
+- [Dental Care](https://pawmclinnic.com/services#dental): Scaling, polishing and extractions under monitored anaesthesia.
+- [Digital X-Ray](https://pawmclinnic.com/services#xray): Low-dose digital radiography read within the same appointment.
+- [Ultrasound](https://pawmclinnic.com/services#ultrasound): Abdominal and cardiac imaging by certified sonographers.
+- [Nutrition](https://pawmclinnic.com/services#nutrition): Weight and diet programmes built around measurable targets.
 
 ## Contact
 
+- [Contact page](https://pawmclinnic.com/contact): Clinic location, phone, email and hours.
 - Phone: 012 10105624
 - Emergency: 012 10105624
 - Email: paw.mclinic@gmail.com
 - Address: Craft Zoon, Second New Cairo, Cairo Governorate 19519, Egypt
 - Hours: 09:00–23:30 daily
-
-## Booking
-
-Appointments can be booked online at https://pawmclinnic.com/book in under a minute. Walk-in emergencies are accepted 24/7.
-
-## Pet Store
-
-Paw-M operates an online pet supply store at https://pawmclinnic.com/store with food, treats, toys, grooming supplies and health accessories for dogs and cats.
-
-## About
-
-Paw-M was built around clear diagnostics, honest estimates and medical records pet owners actually own. Our team of licensed veterinarians has an average of 12 years of practice across five specialties.
