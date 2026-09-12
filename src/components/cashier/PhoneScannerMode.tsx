@@ -113,6 +113,7 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
+  const activeRef = useRef(false);
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
 
@@ -124,6 +125,7 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
   const [photoResult, setPhotoResult] = useState<"ok" | "fail" | null>(null);
 
   const stopCamera = useCallback(() => {
+    activeRef.current = false;
     if (loopTimerRef.current) {
       clearTimeout(loopTimerRef.current);
       loopTimerRef.current = null;
@@ -147,20 +149,10 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
   const scanFrame = useCallback(async () => {
     const reader = readerRef.current;
     const video = videoRef.current;
-    if (!reader || !video || !cameraActive) return;
+    if (!reader || !video || !activeRef.current) return;
 
     try {
-      const result = await reader.decodeOnceFromConstraints(
-        {
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        },
-        video,
-      );
+      const result = reader.decode(video);
       if (result) {
         const code = result.getText();
         const now = Date.now();
@@ -190,14 +182,15 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
       }
     }
 
-    if (cameraActive) {
+    if (activeRef.current) {
       loopTimerRef.current = setTimeout(scanFrame, CAMERA_LOOP_INTERVAL_MS);
     }
-  }, [cameraActive, stopCamera]);
+  }, [stopCamera]);
 
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setPhotoResult(null);
+    activeRef.current = true;
     setCameraActive(true);
     retryCountRef.current = 0;
 
@@ -207,25 +200,30 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
       window.isSecureContext;
     if (!secureContext) {
       setCameraError("insecure");
+      activeRef.current = false;
       setCameraActive(false);
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError("unsupported");
+      activeRef.current = false;
       setCameraActive(false);
       return;
     }
     const video = videoRef.current;
     if (!video) {
       setCameraError("denied");
+      activeRef.current = false;
       setCameraActive(false);
       return;
     }
     try {
       const { BrowserMultiFormatReader, hints } = await loadScanner();
+      if (!activeRef.current) return;
       const videoToScan = videoRef.current;
       if (!videoToScan) {
         setCameraError("denied");
+        activeRef.current = false;
         setCameraActive(false);
         return;
       }
@@ -243,12 +241,18 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
         },
         audio: false,
       });
+      if (!activeRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
 
       videoToScan.srcObject = stream;
       await videoToScan.play();
 
-      scanFrame();
+      if (activeRef.current) {
+        scanFrame();
+      }
     } catch {
       stopCamera();
       setCameraError("denied");
