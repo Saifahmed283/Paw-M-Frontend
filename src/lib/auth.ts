@@ -11,6 +11,7 @@ type Session = {
   username: string;
   role: string;
   expiresAt: number;
+  token?: string;
 };
 
 export async function isAuthConfigured(): Promise<boolean> {
@@ -31,25 +32,34 @@ export async function register(username: string, password: string): Promise<void
   if (password.length < MIN_PASSWORD) {
     throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
   }
-  await api.post("/auth/register", { username: name, password });
+  const r = await api.post<{ configured: boolean; role?: string; token?: string }>(
+    "/auth/register",
+    { username: name, password },
+  );
+  saveSession(name, r.role ?? "staff", r.token);
+}
+
+function saveSession(username: string, role: string, token?: string): void {
+  const session: Session = {
+    username,
+    role,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  };
+  if (token) session.token = token;
+  storageSet("session", SESSION_KEY, JSON.stringify(session));
 }
 
 /** Sign in with staff credentials; opens a session on success. */
 export async function login(username: string, password: string): Promise<boolean> {
   try {
-    const r = await api.post<{ ok: boolean; role?: string }>("/auth/login", {
+    const r = await api.post<{ ok: boolean; role?: string; token?: string }>("/auth/login", {
       username: username.trim(),
       password,
     });
     if (!r.ok) {
       return false;
     }
-    const session: Session = {
-      username: username.trim(),
-      role: r.role ?? "staff",
-      expiresAt: Date.now() + SESSION_TTL_MS,
-    };
-    storageSet("session", SESSION_KEY, JSON.stringify(session));
+    saveSession(username.trim(), r.role ?? "staff", r.token);
     return true;
   } catch {
     return false;
@@ -69,11 +79,16 @@ export async function changeCredentials(input: {
   if (newPassword !== undefined && newPassword.length < MIN_PASSWORD) {
     throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
   }
-  await api.put("/auth/credentials", {
+  const r = await api.put<{ configured: boolean; token?: string }>("/auth/credentials", {
     currentPassword,
     newUsername: newUsername?.trim() || undefined,
     newPassword,
   });
+  // A successful credential change rotates the JWT — persist the refreshed token.
+  if (r.token) {
+    const session = readSession();
+    if (session) saveSession(newUsername?.trim() || session.username, session.role, r.token);
+  }
 }
 
 /** @deprecated Lockout removed — always returns false */
@@ -120,6 +135,11 @@ export function hasMinRole(minRole: string): boolean {
 
 export function isAuthed(): boolean {
   return readSession() !== null;
+}
+
+/** The staff JWT for the current session, if any (used as a Bearer token). */
+export function getSessionToken(): string {
+  return readSession()?.token ?? "";
 }
 
 export async function logout(): Promise<void> {

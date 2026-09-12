@@ -94,22 +94,28 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
       toast.error(t("dash.form.product.requiredStock"));
       return;
     }
-    await saveProduct({
-      id: product?.id ?? `prod-${Date.now().toString(36)}`,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price,
-      compareAtPrice: compareAt,
-      stock,
-      image: form.image.trim(),
-      category: form.category || "accessories",
-      petType: form.petType,
-      featured: form.featured,
-      barcode: form.barcode.trim(),
-      barcodeImage: form.barcodeImage,
-      createdAt: product?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    try {
+      await saveProduct({
+        id: product?.id ?? `prod-${Date.now().toString(36)}`,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        price,
+        compareAtPrice: compareAt,
+        stock,
+        image: form.image.trim(),
+        category: form.category || "accessories",
+        petType: form.petType,
+        featured: form.featured,
+        barcode: form.barcode.trim(),
+        barcodeImage: form.barcodeImage,
+        createdAt: product?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Failed to save product", err);
+      toast.error(t("dash.toast.error"));
+      return;
+    }
     toast.success(t("dash.toast.saved"));
     onClose();
   };
@@ -456,8 +462,13 @@ export function ProductsPanel() {
                       className="h-7 px-2"
                       aria-label={t("dash.form.product.featured")}
                       onClick={async () => {
-                        await saveProduct({ ...p, featured: !p.featured });
-                        toast.success(t("dash.toast.saved"));
+                        try {
+                          await saveProduct({ ...p, featured: !p.featured });
+                          toast.success(t("dash.toast.saved"));
+                        } catch (err) {
+                          console.error("Failed to toggle featured", err);
+                          toast.error(t("dash.toast.error"));
+                        }
                       }}
                     >
                       <Star
@@ -484,8 +495,13 @@ export function ProductsPanel() {
                         className="h-7 px-2 text-muted-foreground hover:text-destructive"
                         aria-label={t("dash.delete")}
                         onClick={async () => {
-                          await deleteProduct(p.id);
-                          toast.success(t("dash.toast.deleted"));
+                          try {
+                            await deleteProduct(p.id);
+                            toast.success(t("dash.toast.deleted"));
+                          } catch (err) {
+                            console.error("Failed to delete product", err);
+                            toast.error(t("dash.toast.error"));
+                          }
                         }}
                       >
                         <Trash2 className="size-3.5" />

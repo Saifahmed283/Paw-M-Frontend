@@ -1,4 +1,6 @@
-import { authHeaders } from "@/lib/client-auth";
+import { getSessionToken, SESSION_KEY as ADMIN_SESSION_KEY } from "@/lib/auth";
+import { storageRemove } from "@/lib/storage";
+import { getClientToken } from "@/lib/client-auth";
 
 const ENV_API_BASE =
   typeof import.meta !== "undefined"
@@ -22,6 +24,16 @@ function resolveApiBase(): string {
 
 const API_BASE = resolveApiBase();
 
+// Send the session that matches the request: the staff JWT takes precedence, so
+// dashboard calls are authenticated even when the API runs on another origin and
+// cross-site cookies are blocked. Falls back to the store customer's token.
+function authHeaders(): Record<string, string> {
+  const staffToken = getSessionToken();
+  if (staffToken) return { Authorization: `Bearer ${staffToken}` };
+  const clientToken = getClientToken();
+  return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
+}
+
 async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
   const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
 
@@ -38,6 +50,14 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
   });
   if (!res.ok) {
     const text = await res.text();
+    // If the staff JWT was rejected, drop the stale local session so the
+    // dashboard falls back to the login gate (and stores a fresh token).
+    if (
+      res.status === 401 &&
+      /Unauthorized — no session|Session expired|Invalid session|User not found/.test(text)
+    ) {
+      storageRemove("session", ADMIN_SESSION_KEY);
+    }
     throw new Error(`API ${res.status}: ${text || res.statusText}`);
   }
   if (res.status === 204) return undefined;

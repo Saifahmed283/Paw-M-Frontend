@@ -34,6 +34,8 @@ function getClientToken(): string | null {
   return readSession()?.token ?? null;
 }
 
+export { getClientToken };
+
 export function authHeaders(): Record<string, string> {
   const token = getClientToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
