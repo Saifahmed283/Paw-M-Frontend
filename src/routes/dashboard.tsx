@@ -23,6 +23,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ScrollText } from "lucide-react";
 
 // Dashboard Panels
 import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
@@ -30,6 +41,7 @@ import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
 import { ShiftBanner } from "@/components/dashboard/ShiftBanner";
 import { DoctorsPanel } from "@/components/dashboard/DoctorsPanel";
 import { ServicesPanel } from "@/components/dashboard/ServicesPanel";
+import { PrescriptionsPanel } from "@/components/dashboard/PrescriptionsPanel";
 import { ArchivePanel } from "@/components/dashboard/ArchivePanel";
 import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
 import { ProductsPanel } from "@/components/dashboard/ProductsPanel";
@@ -40,9 +52,12 @@ import { LogsPanel } from "@/components/dashboard/LogsPanel";
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 
 import { useI18n } from "@/lib/i18n";
+import { saveBookingClinical } from "@/lib/client-medical";
+import { PrescriptionBuilderDialog } from "@/components/dashboard/PrescriptionBuilderDialog";
 import {
   archiveBooking,
   deleteRequest,
+  refreshClinicData,
   setBookingStatus,
   useClinicStore,
   type BookingRequest,
@@ -568,6 +583,8 @@ function ReservationsTab() {
   const { t, lang, tOr } = useI18n();
   const store = useClinicStore();
   const [resQuery, setResQuery] = useState("");
+  const [recordFor, setRecordFor] = useState<BookingRequest | null>(null);
+  const [rxFor, setRxFor] = useState<BookingRequest | null>(null);
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const upcomingBase = useMemo(
@@ -618,7 +635,23 @@ function ReservationsTab() {
                   </div>
                   <StatusBadge status={r.status} />
                 </div>
-                <div className="mt-3 flex gap-2">
+                {(r.diagnosis || r.treatmentNotes) && (
+                  <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+                    {r.diagnosis && (
+                      <p className="rounded-lg bg-muted/60 p-2">
+                        <span className="font-semibold text-foreground">Diagnosis:</span>{" "}
+                        {r.diagnosis}
+                      </p>
+                    )}
+                    {r.treatmentNotes && (
+                      <p className="rounded-lg bg-muted/60 p-2">
+                        <span className="font-semibold text-foreground">Treatment:</span>{" "}
+                        {r.treatmentNotes}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -628,6 +661,12 @@ function ReservationsTab() {
                     }}
                   >
                     {t("dash.complete")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setRecordFor(r)}>
+                    <ScrollText className="size-4" /> Record visit
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setRxFor(r)}>
+                    <Stethoscope className="size-4" /> Write prescription
                   </Button>
                   <Button
                     size="sm"
@@ -651,7 +690,110 @@ function ReservationsTab() {
           />
         </>
       )}
+
+      {recordFor && (
+        <ClinicalRecordDialog
+          booking={recordFor}
+          onClose={() => setRecordFor(null)}
+          onSaved={() => setRecordFor(null)}
+        />
+      )}
+      {rxFor && (
+        <PrescriptionBuilderDialog
+          open
+          onClose={() => setRxFor(null)}
+          onSaved={() => setRxFor(null)}
+          preset={{
+            petId: rxFor.petId ?? undefined,
+            doctorId: rxFor.doctorId,
+            bookingId: rxFor.id,
+            diagnosis: rxFor.diagnosis,
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function ClinicalRecordDialog({
+  booking,
+  onClose,
+  onSaved,
+}: {
+  booking: BookingRequest;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [diagnosis, setDiagnosis] = useState(booking.diagnosis ?? "");
+  const [treatmentNotes, setTreatmentNotes] = useState(booking.treatmentNotes ?? "");
+  const [followUpDate, setFollowUpDate] = useState((booking.followUpDate ?? "").slice(0, 10));
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await saveBookingClinical(booking.id, {
+        diagnosis: diagnosis.trim(),
+        treatmentNotes: treatmentNotes.trim(),
+        followUpDate,
+      });
+      toast.success("Visit record saved");
+      refreshClinicData();
+      onSaved();
+    } catch {
+      toast.error("Could not save the visit record");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Record visit — {booking.petName}</DialogTitle>
+          <DialogDescription>
+            {booking.ownerName} · {booking.doctorName} · {booking.date} {booking.time}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label className="text-xs font-medium text-muted-foreground">Diagnosis</Label>
+            <Textarea
+              rows={2}
+              value={diagnosis}
+              onChange={(e) => setDiagnosis(e.target.value)}
+              placeholder="Final diagnosis for this visit"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-xs font-medium text-muted-foreground">Treatment notes</Label>
+            <Textarea
+              rows={3}
+              value={treatmentNotes}
+              onChange={(e) => setTreatmentNotes(e.target.value)}
+              placeholder="Procedures, medication started, care instructions…"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-xs font-medium text-muted-foreground">Follow-up date</Label>
+            <Input
+              type="date"
+              value={followUpDate}
+              onChange={(e) => setFollowUpDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={busy}>
+            {busy ? "Saving…" : "Save visit record"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -729,6 +871,7 @@ function DashboardPage() {
       {tab === "payroll" && <PayrollPanel />}
       {tab === "doctors" && <DoctorsPanel />}
       {tab === "services" && <ServicesPanel />}
+      {tab === "prescriptions" && <PrescriptionsPanel />}
       {tab === "products" && <ProductsPanel />}
       {tab === "orders" && <OrdersPanel />}
       {tab === "reviews" && <ReviewsPanel />}

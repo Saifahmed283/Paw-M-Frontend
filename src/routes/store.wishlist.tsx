@@ -32,7 +32,13 @@ function WishlistPage() {
     <>
       <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.store"), to: "/store" }, { label: t("page.wishlist.title"), to: "/store/wishlist" }]} />
+          <Breadcrumbs
+            items={[
+              { label: t("crumb.home"), to: "/" },
+              { label: t("crumb.store"), to: "/store" },
+              { label: t("page.wishlist.title"), to: "/store/wishlist" },
+            ]}
+          />
           <SectionHeading
             eyebrow={t("page.wishlist.eyebrow")}
             title={t("page.wishlist.title")}

@@ -284,7 +284,10 @@ function ProductPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <section className="hero-gradient border-b border-border pb-16 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <Breadcrumbs

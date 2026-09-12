@@ -1,0 +1,118 @@
+import { f as Button, v as useI18n } from "./api-D3RhbogT.js";
+import { n as Route } from "./router-B96m8HNi.js";
+import { t as Breadcrumbs } from "./Breadcrumbs-Cmbq3VA9.js";
+import { n as CardContent, t as Card } from "./card-CCY8qCB2.js";
+import { t as ClientAuthGate } from "./ClientAuthGate-Byhf7r5I.js";
+import { s as getPrescription } from "./client-medical-DNQooMV0.js";
+import { n as PrintCss, t as PrescriptionDocument } from "./PrescriptionDocument-CHC0-_y-.js";
+import { Link } from "@tanstack/react-router";
+import { jsx, jsxs } from "react/jsx-runtime";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Copy, Printer } from "lucide-react";
+import { toast } from "sonner";
+//#region src/routes/account.rx.$rxId.tsx?tsr-split=component
+function RxPage() {
+	const { rxId } = Route.useParams();
+	const { t } = useI18n();
+	const { data: rx, isLoading, error } = useQuery({
+		queryKey: ["prescription", rxId],
+		queryFn: () => getPrescription(rxId),
+		retry: 1
+	});
+	const copyNumber = async () => {
+		if (!rx) return;
+		try {
+			await navigator.clipboard.writeText(rx.rxNumber);
+			toast.success("Prescription number copied");
+		} catch {
+			toast.error("Could not copy");
+		}
+	};
+	return /* @__PURE__ */ jsxs(ClientAuthGate, { children: [/* @__PURE__ */ jsx(PrintCss, {}), /* @__PURE__ */ jsx("section", {
+		className: "hero-gradient min-h-screen pb-24 pt-32 sm:pt-40",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "mx-auto max-w-3xl px-5 sm:px-8",
+			children: [
+				/* @__PURE__ */ jsx(Breadcrumbs, { items: [
+					{
+						label: t("crumb.home"),
+						to: "/"
+					},
+					{
+						label: "My Account",
+						to: "/account"
+					},
+					{
+						label: "Prescriptions",
+						to: "/account"
+					},
+					{
+						label: rx?.rxNumber ?? "Rx",
+						to: `/account/rx/${rxId}`
+					}
+				] }),
+				isLoading && /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx(CardContent, {
+					className: "py-16 text-center text-sm text-muted-foreground",
+					children: "Loading…"
+				}) }),
+				error && /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs(CardContent, {
+					className: "py-16 text-center text-sm text-muted-foreground",
+					children: [
+						"This prescription could not be loaded.",
+						" ",
+						/* @__PURE__ */ jsx(Link, {
+							to: "/account",
+							className: "text-primary underline-offset-4 hover:underline",
+							children: "Back to My Account"
+						})
+					]
+				}) }),
+				rx && /* @__PURE__ */ jsxs("div", {
+					className: "grid gap-4",
+					children: [
+						/* @__PURE__ */ jsxs("div", {
+							className: "no-print flex flex-wrap items-center gap-2",
+							children: [
+								/* @__PURE__ */ jsx(Button, {
+									asChild: true,
+									variant: "outline",
+									size: "sm",
+									children: /* @__PURE__ */ jsxs(Link, {
+										to: "/account",
+										children: [/* @__PURE__ */ jsx(ArrowLeft, { className: "size-4" }), " My Account"]
+									})
+								}),
+								/* @__PURE__ */ jsxs(Button, {
+									variant: "outline",
+									size: "sm",
+									onClick: copyNumber,
+									children: [
+										/* @__PURE__ */ jsx(Copy, { className: "size-4" }),
+										" ",
+										rx.rxNumber
+									]
+								}),
+								/* @__PURE__ */ jsxs(Button, {
+									size: "sm",
+									className: "ml-auto shadow-glow",
+									onClick: () => window.print(),
+									children: [/* @__PURE__ */ jsx(Printer, { className: "size-4" }), " Print / Save PDF"]
+								})
+							]
+						}),
+						/* @__PURE__ */ jsx("div", {
+							className: "print-sheet overflow-hidden rounded-2xl border border-border shadow-card",
+							children: /* @__PURE__ */ jsx(PrescriptionDocument, { rx })
+						}),
+						/* @__PURE__ */ jsx("p", {
+							className: "no-print text-center text-xs text-muted-foreground",
+							children: "Show the printed copy when collecting medication. The QR code lets any clinic verify this prescription instantly."
+						})
+					]
+				})
+			]
+		})
+	})] });
+}
+//#endregion
+export { RxPage as component };

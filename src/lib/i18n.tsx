@@ -71,6 +71,7 @@ export const EN: Dict = {
   "dash.reservations": "Reservations",
   "dash.doctors": "Doctors",
   "dash.services": "Services",
+  "dash.prescriptions": "Prescriptions",
   "dash.settings": "Settings",
   "dash.back": "Back to site",
   "dash.overview.stats.pending": "Pending requests",
@@ -376,6 +377,13 @@ export const EN: Dict = {
   "booking.pet.age": "Age",
   "booking.pet.weight": "Weight",
   "booking.pet.otherType": "Other type",
+  "booking.owner.summary": "Not signed in",
+  "booking.owner.account": "Account holder",
+  "booking.owner.hint":
+    "Your booking is automatically linked to your account. Reception verifies these details before the visit.",
+  "booking.pet.addNew": "New pet",
+  "booking.pet.loading": "Loading your pets…",
+  "booking.pet.chooseSaved": "Choose a saved pet",
   "booking.ph.otherPetType": "Specify other pet type",
   "booking.case.symptoms": "Symptoms and case description",
   "booking.case.allergies": "Known allergies",
@@ -402,8 +410,7 @@ export const EN: Dict = {
   // Footer
   "footer.tagline":
     "A boutique veterinary hospital built around clear diagnostics, honest estimates and records you actually own.",
-  "footer.address":
-    "Paw Clinic Madinaty, Craft Zoon, Second New Cairo, Cairo Governorate 19519",
+  "footer.address": "Paw Clinic Madinaty, Craft Zoon, Second New Cairo, Cairo Governorate 19519",
   "footer.accred": "AAHA accredited · Fear Free certified · ISO 9001 quality managed",
   "footer.clinic": "Clinic",
   "footer.care": "Care",
@@ -967,7 +974,8 @@ export const EN: Dict = {
   "img.clinic": "Diagnostic imaging equipment inside the Paw-M clinic",
   loading: "Loading...",
   "notfound.title": "Page not found",
-  "notfound.desc": "The page you're looking for doesn't exist or has been moved. Use the links below or head back to the homepage.",
+  "notfound.desc":
+    "The page you're looking for doesn't exist or has been moved. Use the links below or head back to the homepage.",
   "notfound.home": "Go home",
   "notfound.contact": "Contact us",
   "crumb.home": "Home",
@@ -1175,6 +1183,7 @@ const AR: Dict = {
   "dash.reservations": "الحجوزات",
   "dash.doctors": "الأطباء",
   "dash.services": "الخدمات",
+  "dash.prescriptions": "الوصفات الطبية",
   "dash.settings": "الإعدادات",
   "dash.back": "العودة إلى الموقع",
   "dash.overview.stats.pending": "طلبات معلّقة",
@@ -1477,6 +1486,13 @@ const AR: Dict = {
   "booking.pet.age": "العمر",
   "booking.pet.weight": "الوزن",
   "booking.pet.otherType": "نوع آخر",
+  "booking.owner.summary": "غير مسجل",
+  "booking.owner.account": "صاحب الحساب",
+  "booking.owner.hint":
+    "يتم ربط الحجز تلقائيًا بحسابك. يتحقق الاستقبال من هذه البيانات قبل الزيارة.",
+  "booking.pet.addNew": "حيوان جديد",
+  "booking.pet.loading": "جارٍ تحميل حيواناتك…",
+  "booking.pet.chooseSaved": "اختر حيوانًا مسجلًا",
   "booking.ph.otherPetType": "حدد نوع الحيوان الآخر",
   "booking.case.symptoms": "الأعراض ووصف الحالة",
   "booking.case.allergies": "حساسية معروفة",
@@ -1502,8 +1518,7 @@ const AR: Dict = {
 
   "footer.tagline":
     "مستشفى بيطري متخصص مبني على تشخيصات واضحة وتقديرات صادقة وسجلات طبية تملكها أنت بالفعل.",
-  "footer.address":
-    "باو كلينك مدينتي، كرافت زون، القاهرة الجديدة، محافظة القاهرة 19519",
+  "footer.address": "باو كلينك مدينتي، كرافت زون، القاهرة الجديدة، محافظة القاهرة 19519",
   "footer.clinic": "العيادة",
   "footer.care": "الرعاية",
   "footer.services": "الخدمات",
@@ -2050,7 +2065,8 @@ const AR: Dict = {
   "img.clinic": "معدات التصوير التشخيصي داخل عيادة باو-إم",
   loading: "جارٍ التحميل...",
   "notfound.title": "الصفحة غير موجودة",
-  "notfound.desc": "لا توجد الصفحة التي تبحث عنها أو تم نقلها. استخدم الروابط أدناه أو ارجع إلى الصفحة الرئيسية.",
+  "notfound.desc":
+    "لا توجد الصفحة التي تبحث عنها أو تم نقلها. استخدم الروابط أدناه أو ارجع إلى الصفحة الرئيسية.",
   "notfound.home": "العودة للرئيسية",
   "notfound.contact": "تواصل معنا",
   "crumb.home": "الرئيسية",

@@ -14,7 +14,7 @@ import {
 
 export function ClientAuthGate({ children }: { children: ReactNode }) {
   const [authed, setAuthed] = useState(clientIsAuthed);
-  const [registering, setRegistering] = useState(false);
+  const [registering, setRegistering] = useState(true);
   const [verification, setVerification] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", code: "" });

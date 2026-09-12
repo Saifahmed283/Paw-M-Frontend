@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ANIMAL_TYPES, TIME_SLOTS, bookedSlotsFor } from "@/lib/clinic-data";
 import { addBookingRequest, useClinicStore } from "@/lib/clinic-store";
+import { currentClient, clientIsAuthed } from "@/lib/client-auth";
+import { getPets, type Pet } from "@/lib/client-medical";
 import { useI18n } from "@/lib/i18n";
 import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ type Draft = {
   ownerName: string;
   phone: string;
   email: string;
+  petId?: string;
   petName: string;
   animalType: string;
   customAnimalType?: string;
@@ -93,6 +96,41 @@ function BookingForm() {
     ...EMPTY,
     doctorId: doctor ?? firstDoctor?.id ?? "",
   });
+  const [myPets, setMyPets] = useState<Pet[]>([]);
+  const [petMode, setPetMode] = useState<"saved" | "new">("saved");
+  const client = currentClient();
+
+  // Pull the account holder's details straight from the session so the owner
+  // step acts as a summary instead of a blank form.
+  useEffect(() => {
+    if (!client) return;
+    setDraft((d) => ({
+      ...d,
+      ownerName: d.ownerName || client.fullName,
+      phone: d.phone || client.phone,
+      email: d.email || client.email,
+    }));
+  }, [client]);
+
+  useEffect(() => {
+    let cancel = false;
+    if (!clientIsAuthed()) {
+      setPetMode("new");
+      return;
+    }
+    getPets()
+      .then((pets) => {
+        if (cancel) return;
+        setMyPets(pets);
+        setPetMode(pets.length > 0 ? "saved" : "new");
+      })
+      .catch(() => {
+        if (!cancel) setPetMode("new");
+      });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   useEffect(() => {
     let raw: string | null = null;
@@ -159,6 +197,7 @@ function BookingForm() {
         date: draft.date,
         time: draft.time,
         emergency: draft.emergency,
+        petId: draft.petId ?? null,
       });
     } catch {
       toast.error(t("booking.error.failed"));
@@ -184,7 +223,12 @@ function BookingForm() {
   return (
     <section className="hero-gradient min-h-screen pb-24 pt-32 sm:pt-40">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.book"), to: "/book" }]} />
+        <Breadcrumbs
+          items={[
+            { label: t("crumb.home"), to: "/" },
+            { label: t("crumb.book"), to: "/book" },
+          ]}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -232,91 +276,158 @@ function BookingForm() {
             className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8"
           >
             {step === 0 && (
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field label={t("booking.owner.fullName")} required>
-                  <Input
-                    value={draft.ownerName}
-                    onChange={(e) => set("ownerName", e.target.value)}
-                    placeholder={t("booking.ph.name")}
-                  />
-                </Field>
-                <Field label={t("booking.owner.phone")} required>
-                  <Input
-                    value={draft.phone}
-                    onChange={(e) => set("phone", e.target.value)}
-                    placeholder={t("booking.ph.phone")}
-                  />
-                </Field>
-                <Field label={t("booking.owner.email")} className="sm:col-span-2">
-                  <Input
-                    type="email"
-                    value={draft.email}
-                    onChange={(e) => set("email", e.target.value)}
-                    placeholder={t("booking.ph.email")}
-                  />
-                </Field>
+              <div className="grid gap-5">
+                <div className="rounded-xl border border-border bg-muted/40 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">
+                      {(draft.ownerName || "?").charAt(0).toUpperCase()}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {draft.ownerName || t("booking.owner.summary")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{draft.email}</p>
+                      <p className="text-xs text-muted-foreground">{draft.phone}</p>
+                    </div>
+                    <span className="ml-auto rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
+                      {t("booking.owner.account")}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{t("booking.owner.hint")}</p>
               </div>
             )}
 
-            {step === 1 && (
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field label={t("booking.pet.name")} required>
-                  <Input
-                    value={draft.petName}
-                    onChange={(e) => set("petName", e.target.value)}
-                    placeholder={t("booking.ph.petName")}
-                  />
-                </Field>
-                <Field label={t("booking.pet.type")} required>
-                  <div className="flex flex-wrap gap-2">
-                    {ANIMAL_TYPES.map((type) => (
+            {step === 1 &&
+              (petMode === "saved" && myPets.length > 0 ? (
+                <div className="grid gap-5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {myPets.map((pet) => (
                       <button
-                        key={type}
+                        key={pet.id}
                         type="button"
                         onClick={() => {
-                          set("animalType", type);
-                          // Clear custom animal type when switching from Other to a specific type
-                          if (type !== "Other") {
-                            set("customAnimalType", undefined);
-                          }
+                          setPetMode("saved");
+                          set("petId", pet.id);
+                          set("petName", pet.name);
+                          set("animalType", pet.species);
+                          set("customAnimalType", undefined);
+                          set("age", pet.dob ? yearsBetween(pet.dob) : "");
+                          set("weight", pet.weightKg ? `${pet.weightKg} kg` : "");
                         }}
                         className={cn(
-                          "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                          draft.animalType === type
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/40",
+                          "flex items-center gap-3 rounded-xl border p-4 text-left transition-colors",
+                          draft.petId === pet.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/40",
                         )}
                       >
-                        {t(`animal.${type}`)}
+                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-lg">
+                          {emojiFor(pet.species)}
+                        </span>
+                        <span>
+                          <span className="block text-sm font-semibold">{pet.name}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {[pet.species, pet.breed].filter(Boolean).join(" · ")}
+                            {pet.weightKg ? ` · ${pet.weightKg} kg` : ""}
+                          </span>
+                        </span>
+                        {draft.petId === pet.id && (
+                          <Check className="ml-auto size-4 text-primary" strokeWidth={3} />
+                        )}
                       </button>
                     ))}
                   </div>
-                  {draft.animalType === "Other" && (
-                    <Field label={t("booking.pet.otherType")}>
-                      <Input
-                        value={draft.customAnimalType ?? ""}
-                        onChange={(e) => set("customAnimalType", e.target.value)}
-                        placeholder={t("booking.ph.otherPetType")}
-                      />
-                    </Field>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="justify-self-start"
+                    onClick={() => {
+                      setPetMode("new");
+                      set("petId", undefined);
+                    }}
+                  >
+                    <Plus className="size-4" /> {t("booking.pet.addNew")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {myPets.length === 0 && petMode === "saved" ? (
+                    <p className="text-sm text-muted-foreground sm:col-span-2">
+                      {t("booking.pet.loading")}
+                    </p>
+                  ) : null}
+                  <Field label={t("booking.pet.name")} required>
+                    <Input
+                      value={draft.petName}
+                      onChange={(e) => {
+                        set("petName", e.target.value);
+                        set("petId", undefined);
+                      }}
+                      placeholder={t("booking.ph.petName")}
+                    />
+                  </Field>
+                  <Field label={t("booking.pet.type")} required>
+                    <div className="flex flex-wrap gap-2">
+                      {ANIMAL_TYPES.map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            set("animalType", type);
+                            set("petId", undefined);
+                            // Clear custom animal type when switching from Other to a specific type
+                            if (type !== "Other") {
+                              set("customAnimalType", undefined);
+                            }
+                          }}
+                          className={cn(
+                            "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                            draft.animalType === type
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border text-muted-foreground hover:border-primary/40",
+                          )}
+                        >
+                          {t(`animal.${type}`)}
+                        </button>
+                      ))}
+                    </div>
+                    {draft.animalType === "Other" && (
+                      <Field label={t("booking.pet.otherType")}>
+                        <Input
+                          value={draft.customAnimalType ?? ""}
+                          onChange={(e) => set("customAnimalType", e.target.value)}
+                          placeholder={t("booking.ph.otherPetType")}
+                        />
+                      </Field>
+                    )}
+                  </Field>
+                  <Field label={t("booking.pet.age")}>
+                    <Input
+                      value={draft.age}
+                      onChange={(e) => set("age", e.target.value)}
+                      placeholder={t("booking.ph.age")}
+                    />
+                  </Field>
+                  <Field label={t("booking.pet.weight")}>
+                    <Input
+                      value={draft.weight}
+                      onChange={(e) => set("weight", e.target.value)}
+                      placeholder={t("booking.ph.weight")}
+                    />
+                  </Field>
+                  {myPets.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="justify-self-start sm:col-span-2"
+                      onClick={() => setPetMode("saved")}
+                    >
+                      <ArrowLeft className="size-4" /> {t("booking.pet.chooseSaved")}
+                    </Button>
                   )}
-                </Field>
-                <Field label={t("booking.pet.age")}>
-                  <Input
-                    value={draft.age}
-                    onChange={(e) => set("age", e.target.value)}
-                    placeholder={t("booking.ph.age")}
-                  />
-                </Field>
-                <Field label={t("booking.pet.weight")}>
-                  <Input
-                    value={draft.weight}
-                    onChange={(e) => set("weight", e.target.value)}
-                    placeholder={t("booking.ph.weight")}
-                  />
-                </Field>
-              </div>
-            )}
+                </div>
+              ))}
 
             {step === 2 && (
               <div className="grid gap-5">
@@ -476,4 +587,24 @@ function Field({
       {children}
     </div>
   );
+}
+
+function yearsBetween(dob: string): string {
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return "";
+  const years = Math.max(0, Math.floor((Date.now() - d.getTime()) / 31_557_600_000));
+  if (years >= 1) return `${years} year${years === 1 ? "" : "s"}`;
+  const months = Math.max(0, Math.floor((Date.now() - d.getTime()) / 2_629_800_000));
+  return months >= 1 ? `${months} month${months === 1 ? "" : "s"}` : "Under 1 month";
+}
+
+function emojiFor(species: string): string {
+  const clean = species.toLowerCase();
+  if (clean.includes("cat")) return "🐱";
+  if (clean.includes("bird")) return "🐦";
+  if (clean.includes("rabbit")) return "🐰";
+  if (clean.includes("reptile") || clean.includes("lizard") || clean.includes("turtle"))
+    return "🦎";
+  if (clean.includes("hamster") || clean.includes("rodent") || clean.includes("rat")) return "🐹";
+  return "🐶";
 }

@@ -27,6 +27,11 @@ export type BookingRequest = {
   emergency: boolean;
   status: Status;
   archived?: boolean;
+  petId?: string | null;
+  diagnosis?: string;
+  treatmentNotes?: string;
+  followUpDate?: string;
+  pet?: { id: string; name: string; species: string } | null;
   createdAt: string;
 };
 

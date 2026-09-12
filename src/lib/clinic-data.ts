@@ -132,6 +132,9 @@ export const WHY_US = [
 export type Doctor = {
   id: string;
   name: string;
+  title?: string;
+  licenseNumber?: string;
+  signatureImage?: string;
   specialization: string;
   experience: string;
   rating: number;
@@ -154,6 +157,9 @@ export const DOCTORS: Doctor[] = [
     days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     bio: "Experienced veterinarian trusted by pet owners across Madinaty, known for gentle handling, thorough diagnosis and follow-up care.",
     initials: "DM",
+    title: "Veterinary Surgeon",
+    licenseNumber: "VET-EG-2088",
+    signatureImage: "",
     tags: ["Veterinary Consultation", "Surgery", "Spaying & Neutering", "Dental Care", "Exotics"],
     pets: ["Dog", "Cat", "Bird", "Rabbit", "Reptile"],
   },

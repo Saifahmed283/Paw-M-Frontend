@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, Menu, Moon, Phone, ShoppingBag, Sun, X } from "lucide-react";
+import { Heart, Menu, Moon, Phone, ShoppingBag, Sun, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { LanguageToggle } from "@/lib/i18n-components";
 import { telHref } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/use-theme-hook";
+import { clientIsAuthed } from "@/lib/client-auth";
 
 function useNav() {
   const { t } = useI18n();
@@ -37,6 +38,12 @@ export function SiteHeader() {
   const NAV = useNav();
   const count = useCartCount();
   const wished = useWishlist();
+  const [mounted, setMounted] = useState(false);
+  const showAccount = mounted && clientIsAuthed();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -103,6 +110,16 @@ export function SiteHeader() {
               </span>
             )}
           </Link>
+          {showAccount && (
+            <Link
+              to="/account"
+              aria-label="My Account"
+              title="My Account"
+              className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <User className="size-4" />
+            </Link>
+          )}
           <button
             onClick={() => setCartOpen(true)}
             aria-label={t("header.cartAria")}

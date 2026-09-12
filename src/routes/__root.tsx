@@ -77,7 +77,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <span className="mx-auto grid size-14 place-items-center rounded-3xl bg-primary/10 text-primary">
           <PawMMark className="h-7 w-7" />
         </span>
-        <h1 className="mt-6 text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
+        <h1 className="mt-6 text-xl font-semibold tracking-tight text-foreground">
+          {t("error.title")}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("error.desc")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -141,7 +143,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       ...(API_ORIGIN
-        ? [{ rel: "preconnect", href: API_ORIGIN }, { rel: "dns-prefetch", href: API_ORIGIN }]
+        ? [
+            { rel: "preconnect", href: API_ORIGIN },
+            { rel: "dns-prefetch", href: API_ORIGIN },
+          ]
         : []),
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -183,7 +188,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           openingHoursSpecification: [
             {
               "@type": "OpeningHoursSpecification",
-              dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+              dayOfWeek: [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+              ],
               opens: "09:00",
               closes: "23:30",
             },

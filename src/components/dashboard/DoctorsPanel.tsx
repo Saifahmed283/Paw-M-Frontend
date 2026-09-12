@@ -35,6 +35,9 @@ import { Field } from "./dashboard-helpers";
 
 const EMPTY_DOCTOR = {
   name: "",
+  title: "",
+  licenseNumber: "",
+  signatureImage: "",
   specialization: "",
   experience: "",
   rating: "4.8",
@@ -50,6 +53,9 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
     doctor
       ? {
           name: doctor.name,
+          title: doctor.title ?? "",
+          licenseNumber: doctor.licenseNumber ?? "",
+          signatureImage: doctor.signatureImage ?? "",
           specialization: doctor.specialization,
           experience: doctor.experience,
           rating: String(doctor.rating),
@@ -75,6 +81,9 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
     await saveDoctor({
       id: doctor?.id ?? `dr-${Date.now().toString(36)}`,
       name: form.name.trim() || t("dash.unnamed"),
+      title: form.title.trim(),
+      licenseNumber: form.licenseNumber.trim(),
+      signatureImage: form.signatureImage,
       specialization: form.specialization.trim(),
       experience: form.experience.trim(),
       rating: Math.min(5, Math.max(1, Number(form.rating) || 4.8)),
@@ -112,6 +121,60 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
         <div className="grid gap-4">
           <Field label={t("dash.form.name")}>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Title">
+              <Input
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+                placeholder="Veterinary Surgeon"
+              />
+            </Field>
+            <Field label="License number">
+              <Input
+                value={form.licenseNumber}
+                onChange={(e) => set("licenseNumber", e.target.value)}
+                placeholder="VET-EG-0000"
+              />
+            </Field>
+          </div>
+          <Field label="Signature">
+            {form.signatureImage ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={form.signatureImage}
+                  alt="Signature"
+                  className="h-14 rounded-lg border border-border bg-muted object-contain px-2"
+                />
+                <Button size="sm" variant="outline" onClick={() => set("signatureImage", "")}>
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+                Upload signature image (used on printed prescriptions)
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const img = new Image();
+                    img.onload = () => {
+                      const canvas = document.createElement("canvas");
+                      const max = 400;
+                      const scale = Math.min(1, max / Math.max(img.width, img.height));
+                      canvas.width = Math.round(img.width * scale);
+                      canvas.height = Math.round(img.height * scale);
+                      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                      set("signatureImage", canvas.toDataURL("image/png"));
+                    };
+                    img.src = URL.createObjectURL(file);
+                  }}
+                />
+              </label>
+            )}
           </Field>
           <Field label={t("dash.form.specialization")}>
             <Input

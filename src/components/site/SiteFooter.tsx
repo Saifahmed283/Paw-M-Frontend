@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarHeart, LayoutDashboard, MapPin, PawPrint, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarHeart,
+  LayoutDashboard,
+  MapPin,
+  PawPrint,
+  Sparkles,
+} from "lucide-react";
 import { motion } from "motion/react";
 
 import { PawMLogo } from "@/components/PawMMark";

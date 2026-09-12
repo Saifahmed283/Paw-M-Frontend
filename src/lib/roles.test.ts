@@ -32,4 +32,13 @@ describe("roles permissions", () => {
     expect(DEFAULT_ROLE_PERMISSIONS.payroll).toContain("archive");
     expect(DEFAULT_ROLE_PERMISSIONS.payroll).not.toContain("tasks");
   });
+
+  it("gives staff and payroll access to the prescriptions tab", () => {
+    expect(ALL_TAB_IDS).toContain("prescriptions");
+    expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("prescriptions");
+    expect(DEFAULT_ROLE_PERMISSIONS.payroll).toContain("prescriptions");
+    expect(allowedTabsForRole(undefined, "staff")).toContain("prescriptions");
+    expect(allowedTabsForRole(undefined, "payroll")).toContain("prescriptions");
+    expect(allowedTabsForRole(undefined, "admin")).toContain("prescriptions");
+  });
 });

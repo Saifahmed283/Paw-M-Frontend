@@ -17,6 +17,7 @@ export const ALL_TAB_IDS = [
   "archive",
   "logs",
   "settings",
+  "prescriptions",
 ] as const;
 
 export const SHARED_TAB_IDS: string[] = ["overview", "requests"];
@@ -39,8 +40,9 @@ export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
     "reviews",
     "workdays",
     "archive",
+    "prescriptions",
   ],
-  staff: ["overview", "requests", "reservations"],
+  staff: ["overview", "requests", "reservations", "prescriptions"],
 };
 
 export function allowedTabsForRole(perms: RolePermissions | undefined, role: string): string[] {

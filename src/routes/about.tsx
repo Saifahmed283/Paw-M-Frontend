@@ -29,7 +29,12 @@ function AboutPage() {
     <>
       <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <Breadcrumbs items={[{ label: t("crumb.home"), to: "/" }, { label: t("crumb.about"), to: "/about" }]} />
+          <Breadcrumbs
+            items={[
+              { label: t("crumb.home"), to: "/" },
+              { label: t("crumb.about"), to: "/about" },
+            ]}
+          />
           <SectionHeading
             eyebrow={t("page.about.eyebrow")}
             title={t("page.about.title")}

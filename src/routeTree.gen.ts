@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as CashierRouteImport } from './routes/cashier'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -21,11 +22,14 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as BookingSuccessRouteImport } from './routes/booking.success'
+import { Route as RxVerifyRouteImport } from './routes/rx.verify'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
 import { Route as StoreProductIdRouteImport } from './routes/store.$productId'
 import { Route as StoreCheckoutRouteImport } from './routes/store.checkout'
 import { Route as StoreTrackRouteImport } from './routes/store.track'
 import { Route as StoreWishlistRouteImport } from './routes/store.wishlist'
+import { Route as AccountPetsPetIdRouteImport } from './routes/account.pets.$petId'
+import { Route as AccountRxRxIdRouteImport } from './routes/account.rx.$rxId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookRoute = BookRouteImport.update({
@@ -87,6 +96,11 @@ const BookingSuccessRoute = BookingSuccessRouteImport.update({
   path: '/booking/success',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RxVerifyRoute = RxVerifyRouteImport.update({
+  id: '/rx/verify',
+  path: '/rx/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreIndexRoute = StoreIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -112,10 +126,21 @@ const StoreWishlistRoute = StoreWishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => StoreRoute,
 } as any)
+const AccountPetsPetIdRoute = AccountPetsPetIdRouteImport.update({
+  id: '/pets/$petId',
+  path: '/pets/$petId',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountRxRxIdRoute = AccountRxRxIdRouteImport.update({
+  id: '/rx/$rxId',
+  path: '/rx/$rxId',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRouteWithChildren
   '/book': typeof BookRoute
   '/cashier': typeof CashierRoute
   '/contact': typeof ContactRoute
@@ -126,15 +151,19 @@ export interface FileRoutesByFullPath {
   '/staff': typeof StaffRoute
   '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
+  '/rx/verify': typeof RxVerifyRoute
   '/store/$productId': typeof StoreProductIdRoute
   '/store/checkout': typeof StoreCheckoutRoute
   '/store/track': typeof StoreTrackRoute
   '/store/wishlist': typeof StoreWishlistRoute
   '/store/': typeof StoreIndexRoute
+  '/account/pets/$petId': typeof AccountPetsPetIdRoute
+  '/account/rx/$rxId': typeof AccountRxRxIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRouteWithChildren
   '/book': typeof BookRoute
   '/cashier': typeof CashierRoute
   '/contact': typeof ContactRoute
@@ -144,16 +173,20 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/staff': typeof StaffRoute
   '/booking/success': typeof BookingSuccessRoute
+  '/rx/verify': typeof RxVerifyRoute
   '/store/$productId': typeof StoreProductIdRoute
   '/store/checkout': typeof StoreCheckoutRoute
   '/store/track': typeof StoreTrackRoute
   '/store/wishlist': typeof StoreWishlistRoute
   '/store': typeof StoreIndexRoute
+  '/account/pets/$petId': typeof AccountPetsPetIdRoute
+  '/account/rx/$rxId': typeof AccountRxRxIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRouteWithChildren
   '/book': typeof BookRoute
   '/cashier': typeof CashierRoute
   '/contact': typeof ContactRoute
@@ -164,17 +197,21 @@ export interface FileRoutesById {
   '/staff': typeof StaffRoute
   '/store': typeof StoreRouteWithChildren
   '/booking/success': typeof BookingSuccessRoute
+  '/rx/verify': typeof RxVerifyRoute
   '/store/$productId': typeof StoreProductIdRoute
   '/store/checkout': typeof StoreCheckoutRoute
   '/store/track': typeof StoreTrackRoute
   '/store/wishlist': typeof StoreWishlistRoute
   '/store/': typeof StoreIndexRoute
+  '/account/pets/$petId': typeof AccountPetsPetIdRoute
+  '/account/rx/$rxId': typeof AccountRxRxIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/account'
     | '/book'
     | '/cashier'
     | '/contact'
@@ -185,15 +222,19 @@ export interface FileRouteTypes {
     | '/staff'
     | '/store'
     | '/booking/success'
+    | '/rx/verify'
     | '/store/$productId'
     | '/store/checkout'
     | '/store/track'
     | '/store/wishlist'
     | '/store/'
+    | '/account/pets/$petId'
+    | '/account/rx/$rxId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/account'
     | '/book'
     | '/cashier'
     | '/contact'
@@ -203,15 +244,19 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/staff'
     | '/booking/success'
+    | '/rx/verify'
     | '/store/$productId'
     | '/store/checkout'
     | '/store/track'
     | '/store/wishlist'
     | '/store'
+    | '/account/pets/$petId'
+    | '/account/rx/$rxId'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/account'
     | '/book'
     | '/cashier'
     | '/contact'
@@ -222,16 +267,20 @@ export interface FileRouteTypes {
     | '/staff'
     | '/store'
     | '/booking/success'
+    | '/rx/verify'
     | '/store/$productId'
     | '/store/checkout'
     | '/store/track'
     | '/store/wishlist'
     | '/store/'
+    | '/account/pets/$petId'
+    | '/account/rx/$rxId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AccountRoute: typeof AccountRouteWithChildren
   BookRoute: typeof BookRoute
   CashierRoute: typeof CashierRoute
   ContactRoute: typeof ContactRoute
@@ -242,6 +291,7 @@ export interface RootRouteChildren {
   StaffRoute: typeof StaffRoute
   StoreRoute: typeof StoreRouteWithChildren
   BookingSuccessRoute: typeof BookingSuccessRoute
+  RxVerifyRoute: typeof RxVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +308,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book': {
@@ -330,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rx/verify': {
+      id: '/rx/verify'
+      path: '/rx/verify'
+      fullPath: '/rx/verify'
+      preLoaderRoute: typeof RxVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/store/': {
       id: '/store/'
       path: '/'
@@ -365,8 +429,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreWishlistRouteImport
       parentRoute: typeof StoreRoute
     }
+    '/account/pets/$petId': {
+      id: '/account/pets/$petId'
+      path: '/pets/$petId'
+      fullPath: '/account/pets/$petId'
+      preLoaderRoute: typeof AccountPetsPetIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/rx/$rxId': {
+      id: '/account/rx/$rxId'
+      path: '/rx/$rxId'
+      fullPath: '/account/rx/$rxId'
+      preLoaderRoute: typeof AccountRxRxIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
+
+interface AccountRouteChildren {
+  AccountPetsPetIdRoute: typeof AccountPetsPetIdRoute
+  AccountRxRxIdRoute: typeof AccountRxRxIdRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountPetsPetIdRoute: AccountPetsPetIdRoute,
+  AccountRxRxIdRoute: AccountRxRxIdRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
 
 interface StoreRouteChildren {
   StoreProductIdRoute: typeof StoreProductIdRoute
@@ -389,6 +480,7 @@ const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AccountRoute: AccountRouteWithChildren,
   BookRoute: BookRoute,
   CashierRoute: CashierRoute,
   ContactRoute: ContactRoute,
@@ -399,6 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   StaffRoute: StaffRoute,
   StoreRoute: StoreRouteWithChildren,
   BookingSuccessRoute: BookingSuccessRoute,
+  RxVerifyRoute: RxVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

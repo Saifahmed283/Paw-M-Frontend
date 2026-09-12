@@ -2,6 +2,7 @@ import {
   Archive,
   Banknote,
   CalendarCheck,
+  FileText,
   FolderOpen,
   HeartPulse,
   History,
@@ -47,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "doctors", icon: Stethoscope, roles: ["payroll", "admin"] },
       { id: "services", icon: HeartPulse, roles: ["payroll", "admin"] },
+      { id: "prescriptions", icon: FileText, roles: ["staff", "payroll", "admin"] },
     ],
   },
   {
