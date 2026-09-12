@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type ScanFn = (code: string) => void;
 
 type BrowserMultiFormatReaderType = import("@zxing/library").BrowserMultiFormatReader;
+import type { Result } from "@zxing/library";
 
 const SCAN_FORMATS = [
   "EAN_13",
@@ -21,14 +22,15 @@ const SCAN_FORMATS = [
   "QR_CODE",
 ] as const;
 
-const DECODE_DELAY_MS = 200;
+const SCAN_INTERVAL_MS = 300;
+const DECODE_RETRY_INTERVAL_MS = 150;
 const DEDUP_MS = 2500;
 const MAX_IMAGE_DIM = 1920;
 const MAX_PHOTO_DIM = 3840;
 const IMAGE_LOAD_TIMEOUT_MS = 10_000;
 const DECODE_TIMEOUT_MS = 20_000;
-const CAMERA_LOOP_INTERVAL_MS = 200;
-const CAMERA_MAX_RETRIES = 8;
+const WATCHDOG_INTERVAL_MS = 2000;
+const HEARTBEAT_TIMEOUT_MS = 5000;
 
 async function loadScanner() {
   const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } =
@@ -107,13 +109,12 @@ async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const readerRef = useRef<BrowserMultiFormatReaderType | null>(null);
   const lastScanRef = useRef<{ code: string; at: number } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryCountRef = useRef(0);
   const activeRef = useRef(false);
+  const startingRef = useRef(false);
+  const heartbeatRef = useRef(0);
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
 
@@ -126,81 +127,33 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
 
   const stopCamera = useCallback(() => {
     activeRef.current = false;
-    if (loopTimerRef.current) {
-      clearTimeout(loopTimerRef.current);
-      loopTimerRef.current = null;
-    }
     try {
       readerRef.current?.reset();
     } catch {
       /* already stopped */
     }
     readerRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
     setCameraActive(false);
-    retryCountRef.current = 0;
   }, []);
 
-  useEffect(() => {
-    return stopCamera;
-  }, [stopCamera]);
-
-  const scanFrame = useCallback(async () => {
-    const reader = readerRef.current;
-    const video = videoRef.current;
-    if (!reader || !video || !activeRef.current) return;
-
-    if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
-      loopTimerRef.current = setTimeout(scanFrame, CAMERA_LOOP_INTERVAL_MS);
+  const handleDecode = useCallback((result: Result | null) => {
+    heartbeatRef.current = Date.now();
+    if (!activeRef.current || !result) return;
+    const code = result.getText();
+    const now = Date.now();
+    const last = lastScanRef.current;
+    if (last && last.code === code && now - last.at < DEDUP_MS) {
       return;
     }
-
-    try {
-      const result = reader.decode(video);
-      if (result) {
-        const code = result.getText();
-        const now = Date.now();
-        const last = lastScanRef.current;
-        if (last && last.code === code && now - last.at < DEDUP_MS) {
-          retryCountRef.current = 0;
-        } else {
-          lastScanRef.current = { code, at: now };
-          onScanRef.current(code);
-          retryCountRef.current = 0;
-        }
-      }
-    } catch (e) {
-      const isRetryable =
-        e instanceof Error &&
-        (e.name === "NotFoundException" ||
-          e.name === "ChecksumException" ||
-          e.name === "FormatException" ||
-          e.name === "InvalidStateError" ||
-          e.name === "NS_ERROR_NOT_AVAILABLE" ||
-          e.name === "AbortError");
-      if (!isRetryable) {
-        console.warn("Camera scan error:", e);
-        retryCountRef.current += 1;
-        if (retryCountRef.current >= CAMERA_MAX_RETRIES) {
-          stopCamera();
-          setCameraError("denied");
-          return;
-        }
-      }
-    }
-
-    if (activeRef.current) {
-      loopTimerRef.current = setTimeout(scanFrame, CAMERA_LOOP_INTERVAL_MS);
-    }
-  }, [stopCamera]);
+    lastScanRef.current = { code, at: now };
+    onScanRef.current(code);
+  }, []);
 
   const startCamera = useCallback(async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setCameraError(null);
     setPhotoResult(null);
-    activeRef.current = true;
-    setCameraActive(true);
-    retryCountRef.current = 0;
 
     const secureContext =
       typeof window === "undefined" ||
@@ -208,64 +161,69 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
       window.isSecureContext;
     if (!secureContext) {
       setCameraError("insecure");
-      activeRef.current = false;
       setCameraActive(false);
+      startingRef.current = false;
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError("unsupported");
-      activeRef.current = false;
       setCameraActive(false);
+      startingRef.current = false;
       return;
     }
-    const video = videoRef.current;
-    if (!video) {
-      setCameraError("denied");
-      activeRef.current = false;
-      setCameraActive(false);
-      return;
-    }
+
+    stopCamera();
+    activeRef.current = true;
+    setCameraActive(true);
+
     try {
       const { BrowserMultiFormatReader, hints } = await loadScanner();
       if (!activeRef.current) return;
-      const videoToScan = videoRef.current;
-      if (!videoToScan) {
-        setCameraError("denied");
-        activeRef.current = false;
-        setCameraActive(false);
-        return;
-      }
+      const video = videoRef.current;
+      if (!video) throw new Error("video element is missing");
+
       const reader = new BrowserMultiFormatReader(
         hints as ConstructorParameters<typeof BrowserMultiFormatReader>[0],
-        DECODE_DELAY_MS,
+        SCAN_INTERVAL_MS,
       );
+      reader.timeBetweenDecodingAttempts = DECODE_RETRY_INTERVAL_MS;
       readerRef.current = reader;
+      heartbeatRef.current = Date.now();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+      await reader.decodeFromConstraints(
+        {
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
         },
-        audio: false,
-      });
-      if (!activeRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      streamRef.current = stream;
-
-      videoToScan.srcObject = stream;
-      await videoToScan.play();
-
-      if (activeRef.current) {
-        scanFrame();
-      }
-    } catch {
+        video,
+        handleDecode,
+      );
+    } catch (e) {
+      console.warn("Camera scan failed to start:", e);
       stopCamera();
       setCameraError("denied");
+    } finally {
+      startingRef.current = false;
     }
-  }, [scanFrame, stopCamera]);
+  }, [handleDecode, stopCamera]);
+
+  useEffect(() => {
+    const watchdog = setInterval(() => {
+      if (!activeRef.current || startingRef.current) return;
+      if (Date.now() - heartbeatRef.current > HEARTBEAT_TIMEOUT_MS) {
+        console.warn("Scanner loop stalled — restarting camera");
+        void startCamera();
+      }
+    }, WATCHDOG_INTERVAL_MS);
+    return () => {
+      clearInterval(watchdog);
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
 
   const decodePhoto = useCallback(async (file: File) => {
     const { BrowserMultiFormatReader, hints } = await loadPhotoReader();
@@ -289,7 +247,7 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
         try {
           reader = new BrowserMultiFormatReader(
             hints as ConstructorParameters<typeof BrowserMultiFormatReader>[0],
-            DECODE_DELAY_MS,
+            SCAN_INTERVAL_MS,
           );
           const result = await withTimeout(reader.decodeFromImageUrl(url), DECODE_TIMEOUT_MS);
           if (result) {
