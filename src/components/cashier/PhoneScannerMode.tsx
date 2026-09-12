@@ -28,7 +28,7 @@ const MAX_PHOTO_DIM = 3840;
 const IMAGE_LOAD_TIMEOUT_MS = 10_000;
 const DECODE_TIMEOUT_MS = 20_000;
 const CAMERA_LOOP_INTERVAL_MS = 200;
-const CAMERA_MAX_RETRIES = 3;
+const CAMERA_MAX_RETRIES = 8;
 
 async function loadScanner() {
   const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } =
@@ -151,6 +151,11 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
     const video = videoRef.current;
     if (!reader || !video || !activeRef.current) return;
 
+    if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+      loopTimerRef.current = setTimeout(scanFrame, CAMERA_LOOP_INTERVAL_MS);
+      return;
+    }
+
     try {
       const result = reader.decode(video);
       if (result) {
@@ -170,7 +175,10 @@ export function PhoneScannerMode({ onScan }: { onScan: ScanFn }) {
         e instanceof Error &&
         (e.name === "NotFoundException" ||
           e.name === "ChecksumException" ||
-          e.name === "FormatException");
+          e.name === "FormatException" ||
+          e.name === "InvalidStateError" ||
+          e.name === "NS_ERROR_NOT_AVAILABLE" ||
+          e.name === "AbortError");
       if (!isRetryable) {
         console.warn("Camera scan error:", e);
         retryCountRef.current += 1;
