@@ -319,7 +319,10 @@ export const EN: Dict = {
   "dash.form.product.category": "Category",
   "dash.form.product.price": "Price",
   "dash.form.product.stock": "Stock",
-  "dash.form.product.image": "Image URL",
+  "dash.form.product.image": "Product image (upload)",
+  "dash.form.product.imageHint":
+    "PNG, JPG or WebP up to 4 MB. The existing image is kept unless you upload a new one.",
+  "dash.form.product.imageTooLarge": "Image must be 4 MB or smaller.",
   "dash.form.product.desc": "Description",
   "dash.form.product.featured": "Featured",
   "dash.form.product.barcode": "Barcode / QR value",
@@ -1429,7 +1432,10 @@ const AR: Dict = {
   "dash.form.product.category": "الفئة",
   "dash.form.product.price": "السعر",
   "dash.form.product.stock": "المخزون",
-  "dash.form.product.image": "رابط الصورة",
+  "dash.form.product.image": "صورة المنتج (رفع)",
+  "dash.form.product.imageHint":
+    "PNG أو JPG أو WebP حتى 4 ميغابايت. تُحفظ الصورة الحالية ما لم ترفع صورة جديدة.",
+  "dash.form.product.imageTooLarge": "يجب ألا يتجاوز حجم الصورة 4 ميغابايت.",
   "dash.form.product.desc": "الوصف",
   "dash.form.product.featured": "مميز",
   "dash.form.product.barcode": "قيمة الباركود / QR",

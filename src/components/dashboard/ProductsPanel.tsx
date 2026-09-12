@@ -196,18 +196,40 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
           </Field>
           <Field label={t("dash.form.product.image")}>
             <Input
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-              placeholder="https://…"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 4 * 1024 * 1024) {
+                  toast.error(t("dash.form.product.imageTooLarge"));
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setForm((f) => ({ ...f, image: String(reader.result ?? "") }));
+                reader.readAsDataURL(file);
+              }}
             />
+            <p className="text-xs text-muted-foreground">{t("dash.form.product.imageHint")}</p>
+            {form.image && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={form.image}
+                  alt=""
+                  className="h-20 w-20 rounded-lg border border-border object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setForm((f) => ({ ...f, image: "" }))}
+                >
+                  {t("dash.remove")}
+                </Button>
+              </div>
+            )}
           </Field>
-          {form.image && (
-            <img
-              src={form.image}
-              alt=""
-              className="h-32 w-full rounded-xl border border-border object-cover"
-            />
-          )}
           <Field label={t("dash.form.product.qrCode")}>
             <Input
               type="file"
