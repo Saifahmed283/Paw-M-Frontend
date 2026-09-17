@@ -37,6 +37,7 @@ import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
+import { ScannerStatus } from "@/components/cashier/ScannerStatus";
 import { QuickAddGrid } from "@/components/cashier/QuickAddGrid";
 import { HoldManager } from "@/components/cashier/HoldManager";
 import { DiscountPanel } from "@/components/cashier/DiscountPanel";
@@ -558,6 +559,7 @@ function CashierApp() {
                     <PhoneScannerMode onScan={processBarcode} />
                   </CollapsibleContent>
                 </Collapsible>
+                <ScannerStatus />
               </TabsContent>
               <TabsContent value="quick" className="pt-4">
                 <QuickAddGrid
