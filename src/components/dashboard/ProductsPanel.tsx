@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Star, Trash2, UploadCloud } from "lucide-react";
+import QRCode from "qrcode";
+import { Plus, ScanLine, Star, Trash2, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 import {
   Table,
   TableBody,
@@ -53,8 +56,17 @@ const EMPTY_PRODUCT = {
   barcodeImage: "",
 };
 
-function ProductDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
+function ProductDialog({
+  product,
+  onClose,
+  products,
+}: {
+  product: Product | null;
+  onClose: () => void;
+  products: Product[];
+}) {
   const { t } = useI18n();
+  const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState(() =>
     product
       ? {
@@ -71,6 +83,26 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
           barcodeImage: product.barcodeImage ?? "",
         }
       : EMPTY_PRODUCT,
+  );
+
+  const handleCapture = useCallback(
+    async (code: string) => {
+      const clean = code.trim();
+      if (!clean || clean === form.barcode) return;
+      setForm((f) => ({ ...f, barcode: clean }));
+      toast.success(t("dash.form.product.captured", { code: clean }));
+      try {
+        const label = await QRCode.toDataURL(clean, { margin: 1, width: 400 });
+        setForm((f) => ({ ...f, barcodeImage: label }));
+      } catch (err) {
+        console.error("Failed to generate barcode label", err);
+      }
+      const existing = products.find((p) => p.barcode === clean && p.id !== product?.id);
+      if (existing) {
+        toast.warning(t("dash.form.product.barcodeExists", { name: existing.name }));
+      }
+    },
+    [form.barcode, products, product?.id, t],
   );
 
   const save = async () => {
@@ -141,6 +173,24 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
               value={form.barcode}
               onChange={(e) => setForm({ ...form, barcode: e.target.value })}
             />
+            <Collapsible
+              open={scanOpen}
+              onOpenChange={setScanOpen}
+              className="mt-2 rounded-lg border border-border p-2"
+            >
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                  <ScanLine className="size-4" />
+                  {t("dash.form.product.capture")}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {t("dash.form.product.captureHint")}
+                </p>
+                <PhoneScannerMode onScan={(code) => void handleCapture(code)} />
+              </CollapsibleContent>
+            </Collapsible>
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label={t("dash.form.product.price")}>
@@ -529,6 +579,7 @@ export function ProductsPanel() {
         <ProductDialog
           product={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
+          products={products}
         />
       )}
 
