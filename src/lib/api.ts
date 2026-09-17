@@ -34,12 +34,25 @@ function authHeaders(): Record<string, string> {
   return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
 }
 
+const CSRF_COOKIE = "paw-m-csrf-token";
+
+// Same-origin deployments receive a readable double-submit CSRF cookie with
+// the staff session; echo it back so cookie-authenticated state changes pass
+// backend verification. Cross-origin deployments cannot read the API origin's
+// cookie, so they rely on the Bearer token path and send no header.
+function csrfHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const match = document.cookie.match(new RegExp(`(?:^|; )${CSRF_COOKIE}=([^;]+)`));
+  return match ? { "X-CSRF-Token": decodeURIComponent(match[1]) } : {};
+}
+
 async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
   const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
 
   const headers = new Headers({
     "Content-Type": "application/json",
     ...authHeaders(),
+    ...csrfHeaders(),
     ...(init?.headers ?? {}),
   });
 
