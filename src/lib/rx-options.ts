@@ -78,5 +78,5 @@ export function carePlanFor(species: string): RxCareCategory[] {
   const key = Object.keys(RX_CARE_PLAN).find(
     (k) => k.toLowerCase() === species.trim().toLowerCase(),
   );
-  return key ? RX_CARE_PLAN[key] : [];
+  return key ? (RX_CARE_PLAN[key] ?? []) : [];
 }

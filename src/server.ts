@@ -29,7 +29,7 @@ function resolveApiOrigin(request: Request): string {
 }
 
 function buildSecurityHeaders(apiOrigin: string): Record<string, string> {
-  const isDev = typeof process !== "undefined" ? process.env.NODE_ENV !== "production" : false;
+  const isDev = typeof process !== "undefined" ? process.env["NODE_ENV"] !== "production" : false;
 
   const cspDirectives = [
     "default-src 'self'",

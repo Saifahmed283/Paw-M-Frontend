@@ -326,12 +326,13 @@ export const EN: Dict = {
   "dash.form.product.desc": "Description",
   "dash.form.product.featured": "Featured",
   "dash.form.product.barcode": "Barcode / QR value",
-  "dash.form.product.capture": "Barcode capture",
+  "dash.form.product.capture": "Scanner capture",
   "dash.form.product.captureHint":
-    "Use the camera to scan the barcode or upload a photo. The captured value fills the field above and generates a printable label.",
+    "Connect a USB / laser barcode scanner, then scan the product's barcode. The value is detected automatically and fills the Barcode field above, and a printable label is generated. You can also type or paste the code manually and press Enter.",
+  "dash.form.product.scanPlaceholder": "Scan or type barcode…",
   "dash.form.product.captured": "Barcode captured: {code}",
   "dash.form.product.barcodeExists":
-    "This barcode already belongs to \"{name}\". Save anyway, or edit that product instead to avoid duplicates.",
+    'This barcode already belongs to "{name}". Save anyway, or edit that product instead to avoid duplicates.',
   "dash.form.product.qrCode": "QR code image (upload)",
   "dash.form.product.qrHint":
     "Enter the exact barcode/QR value the scanner outputs into the field above — the cashier matches the scanned value to this. The uploaded QR image is a printable label of that value.",
@@ -856,7 +857,7 @@ export const EN: Dict = {
   "cashier.scannerCount": "{count} scans",
   "cashier.scannerTest": "Test scanner",
   "cashier.scannerTestDesc":
-    "Click the field and scan any barcode. If nothing appears, the scanner is not in USB Keyboard mode — scan the \"USB Keyboard\" barcode from its setup guide.",
+    'Click the field and scan any barcode. If nothing appears, the scanner is not in USB Keyboard mode — scan the "USB Keyboard" barcode from its setup guide.',
   "cashier.scannerTestPlaceholder": "Scan here to test...",
   "cashier.scannerTestClose": "Close test",
   "cashier.quickAdd": "Quick add",
@@ -1454,12 +1455,13 @@ const AR: Dict = {
   "dash.form.product.desc": "الوصف",
   "dash.form.product.featured": "مميز",
   "dash.form.product.barcode": "قيمة الباركود / QR",
-  "dash.form.product.capture": "التقاط الباركود",
+  "dash.form.product.capture": "التقاط بالماسح",
   "dash.form.product.captureHint":
-    "استخدم الكاميرا لمسح الباركود أو ارفع صورة. القيمة الملتقطة تُملأ تلقائيًا في الحقل أعلاه وتُنشئ ملصقًا قابلًا للطباعة.",
+    "وصّل ماسح باركود USB أو ليزر ثم امسح باركود المنتج. تُكتشف القيمة تلقائيًا وتُملأ في حقل الباركود أعلاه، ويُولَّد ملصق قابل للطباعة. يمكنك أيضًا كتابة الكود أو لصقه يدويًا والضغط على Enter.",
+  "dash.form.product.scanPlaceholder": "امسح أو اكتب الباركود…",
   "dash.form.product.captured": "تم التقاط الباركود: {code}",
   "dash.form.product.barcodeExists":
-    "هذا الباركود مُسجّل بالفعل لمنتج \"{name}\". احفظه على أي حال، أو عدّل هذا المنتج بدلًا من ذلك لتجنب التكرار.",
+    'هذا الباركود مُسجّل بالفعل لمنتج "{name}". احفظه على أي حال، أو عدّل هذا المنتج بدلًا من ذلك لتجنب التكرار.',
   "dash.form.product.qrCode": "صورة رمز QR (رفع)",
   "dash.form.product.qrHint":
     "أدخل قيمة الباركود/QR التي يخرجها الماسح بالضبط في الحقل أعلاه — يعتمد الكاشير على مطابقة القيمة الممسوحة معه. صورة QR المرفوعة هي ملصق مطبوع لتلك القيمة.",
@@ -1967,7 +1969,7 @@ const AR: Dict = {
   "cashier.scannerCount": "{count} عمليات مسح",
   "cashier.scannerTest": "اختبار الماسح",
   "cashier.scannerTestDesc":
-    "انقر على الحقل ثم امسح أي باركود. إذا لم يظهر شيء، فالماسح ليس في وضع USB Keyboard — امسح باركود \"USB Keyboard\" من دليل الإعداد الخاص به.",
+    'انقر على الحقل ثم امسح أي باركود. إذا لم يظهر شيء، فالماسح ليس في وضع USB Keyboard — امسح باركود "USB Keyboard" من دليل الإعداد الخاص به.',
   "cashier.scannerTestPlaceholder": "امسح هنا للاختبار...",
   "cashier.scannerTestClose": "إغلاق الاختبار",
   "cashier.quickAdd": "إضافة سريعة",

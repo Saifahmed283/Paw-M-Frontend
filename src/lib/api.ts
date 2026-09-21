@@ -43,7 +43,7 @@ const CSRF_COOKIE = "paw-m-csrf-token";
 function csrfHeaders(): Record<string, string> {
   if (typeof document === "undefined") return {};
   const match = document.cookie.match(new RegExp(`(?:^|; )${CSRF_COOKIE}=([^;]+)`));
-  return match ? { "X-CSRF-Token": decodeURIComponent(match[1]) } : {};
+  return match ? { "X-CSRF-Token": decodeURIComponent(match[1] ?? "") } : {};
 }
 
 async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {

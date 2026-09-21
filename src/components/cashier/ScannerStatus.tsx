@@ -45,7 +45,8 @@ export function ScannerStatus({ className }: { className?: string }) {
 
   let message: string;
   if (active && lastAt !== null) message = t("cashier.scannerActive", { ago: timeAgo(lastAt, t) });
-  else if (detected && lastAt !== null) message = t("cashier.scannerSeen", { ago: timeAgo(lastAt, t) });
+  else if (detected && lastAt !== null)
+    message = t("cashier.scannerSeen", { ago: timeAgo(lastAt, t) });
   else message = t("cashier.scannerNever");
 
   return (
@@ -60,14 +61,21 @@ export function ScannerStatus({ className }: { className?: string }) {
         {detected && (
           <span className="ml-auto inline-flex items-center gap-3 text-xs text-muted-foreground">
             {lastCode && <span className="font-mono">{lastCode}</span>}
-            {scanCount > 0 && <span>{t("cashier.scannerCount", { count: String(scanCount) })}</span>}
+            {scanCount > 0 && (
+              <span>{t("cashier.scannerCount", { count: String(scanCount) })}</span>
+            )}
           </span>
         )}
       </div>
 
       <div className="mt-2 border-t pt-2">
         {!testing ? (
-          <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={() => setTesting(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => setTesting(true)}
+          >
             <ScanLine className="size-3.5" />
             {t("cashier.scannerTest")}
           </Button>
@@ -92,7 +100,12 @@ export function ScannerStatus({ className }: { className?: string }) {
               <CircleAlert className="mt-0.5 size-3.5 shrink-0" />
               {t("cashier.scannerTestDesc")}
             </p>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setTesting(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setTesting(false)}
+            >
               {t("cashier.scannerTestClose")}
             </Button>
           </div>

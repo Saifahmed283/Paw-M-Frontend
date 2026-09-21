@@ -704,10 +704,10 @@ function ReservationsTab() {
           onClose={() => setRxFor(null)}
           onSaved={() => setRxFor(null)}
           preset={{
-            petId: rxFor.petId ?? undefined,
+            ...(rxFor.petId ? { petId: rxFor.petId } : {}),
             doctorId: rxFor.doctorId,
             bookingId: rxFor.id,
-            diagnosis: rxFor.diagnosis,
+            ...(rxFor.diagnosis ? { diagnosis: rxFor.diagnosis } : {}),
           }}
         />
       )}

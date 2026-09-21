@@ -247,7 +247,7 @@ function ProductPage() {
     if (product) {
       document.title = `${product.name} — Paw-M Store`;
     }
-  }, [product?.name]);
+  }, [product, product?.name]);
 
   if (!product) {
     return (

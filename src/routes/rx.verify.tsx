@@ -53,10 +53,10 @@ function VerifyPage() {
         setState({
           kind: "valid",
           rxNumber: res.rxNumber ?? clean,
-          pet: res.pet?.name,
-          doctor: res.doctor?.name,
-          diagnosis: res.diagnosis,
-          issuedAt: res.issuedAt,
+          ...(res.pet?.name !== undefined ? { pet: res.pet.name } : {}),
+          ...(res.doctor?.name !== undefined ? { doctor: res.doctor.name } : {}),
+          ...(res.diagnosis !== undefined ? { diagnosis: res.diagnosis } : {}),
+          ...(res.issuedAt !== undefined ? { issuedAt: res.issuedAt } : {}),
         });
       } else {
         setState({

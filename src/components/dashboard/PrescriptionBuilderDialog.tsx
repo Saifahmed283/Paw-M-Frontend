@@ -162,11 +162,15 @@ export function PrescriptionBuilderDialog({
     };
     try {
       if (editing) {
-        await updatePrescription(editing.id, payload);
+        await updatePrescription(editing.id, {
+          ...payload,
+          status: status === "void" ? "void" : "issued",
+        });
         toast.success(editing.status === "void" ? "Prescription updated" : "Prescription updated");
       } else {
         await createPrescription({
           ...payload,
+          status: status === "draft" ? "draft" : "issued",
           petId: petId || null,
           petName: selectedPet ? selectedPet.name : patientName.trim(),
           petSpecies: selectedPet ? selectedPet.species : planSpecies,

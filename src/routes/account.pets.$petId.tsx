@@ -12,10 +12,11 @@ import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/account/pets/$petId")({
-  head: () => ({
+  head: ({ params }) => ({
     meta: ogMeta(
       "Pet History — My Account",
       "Your pet's complete visit and prescription history at Paw-M.",
+      `/account/pets/${params.petId}`,
     ),
   }),
   component: PetHistoryPage,

@@ -13,9 +13,7 @@ import { PrescriptionDocument, PrintCss } from "@/components/PrescriptionDocumen
 
 export const Route = createFileRoute("/account/rx/$rxId")({
   head: () => ({
-    meta: {
-      title: "Prescription — My Account",
-    },
+    meta: [{ title: "Prescription — My Account" }],
   }),
   component: RxPage,
 });

@@ -1,11 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { Plus, ScanLine, Star, Trash2, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 import {
   Table,
   TableBody,
@@ -66,7 +64,10 @@ function ProductDialog({
   products: Product[];
 }) {
   const { t } = useI18n();
-  const [scanOpen, setScanOpen] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [scanText, setScanText] = useState("");
+  const [scanBuffer, setScanBuffer] = useState("");
   const [form, setForm] = useState(() =>
     product
       ? {
@@ -85,25 +86,63 @@ function ProductDialog({
       : EMPTY_PRODUCT,
   );
 
-  const handleCapture = useCallback(
-    async (code: string) => {
+  const submitScan = useCallback(
+    (code: string) => {
       const clean = code.trim();
-      if (!clean || clean === form.barcode) return;
-      setForm((f) => ({ ...f, barcode: clean }));
+      setScanText("");
+      setScanBuffer("");
+      if (!clean) return;
+      setForm((f) => (clean === f.barcode ? f : { ...f, barcode: clean }));
       toast.success(t("dash.form.product.captured", { code: clean }));
-      try {
-        const label = await QRCode.toDataURL(clean, { margin: 1, width: 400 });
-        setForm((f) => ({ ...f, barcodeImage: label }));
-      } catch (err) {
-        console.error("Failed to generate barcode label", err);
-      }
+      void QRCode.toDataURL(clean, { margin: 1, width: 400 })
+        .then((label) => setForm((f) => ({ ...f, barcodeImage: label })))
+        .catch((err) => console.error("Failed to generate barcode label", err));
       const existing = products.find((p) => p.barcode === clean && p.id !== product?.id);
       if (existing) {
         toast.warning(t("dash.form.product.barcodeExists", { name: existing.name }));
       }
+      scanInputRef.current?.focus();
     },
-    [form.barcode, products, product?.id, t],
+    [products, product?.id, t],
   );
+
+  // USB / laser barcode scanners act as a keyboard: they type the code very
+  // quickly and send Enter. Capture that input directly on the scan field and,
+  // as a fallback, silently on any non-editable spot while the dialog is open.
+  useEffect(() => {
+    scanInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const flush = () => {
+      const value = scanBuffer.trim();
+      if (value) submitScan(value);
+      setScanBuffer("");
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+      scanTimerRef.current = null;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "Enter") {
+        if (!scanBuffer.trim()) return;
+        e.preventDefault();
+        flush();
+        return;
+      }
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setScanBuffer((prev) => prev + e.key);
+        if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+        scanTimerRef.current = setTimeout(() => setScanBuffer(""), 200);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    };
+  }, [scanBuffer, submitScan]);
 
   const save = async () => {
     const price = Number(form.price);
@@ -173,24 +212,36 @@ function ProductDialog({
               value={form.barcode}
               onChange={(e) => setForm({ ...form, barcode: e.target.value })}
             />
-            <Collapsible
-              open={scanOpen}
-              onOpenChange={setScanOpen}
-              className="mt-2 rounded-lg border border-border p-2"
-            >
-              <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="gap-1.5">
-                  <ScanLine className="size-4" />
-                  {t("dash.form.product.capture")}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <p className="mb-2 text-xs text-muted-foreground">
-                  {t("dash.form.product.captureHint")}
-                </p>
-                <PhoneScannerMode onScan={(code) => void handleCapture(code)} />
-              </CollapsibleContent>
-            </Collapsible>
+          </Field>
+          <Field label={t("dash.form.product.capture")}>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <ScanLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  ref={scanInputRef}
+                  value={scanText}
+                  onChange={(e) => setScanText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitScan(scanText);
+                    }
+                  }}
+                  placeholder={t("dash.form.product.scanPlaceholder")}
+                  className="pl-9"
+                  autoComplete="off"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => submitScan(scanText)}
+                className="shrink-0"
+              >
+                {t("dash.form.product.capture")}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("dash.form.product.captureHint")}</p>
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label={t("dash.form.product.price")}>

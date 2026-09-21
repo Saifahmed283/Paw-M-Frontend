@@ -128,7 +128,7 @@ export async function updatePet(id: string, patch: Partial<PetInput>): Promise<P
 }
 
 export async function deletePet(id: string): Promise<void> {
-  return api.delete(`/pets/${id}`);
+  await api.delete(`/pets/${id}`);
 }
 
 export async function getPetHistory(id: string): Promise<PetHistory> {
@@ -163,6 +163,8 @@ export type PrescriptionInput = {
   status?: "draft" | "issued";
 };
 
+export type RxDoctorInfo = NonNullable<Prescription["doctor"]>;
+
 export async function createPrescription(input: PrescriptionInput): Promise<Prescription> {
   return api.post<Prescription>("/prescriptions", input);
 }
@@ -186,7 +188,7 @@ export async function verifyRxCode(code: string): Promise<{
   rxNumber?: string;
   issuedAt?: string | null;
   pet?: Prescription["pet"];
-  doctor?: Pick<Prescription["doctor"], "name" | "title" | "licenseNumber">;
+  doctor?: Pick<RxDoctorInfo, "name" | "title" | "licenseNumber">;
   diagnosis?: string;
 }> {
   return api.get<{
@@ -195,7 +197,7 @@ export async function verifyRxCode(code: string): Promise<{
     rxNumber?: string;
     issuedAt?: string | null;
     pet?: Prescription["pet"];
-    doctor?: Pick<Prescription["doctor"], "name" | "title" | "licenseNumber">;
+    doctor?: Pick<RxDoctorInfo, "name" | "title" | "licenseNumber">;
     diagnosis?: string;
   }>(`/prescriptions/verify?code=${encodeURIComponent(code)}`);
 }
