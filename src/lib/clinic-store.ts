@@ -4,6 +4,7 @@ import { CLINIC, CLINIC_REVIEWS, DOCTORS, SERVICES, type Doctor } from "@/lib/cl
 import { sanitizeEmail, sanitizePhone, sanitizeWhatsapp } from "@/lib/sanitize";
 import { api } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
+import type { Prescription } from "@/lib/client-medical";
 import type { RolePermissions } from "@/lib/roles";
 
 export type Status = "pending" | "confirmed" | "completed" | "cancelled";
@@ -40,6 +41,7 @@ export type ServiceItem = {
   icon: string;
   title: string;
   description: string;
+  price?: number;
 };
 
 export type Product = {
@@ -90,6 +92,34 @@ export type Order = {
   createdAt: string;
 };
 
+export type PaymentKind = "order" | "visit" | "manual";
+export type PaymentItemKind = "service" | "product" | "other";
+
+export type PaymentItem = {
+  id: string;
+  paymentId: string;
+  label: string;
+  amount: number;
+  kind: PaymentItemKind;
+  referenceId?: string | null;
+  createdAt: string;
+};
+
+export type ClientRef = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+};
+
+export type BookingRef = {
+  id: string;
+  petName: string;
+  doctorName: string;
+  date: string;
+  status: Status;
+};
+
 export type Payment = {
   id: string;
   title: string;
@@ -98,8 +128,94 @@ export type Payment = {
   status: "unpaid" | "paid";
   date: string;
   notes: string;
-  orderId: string;
+  orderId?: string | null;
+  clientId?: string | null;
+  bookingId?: string | null;
+  kind: PaymentKind;
+  requestedBy?: string;
+  client?: ClientRef | null;
+  booking?: BookingRef | null;
+  items?: PaymentItem[];
   createdAt: string;
+};
+
+export type ClientType = "store" | "clinic" | "both" | "new";
+
+export type ClientSummary = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  createdAt: string;
+  updatedAt: string;
+  type: ClientType;
+  petsCount: number;
+  bookingsCount: number;
+  ordersCount: number;
+  totalPaid: number;
+  outstanding: number;
+  lastActivity: string;
+};
+
+export type ClientPet = {
+  id: string;
+  name: string;
+  species: string;
+  breed?: string;
+  sex?: string;
+  dob?: string;
+  weightKg?: number;
+  color?: string;
+  photo?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+export type ClientDetailBooking = {
+  id: string;
+  petId?: string | null;
+  petName: string;
+  doctorId?: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  status: Status;
+  symptoms?: string;
+  diagnosis?: string;
+  treatmentNotes?: string;
+  followUpDate?: string;
+  pet?: { id: string; name: string; species: string } | null;
+  prescriptions?: {
+    id: string;
+    rxNumber: string;
+    status: string;
+    followUpDate?: string;
+    issuedAt?: string | null;
+  }[];
+};
+
+export type ClientDetail = {
+  client: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  pets: ClientPet[];
+  bookings: ClientDetailBooking[];
+  prescriptions: Prescription[];
+  orders: Order[];
+  payments: Payment[];
+  stats: {
+    bookingsCount: number;
+    completedCount: number;
+    paidVisit: number;
+    outstandingVisit: number;
+    nextAppointment: ClientDetailBooking | null;
+    followUpDate: string;
+  };
 };
 
 export type Review = {
@@ -172,6 +288,7 @@ type Store = {
   orders: Order[];
   reviews: Review[];
   payments: Payment[];
+  clients: ClientSummary[];
   settings: ClinicSettings;
   workSession: WorkSession | null;
   auditLogs: AuditLog[];
@@ -187,6 +304,7 @@ const QUERY_KEYS = {
   orders: ["orders"] as const,
   reviews: ["reviews"] as const,
   payments: ["payments"] as const,
+  clients: ["clients"] as const,
   settings: ["settings"] as const,
   workSession: ["work-session"] as const,
   auditLogs: ["audit-logs"] as const,
@@ -208,6 +326,7 @@ const seedDefaults = {
   products: [] as Product[],
   orders: [] as Order[],
   payments: [] as Payment[],
+  clients: [] as ClientSummary[],
   auditLogs: [] as AuditLog[],
   workDays: [] as WorkDaySummary[],
 };
@@ -227,6 +346,7 @@ function seed(): Store {
       createdAt: new Date(0).toISOString(),
     })),
     payments: [],
+    clients: [],
     settings: { ...CLINIC },
     workSession: null,
     auditLogs: [],
@@ -314,6 +434,14 @@ export function useClinicStore() {
     enabled: mounted && isAuthed(),
   });
 
+  const { data: clients = seedDefaults.clients } = useQuery({
+    queryKey: QUERY_KEYS.clients,
+    queryFn: () => api.get<ClientSummary[]>("/clients?limit=200"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? seedDefaults.clients,
+    enabled: mounted && isAuthed(),
+  });
+
   const { data: settings = seedDefaults.settings } = useQuery({
     queryKey: QUERY_KEYS.settings,
     queryFn: () => api.get<ClinicSettings>("/settings"),
@@ -369,6 +497,7 @@ export function useClinicStore() {
       orders: gated(orders, seedDefaults.orders),
       reviews: gated(reviews, seedDefaults.reviews),
       payments: gated(payments, seedDefaults.payments),
+      clients: gated(clients, seedDefaults.clients),
       settings: gated(settings, seedDefaults.settings),
       workSession: gated(workSession, null),
       auditLogs: gated(auditLogs, seedDefaults.auditLogs),
@@ -384,6 +513,7 @@ export function useClinicStore() {
     orders,
     reviews,
     payments,
+    clients,
     settings,
     workSession,
     auditLogs,
@@ -401,6 +531,7 @@ export function refreshClinicData() {
   invalidate(QUERY_KEYS.orders);
   invalidate(QUERY_KEYS.reviews);
   invalidate(QUERY_KEYS.payments);
+  invalidate(QUERY_KEYS.clients);
   invalidate(QUERY_KEYS.settings);
   invalidate(QUERY_KEYS.workSession);
   invalidate(QUERY_KEYS.auditLogs);
@@ -714,6 +845,65 @@ export async function deletePayment(id: string) {
   }
 }
 
+export type PaymentRequestInput = {
+  title: string;
+  kind?: PaymentKind;
+  clientId?: string | null;
+  bookingId?: string | null;
+  amount: number;
+  method: PaymentMethod;
+  status?: "unpaid" | "paid" | undefined;
+  date?: string;
+  notes?: string;
+  requestedBy?: string;
+  items?: {
+    label: string;
+    amount: number;
+    kind: "service" | "product" | "other";
+    referenceId?: string | null | undefined;
+  }[];
+};
+
+export async function createPaymentRequest(input: PaymentRequestInput) {
+  try {
+    const created = await api.post<Payment>("/payments", input);
+    invalidate(QUERY_KEYS.payments);
+    return created;
+  } catch (err) {
+    console.error("Failed to create payment request", err);
+    throw err;
+  }
+}
+
+export async function addPaymentItem(
+  id: string,
+  items: { label: string; amount: number; kind: "service" | "product" | "other" }[],
+) {
+  try {
+    const updated = await api.post<Payment>(`/payments/${id}/items`, { items });
+    invalidate(QUERY_KEYS.payments);
+    return updated;
+  } catch (err) {
+    console.error("Failed to add payment items", err);
+    throw err;
+  }
+}
+
+export async function settlePayment(id: string, input: { method: PaymentMethod; notes?: string }) {
+  try {
+    const updated = await api.post<Payment>(`/payments/${id}/settle`, input);
+    invalidate(QUERY_KEYS.payments);
+    return updated;
+  } catch (err) {
+    console.error("Failed to settle payment", err);
+    throw err;
+  }
+}
+
+export async function getClient(id: string) {
+  return api.get<ClientDetail>(`/clients/${id}`);
+}
+
 export async function updateSettings(patch: Partial<ClinicSettings>) {
   const clean: Partial<ClinicSettings> = { ...patch };
   if (patch.phone !== undefined) clean.phone = sanitizePhone(patch.phone);
@@ -844,6 +1034,7 @@ export function get(): Store {
         createdAt: new Date(0).toISOString(),
       })),
     payments: qc.getQueryData<Payment[]>(QUERY_KEYS.payments) ?? [],
+    clients: qc.getQueryData<ClientSummary[]>(QUERY_KEYS.clients) ?? [],
     settings: qc.getQueryData<ClinicSettings>(QUERY_KEYS.settings) ?? { ...CLINIC },
     workSession: qc.getQueryData<WorkSession | null>(QUERY_KEYS.workSession) ?? null,
     auditLogs: qc.getQueryData<AuditLog[]>(QUERY_KEYS.auditLogs) ?? [],

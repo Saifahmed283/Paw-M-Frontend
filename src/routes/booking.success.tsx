@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck, Check } from "lucide-react";
+import { Banknote, CalendarCheck, Check } from "lucide-react";
 import { motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,11 @@ function SuccessPage() {
             </div>
           ))}
         </dl>
+
+        <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+          <Banknote className="size-4 shrink-0 text-primary/70" />
+          <span>{t("booking.success.fee")}</span>
+        </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild className="shadow-glow">

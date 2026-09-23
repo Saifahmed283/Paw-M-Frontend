@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Banknote, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -538,7 +538,12 @@ function BookingForm() {
               </div>
             )}
 
-            <div className="mt-8 flex items-center justify-between gap-3">
+            <div className="mt-6 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              <Banknote className="size-4 shrink-0 text-primary/70" />
+              <span>{t("book.feeNote")}</span>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
               <Button
                 variant="ghost"
                 onClick={() => setStep((s) => Math.max(0, s - 1))}

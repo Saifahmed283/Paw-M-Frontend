@@ -25,20 +25,25 @@ import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 import { useClinicStore, saveService, deleteService, type ServiceItem } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { Field } from "./dashboard-helpers";
+import { formatMoney } from "./dashboard-format";
 
 function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onClose: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({
     title: service?.title ?? "",
     description: service?.description ?? "",
+    price: service?.price != null ? String(service.price) : "0",
   });
 
   const save = async () => {
+    const value = Number.parseFloat(form.price);
+    const price = Number.isFinite(value) && value >= 0 ? value : 0;
     await saveService({
       slug: service?.slug ?? `svc-${Date.now().toString(36)}`,
       icon: service?.icon ?? "Stethoscope",
       title: form.title.trim() || t("dash.untitled"),
       description: form.description.trim(),
+      price,
     });
     toast.success(t("dash.toast.saved"));
     onClose();
@@ -70,6 +75,15 @@ function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onCl
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </Field>
+          <Field label={t("dash.form.service.price")}>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+            />
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -86,7 +100,7 @@ function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onCl
 
 export function ServicesPanel() {
   const { t, tOr } = useI18n();
-  const { services } = useClinicStore();
+  const { services, settings } = useClinicStore();
   const [editing, setEditing] = useState<ServiceItem | "new" | null>(null);
   const [query, setQuery] = useState("");
   const grid = useGrid(services, query, ["title", "description"]);
@@ -112,6 +126,7 @@ export function ServicesPanel() {
               <TableRow>
                 <TableHead>{t("dash.form.service.title")}</TableHead>
                 <TableHead>{t("dash.form.service.desc")}</TableHead>
+                <TableHead className="text-end">{t("payments.amount")}</TableHead>
                 <TableHead className="text-end">{t("dash.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -123,6 +138,11 @@ export function ServicesPanel() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {tOr(`svc.${s.slug}.desc`, s.description)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-end font-semibold">
+                    {(s.price ?? 0) > 0
+                      ? formatMoney(s.price!, settings.currency)
+                      : t("dash.services.free")}
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1.5">

@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { Order } from "@/lib/clinic-store";
+import type { Order, Payment } from "@/lib/clinic-store";
 
 export type Pet = {
   id: string;
@@ -101,6 +101,7 @@ export type MeProfile = {
   bookings: ClientBooking[];
   orders: Order[];
   prescriptions: Prescription[];
+  payments: Payment[];
 };
 
 export type PetHistory = {

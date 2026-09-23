@@ -9,6 +9,7 @@ import {
   PawPrint,
   Plus,
   Pencil,
+  ReceiptText,
   ShoppingBag,
   Trash2,
 } from "lucide-react";
@@ -41,6 +42,8 @@ import { useI18n } from "@/lib/i18n";
 import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { logoutClient } from "@/lib/client-auth";
+import { formatPrice } from "@/lib/format";
+import { useClinicStore } from "@/lib/clinic-store";
 import {
   createPet,
   deletePet,
@@ -63,13 +66,14 @@ export const Route = createFileRoute("/account")({
   component: AccountPage,
 });
 
-type Tab = "overview" | "pets" | "appointments" | "orders" | "prescriptions";
+type Tab = "overview" | "pets" | "appointments" | "orders" | "prescriptions" | "bills";
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "pets", label: "My Pets", icon: PawPrint },
   { id: "appointments", label: "Appointments", icon: CalendarDays },
   { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "bills", label: "Bills", icon: ReceiptText },
   { id: "prescriptions", label: "Prescriptions", icon: FileText },
 ];
 
@@ -168,6 +172,8 @@ function AccountPortal() {
               <AppointmentsTab profile={profile!} />
             ) : tab === "orders" ? (
               <OrdersTab profile={profile!} />
+            ) : tab === "bills" ? (
+              <BillsTab profile={profile!} />
             ) : (
               <PrescriptionsTab profile={profile!} />
             )}
@@ -598,6 +604,49 @@ function OrdersTab({ profile }: { profile: MeProfile }) {
               ))}
               {o.items.length > 3 && <li>… and {o.items.length - 3} more</li>}
             </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BillsTab({ profile }: { profile: MeProfile }) {
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
+  const bills = profile.payments.filter((p) => p.kind === "visit");
+  return (
+    <div className="grid gap-5">
+      <h2 className="text-lg font-semibold">{t("account.visitBills")}</h2>
+      {bills.length === 0 && (
+        <Card>
+          <CardContent className="py-14 text-center text-sm text-muted-foreground">
+            {t("account.visitBillsEmpty")}
+          </CardContent>
+        </Card>
+      )}
+      <div className="grid gap-3">
+        {bills.map((p) => (
+          <div key={p.id} className="rounded-2xl border border-border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">{p.title}</p>
+              <Badge variant={p.status === "paid" ? "secondary" : "outline"}>
+                {p.status === "paid" ? t("account.billPaid") : t("account.billsOutstanding")}
+              </Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {fmt(p.date)} · {formatPrice(p.amount, settings.currency)}
+            </p>
+            {p.items && p.items.length > 0 && (
+              <ul className="mt-2 grid gap-1 text-xs text-muted-foreground">
+                {p.items.map((it, idx) => (
+                  <li key={idx} className="flex justify-between gap-3">
+                    <span>{it.label}</span>
+                    <span>{formatPrice(it.amount, settings.currency)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>

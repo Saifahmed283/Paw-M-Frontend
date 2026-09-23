@@ -32,10 +32,19 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { createOrder, useClinicStore, type PaymentMethod, type Product } from "@/lib/clinic-store";
+import {
+  createOrder,
+  useClinicStore,
+  type Payment,
+  type PaymentMethod,
+  type Product,
+} from "@/lib/clinic-store";
+import { addPaymentItem, refreshClinicData, settlePayment } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { PaymentKindBadge } from "@/components/dashboard/dashboard-helpers";
+import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog";
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 import { ScannerStatus } from "@/components/cashier/ScannerStatus";
 import { QuickAddGrid } from "@/components/cashier/QuickAddGrid";
@@ -119,6 +128,108 @@ function CashierPage() {
   );
 }
 
+function PaymentRequestsCard({
+  cartLines,
+  onCombined,
+}: {
+  cartLines: { label: string; amount: number; kind: "product"; referenceId: string }[];
+  onCombined: () => void;
+}) {
+  const { t } = useI18n();
+  const { payments, settings } = useClinicStore();
+  const [settling, setSettling] = useState<Payment | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const pending = payments.filter((p) => p.status === "unpaid");
+  const settlingPayment = pending.find((p) => p.id === settling?.id) ?? settling;
+
+  const combineAndSettle = async (p: Payment) => {
+    if (busyId) return;
+    if (cartLines.length === 0) return;
+    setBusyId(p.id);
+    try {
+      await addPaymentItem(p.id, cartLines);
+      toast.success(t("cashier.billCombined"));
+      await settlePayment(p.id, { method: "cash", notes: t("cashier.combineLinesHint") });
+      toast.success(t("cashier.billSettled"));
+      refreshClinicData();
+      onCombined();
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : "";
+      toast.error(message || t("dash.toast.error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (pending.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ReceiptText className="size-4 text-muted-foreground" />
+          {t("cashier.paymentRequests")}
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">{t("cashier.paymentRequestsDesc")}</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {pending.map((p) => (
+          <div key={p.id} className="rounded-xl border border-border p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{p.title}</p>
+                {p.client?.fullName && (
+                  <p className="text-xs text-muted-foreground">{p.client.fullName}</p>
+                )}
+                {p.items && p.items.length > 0 && (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {p.items.map((it) => it.label).join(" · ")}
+                  </p>
+                )}
+              </div>
+              <div className="text-end">
+                <p className="text-base font-bold">{formatPrice(p.amount, settings.currency)}</p>
+                <PaymentKindBadge kind={p.kind} />
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 flex-1"
+                disabled={busyId === p.id}
+                onClick={() => setSettling(p)}
+              >
+                {t("cashier.settleVisit")}
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 flex-1"
+                disabled={cartLines.length === 0 || busyId !== null}
+                onClick={() => combineAndSettle(p)}
+              >
+                {busyId === p.id
+                  ? t("dash.saving")
+                  : t("cashier.combineLine", { count: String(cartLines.length) })}
+              </Button>
+            </div>
+          </div>
+        ))}
+        {settlingPayment && (
+          <PaymentSettleDialog
+            payment={settlingPayment}
+            onClose={() => {
+              setSettling(null);
+              refreshClinicData();
+            }}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 type Totals = {
   subtotal: number;
   itemDiscount: number;
@@ -188,6 +299,14 @@ function CashierApp() {
     [cart, itemDiscounts, orderDiscount],
   );
   const itemCount = cart.reduce((n, i) => n + i.qty, 0);
+
+  const cartLines = cart.map((i) => ({
+    label: i.name,
+    amount:
+      Math.round(itemEffectivePrice(i.originalPrice, itemDiscounts[i.id]) * i.qty * 100) / 100,
+    kind: "product" as const,
+    referenceId: i.id,
+  }));
 
   const addProduct = useCallback(
     (product: Product, qty = 1) => {
@@ -484,6 +603,7 @@ function CashierApp() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
       <div className="space-y-4 min-w-0">
+        <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{t("cashier.addProducts")}</CardTitle>

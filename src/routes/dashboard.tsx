@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   Archive,
   ArrowLeft,
+  Banknote,
   CalendarClock,
   HeartPulse,
   Lock,
@@ -38,6 +39,7 @@ import { ScrollText } from "lucide-react";
 // Dashboard Panels
 import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
 import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
+import { ClientsPanel } from "@/components/dashboard/ClientsPanel";
 import { ShiftBanner } from "@/components/dashboard/ShiftBanner";
 import { DoctorsPanel } from "@/components/dashboard/DoctorsPanel";
 import { ServicesPanel } from "@/components/dashboard/ServicesPanel";
@@ -56,11 +58,13 @@ import { saveBookingClinical } from "@/lib/client-medical";
 import { PrescriptionBuilderDialog } from "@/components/dashboard/PrescriptionBuilderDialog";
 import {
   archiveBooking,
+  createPaymentRequest,
   deleteRequest,
   refreshClinicData,
   setBookingStatus,
   useClinicStore,
   type BookingRequest,
+  type ServiceItem,
   type Status,
 } from "@/lib/clinic-store";
 import {
@@ -80,7 +84,12 @@ import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
 import { allowedTabsForRole } from "@/lib/roles";
 import { StatusBadge, Field } from "@/components/dashboard/dashboard-helpers";
-import { STATUS_OPTIONS, formatDate, formatTime } from "@/components/dashboard/dashboard-format";
+import {
+  STATUS_OPTIONS,
+  formatDate,
+  formatMoney,
+  formatTime,
+} from "@/components/dashboard/dashboard-format";
 import { StatCard, OverviewCard } from "@/components/dashboard/dashboard-shared";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
@@ -585,6 +594,7 @@ function ReservationsTab() {
   const [resQuery, setResQuery] = useState("");
   const [recordFor, setRecordFor] = useState<BookingRequest | null>(null);
   const [rxFor, setRxFor] = useState<BookingRequest | null>(null);
+  const [reqPayFor, setReqPayFor] = useState<BookingRequest | null>(null);
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const upcomingBase = useMemo(
@@ -668,6 +678,9 @@ function ReservationsTab() {
                   <Button size="sm" variant="outline" onClick={() => setRxFor(r)}>
                     <Stethoscope className="size-4" /> Write prescription
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setReqPayFor(r)}>
+                    <Banknote className="size-4" /> {t("reservations.reqPayment")}
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -711,6 +724,7 @@ function ReservationsTab() {
           }}
         />
       )}
+      {reqPayFor && <RequestPaymentDialog booking={reqPayFor} onClose={() => setReqPayFor(null)} />}
     </div>
   );
 }
@@ -797,6 +811,202 @@ function ClinicalRecordDialog({
   );
 }
 
+/* ─── Request Payment Dialog ─────────────────────────────────────────────────── */
+
+type PayItemDraft = { id: string; label: string; amount: number; kind: "service" | "other" };
+
+function RequestPaymentDialog({
+  booking,
+  onClose,
+}: {
+  booking: BookingRequest;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const { services, settings } = useClinicStore();
+  const [items, setItems] = useState<PayItemDraft[]>([]);
+  const [customLabel, setCustomLabel] = useState("");
+  const [customAmount, setCustomAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const pricedServices = services.filter((s) => (s.price ?? 0) > 0);
+  const total = items.reduce((sum, it) => sum + it.amount, 0);
+
+  const toggleService = (svc: ServiceItem) => {
+    setItems((prev) => {
+      const existing = prev.find((it) => it.id === svc.slug);
+      if (existing) return prev.filter((it) => it.id !== svc.slug);
+      return [...prev, { id: svc.slug, label: svc.title, amount: svc.price!, kind: "service" }];
+    });
+  };
+
+  const addCustom = () => {
+    const value = Number.parseFloat(customAmount);
+    if (!customLabel.trim() || !Number.isFinite(value) || value <= 0) {
+      toast.error(t("reservations.noItems"));
+      return;
+    }
+    setItems((prev) => [
+      ...prev,
+      { id: `custom-${Date.now()}`, label: customLabel.trim(), amount: value, kind: "other" },
+    ]);
+    setCustomLabel("");
+    setCustomAmount("");
+  };
+
+  const setAmount = (id: string, value: string) => {
+    const num = Number.parseFloat(value);
+    const amount = Number.isFinite(num) && num >= 0 ? num : 0;
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, amount } : it)));
+  };
+
+  const send = async () => {
+    if (busy) return;
+    if (items.length === 0) {
+      toast.error(t("reservations.noItems"));
+      return;
+    }
+    setBusy(true);
+    try {
+      await createPaymentRequest({
+        title: `${t("payments.kind.visit")} — ${booking.petName}`,
+        bookingId: booking.id,
+        kind: "visit",
+        amount: total,
+        method: "cash",
+        status: "unpaid",
+        date: new Date().toISOString().slice(0, 10),
+        items: items.map((it) => ({
+          label: it.label,
+          amount: it.amount,
+          kind: it.kind,
+          referenceId: it.kind === "service" ? it.id : undefined,
+        })),
+      });
+      toast.success(t("reservations.requestSent"));
+      refreshClinicData();
+      onClose();
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>
+            {t("reservations.reqPayment")} — {booking.petName}
+          </DialogTitle>
+          <DialogDescription>
+            {booking.ownerName} · {booking.doctorName} · {formatDate(booking.date, "en")}{" "}
+            {booking.time}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <p className="text-xs text-muted-foreground">{t("reservations.requestPaymentDesc")}</p>
+          {pricedServices.length > 0 && (
+            <div className="grid gap-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">
+                {t("dash.form.service.title")}
+              </p>
+              {pricedServices.map((s) => {
+                const active = items.some((it) => it.id === s.slug);
+                return (
+                  <button
+                    key={s.slug}
+                    type="button"
+                    onClick={() => toggleService(s)}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                      active
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:bg-muted/60",
+                    )}
+                  >
+                    <span>{s.title}</span>
+                    <span className="text-xs font-bold text-muted-foreground">
+                      {formatMoney(s.price!, settings.currency)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {items.length > 0 && (
+            <div className="grid gap-1.5">
+              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <span>{t("reservations.serviceCol")}</span>
+                <span className="w-28 text-end">{t("reservations.amountCol")}</span>
+                <span className="w-8" />
+              </div>
+              {items.map((it) => (
+                <div key={it.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
+                  <span className="truncate text-sm">{it.label}</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={String(it.amount)}
+                    onChange={(e) => setAmount(it.id, e.target.value)}
+                    className="h-8 w-28 text-end"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-8"
+                    onClick={() => setItems((prev) => prev.filter((x) => x.id !== it.id))}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid gap-1.5 rounded-lg bg-muted/40 p-3">
+            <p className="text-xs font-semibold text-muted-foreground">
+              {t("reservations.customService")}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+              <Input
+                placeholder={t("reservations.customLabel")}
+                value={customLabel}
+                onChange={(e) => setCustomLabel(e.target.value)}
+              />
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder={t("reservations.customAmount")}
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                className="w-28"
+              />
+              <Button variant="outline" size="sm" onClick={addCustom}>
+                {t("reservations.addLine")}
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t pt-3">
+            <span className="text-sm font-semibold">{t("reservations.total")}</span>
+            <span className="text-lg font-bold">{formatMoney(total, settings.currency)}</span>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {t("dash.cancel")}
+          </Button>
+          <Button onClick={send} disabled={busy}>
+            {busy ? t("dash.saving") : t("reservations.sendToCashier")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ─── Main Dashboard Page ────────────────────────────────────────────────────── */
 
 function DashboardPage() {
@@ -869,6 +1079,7 @@ function DashboardPage() {
 
       {tab === "staff-overview" && <StaffOverviewPanel />}
       {tab === "payroll" && <PayrollPanel />}
+      {tab === "clients" && <ClientsPanel />}
       {tab === "doctors" && <DoctorsPanel />}
       {tab === "services" && <ServicesPanel />}
       {tab === "prescriptions" && <PrescriptionsPanel />}

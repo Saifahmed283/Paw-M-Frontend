@@ -41,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "staff-overview", icon: Users, roles: ["admin"] },
       { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
+      { id: "clients", icon: Users, roles: ["payroll", "admin"] },
     ],
   },
   {

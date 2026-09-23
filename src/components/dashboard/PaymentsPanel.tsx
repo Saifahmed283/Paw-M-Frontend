@@ -41,8 +41,14 @@ import {
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { Field, PaymentMethodBadge, PaymentStatusBadge } from "./dashboard-helpers";
+import {
+  Field,
+  PaymentKindBadge,
+  PaymentMethodBadge,
+  PaymentStatusBadge,
+} from "./dashboard-helpers";
 import { formatMoney, formatDate } from "./dashboard-format";
+import { PaymentSettleDialog } from "./PaymentSettleDialog";
 
 function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
   const { t } = useI18n();
@@ -185,6 +191,8 @@ export function PaymentsPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [instapayDraft, setInstapayDraft] = useState(settings.instapay);
   const [query, setQuery] = useState("");
+  const [settling, setSettling] = useState<Payment | null>(null);
+  const settlingPayment = payments.find((p) => p.id === settling?.id) ?? settling;
   const { sort, toggle } = useSortState("date", "desc");
   const comparators: Record<string, (a: Payment, b: Payment) => number> = {
     date: (a, b) => a.date.localeCompare(b.date),
@@ -413,6 +421,7 @@ export function PaymentsPanel() {
                     <TableRow>
                       <TableHead>{t("payments.date")}</TableHead>
                       <TableHead>{t("payments.title")}</TableHead>
+                      <TableHead>{t("payments.kind.short")}</TableHead>
                       <TableHead>{t("payments.method")}</TableHead>
                       <TableHead className="text-end">{t("payments.amount")}</TableHead>
                       <TableHead>{t("payments.status")}</TableHead>
@@ -433,6 +442,19 @@ export function PaymentsPanel() {
                               {p.orderId}
                             </div>
                           )}
+                          {p.client?.fullName && (
+                            <div className="text-[11px] text-muted-foreground">
+                              {p.client.fullName}
+                            </div>
+                          )}
+                          {p.items && p.items.length > 0 && (
+                            <div className="mt-0.5 text-[11px] text-muted-foreground">
+                              {p.items.map((it) => it.label).join(" · ")}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <PaymentKindBadge kind={p.kind} />
                         </TableCell>
                         <TableCell>
                           <PaymentMethodBadge method={p.method} />
@@ -450,6 +472,16 @@ export function PaymentsPanel() {
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1.5">
+                            {p.status === "unpaid" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2"
+                                onClick={() => setSettling(p)}
+                              >
+                                {t("payments.settle")}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -490,6 +522,9 @@ export function PaymentsPanel() {
 
       {adding && <PaymentDialog payment={null} onClose={() => setAdding(false)} />}
       {editing && <PaymentDialog payment={editing} onClose={() => setEditing(null)} />}
+      {settlingPayment && (
+        <PaymentSettleDialog payment={settlingPayment} onClose={() => setSettling(null)} />
+      )}
     </div>
   );
 }
