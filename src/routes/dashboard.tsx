@@ -39,6 +39,7 @@ import { ScrollText } from "lucide-react";
 // Dashboard Panels
 import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
 import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
+import { PaymentsPanel } from "@/components/dashboard/PaymentsPanel";
 import { ClientsPanel } from "@/components/dashboard/ClientsPanel";
 import { ShiftBanner } from "@/components/dashboard/ShiftBanner";
 import { DoctorsPanel } from "@/components/dashboard/DoctorsPanel";
@@ -1079,6 +1080,7 @@ function DashboardPage() {
 
       {tab === "staff-overview" && <StaffOverviewPanel />}
       {tab === "payroll" && <PayrollPanel />}
+      {tab === "finance" && <PaymentsPanel />}
       {tab === "clients" && <ClientsPanel />}
       {tab === "doctors" && <DoctorsPanel />}
       {tab === "services" && <ServicesPanel />}

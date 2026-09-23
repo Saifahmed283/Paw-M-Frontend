@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Stethoscope,
   Users,
+  Wallet,
 } from "lucide-react";
 
 export type NavGroup = {
@@ -41,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "staff-overview", icon: Users, roles: ["admin"] },
       { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
+      { id: "finance", icon: Wallet, roles: ["payroll", "admin"] },
       { id: "clients", icon: Users, roles: ["payroll", "admin"] },
     ],
   },

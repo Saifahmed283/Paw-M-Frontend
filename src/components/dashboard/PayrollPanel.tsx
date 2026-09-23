@@ -1,9 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Banknote, Calendar, Check, DollarSign, Edit, ListChecks, Plus, X } from "lucide-react";
+import {
+  Banknote,
+  Calendar,
+  Check,
+  CircleDollarSign,
+  DiamondPlus,
+  Edit,
+  ListChecks,
+  Minus,
+  X,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   PaginationBar,
   SearchBox,
@@ -13,15 +32,17 @@ import {
   useSortState,
 } from "@/components/dash-grid";
 import { api } from "@/lib/api";
+import { currentRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Field } from "./dashboard-helpers";
 
 type PayrollStatus = "calculated" | "pending_approval" | "approved" | "paid" | "rejected";
 
 interface PayrollRecord {
   id: string;
-  employee?: { fullName: string; role?: string } | null;
+  employee?: { id: string; fullName: string; role?: string } | null;
   periodStart: string;
   periodEnd: string;
   totalSessions?: number;
@@ -43,11 +64,20 @@ interface CalculateResponse {
   count: number;
 }
 
-const STATUS_FLOW: Partial<Record<PayrollStatus, PayrollStatus>> = {
-  calculated: "pending_approval",
-  pending_approval: "approved",
-  approved: "paid",
-};
+type RequestStatus = "pending" | "approved" | "rejected";
+type RequestType = "bonus" | "deduction";
+
+interface BonusDeductionRequest {
+  id: string;
+  type: RequestType;
+  amount: number;
+  reason: string;
+  status: RequestStatus;
+  requestedBy: string;
+  reviewedBy?: string | null;
+  adminComment?: string | null;
+  createdAt: string;
+}
 
 function currentRange(): { start: string; end: string } {
   const now = new Date();
@@ -64,8 +94,301 @@ const STATUS_STYLES: Record<PayrollStatus, string> = {
   rejected: "bg-destructive/15 text-destructive line-through",
 };
 
+const REQUEST_STATUS_STYLES: Record<RequestStatus, string> = {
+  pending: "bg-amber-500/15 text-amber-600",
+  approved: "bg-success/15 text-success",
+  rejected: "bg-destructive/15 text-destructive",
+};
+
+function AdjustAmountDialog({
+  record,
+  onClose,
+  onSaved,
+}: {
+  record: PayrollRecord;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useI18n();
+  const [basePay, setBasePay] = useState(String(record.basePay ?? ""));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const value = Number(basePay);
+    if (!Number.isFinite(value) || value < 0) {
+      toast.error(t("dash.errorLoad"));
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.patch(`/api/payroll/records/${record.id}/amount`, { basePay: value });
+      toast.success(t("dash.toast.adjusted"));
+      onSaved();
+      onClose();
+    } catch (err) {
+      console.error("Error adjusting payroll amount:", err);
+      toast.error(t("dash.errorLoad"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("dash.adjustAmountTitle")}</DialogTitle>
+          <DialogDescription>{t("dash.adjustAmountHint")}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <Field label={t("dash.basePay")}>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={basePay}
+              onChange={(e) => setBasePay(e.target.value)}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Stat
+              label={t("dash.commission")}
+              value={`${t("dash.egp")}${(record.commissionPay ?? 0).toLocaleString()}`}
+            />
+            <Stat
+              label={t("dash.netPay")}
+              value={`${t("dash.egp")}${(record.netPay ?? 0).toLocaleString()}`}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            {t("payments.cancel")}
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? t("payments.saving") : t("dash.submitAmount")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BonusDeductionDialog({
+  record,
+  isAdmin,
+  onClose,
+  onChanged,
+}: {
+  record: PayrollRecord;
+  isAdmin: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const { t } = useI18n();
+  const [requests, setRequests] = useState<BonusDeductionRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [kind, setKind] = useState<RequestType>("bonus");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<BonusDeductionRequest[] | { data: BonusDeductionRequest[] }>(
+        `/api/payroll/${record.id}/requests`,
+      );
+      setRequests(Array.isArray(res) ? res : (res?.data ?? []));
+    } catch (err) {
+      console.error("Error fetching bonus/deduction requests:", err);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [record.id]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  const submit = async () => {
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0 || !reason.trim()) {
+      toast.error(t("dash.errorLoad"));
+      return;
+    }
+    setSaving(true);
+    try {
+      const path = kind === "bonus" ? "bonus-request" : "deduction-request";
+      await api.post(`/api/payroll/${record.id}/${path}`, {
+        amount: value,
+        reason: reason.trim(),
+      });
+      toast.success(t("dash.toast.requestSent"));
+      setAmount("");
+      setReason("");
+      await fetchRequests();
+      onChanged();
+    } catch (err) {
+      console.error("Error creating request:", err);
+      toast.error(t("dash.errorLoad"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const review = async (requestId: string, status: "approved" | "rejected") => {
+    setSaving(true);
+    try {
+      await api.patch(`/api/payroll/requests/${requestId}`, { status });
+      toast.success(t("dash.toast.requestReviewed"));
+      await fetchRequests();
+      onChanged();
+    } catch (err) {
+      console.error("Error reviewing request:", err);
+      toast.error(t("dash.errorLoad"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("dash.bonusDeductions")}</DialogTitle>
+          <DialogDescription>
+            {record.employee?.fullName} · {formatDate(record.periodStart)} –{" "}
+            {formatDate(record.periodEnd)}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border p-4">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={kind === "bonus" ? "default" : "outline"}
+                className="h-7"
+                onClick={() => setKind("bonus")}
+              >
+                <DiamondPlus className="mr-1.5 size-3.5" />
+                {t("dash.requestBonus")}
+              </Button>
+              <Button
+                size="sm"
+                variant={kind === "deduction" ? "default" : "outline"}
+                className="h-7"
+                onClick={() => setKind("deduction")}
+              >
+                <Minus className="mr-1.5 size-3.5" />
+                {t("dash.requestDeduction")}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("dash.requestAmount")}>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </Field>
+              <Field label={t("dash.requestReason")}>
+                <Input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={t("dash.requestReasonPlaceholder")}
+                />
+              </Field>
+            </div>
+            <Button className="mt-3" size="sm" onClick={submit} disabled={saving}>
+              <ListChecks className="mr-1.5 size-3.5" />
+              {t("dash.toast.requestSent")}
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {loading && <p className="py-4 text-sm text-muted-foreground">{t("dash.errorLoad")}</p>}
+            {!loading && requests.length === 0 && (
+              <p className="py-4 text-sm text-muted-foreground">{t("dash.requestsEmpty")}</p>
+            )}
+            {requests.map((r) => (
+              <div key={r.id} className="rounded-xl border border-border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "border-transparent",
+                        r.type === "bonus"
+                          ? "bg-success/15 text-success"
+                          : "bg-destructive/15 text-destructive",
+                      )}
+                    >
+                      {r.type === "bonus" ? t("dash.bonuses") : t("dash.deductions")}
+                    </Badge>
+                    <span className="text-sm font-bold">
+                      {t("dash.egp")}
+                      {r.amount.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{r.reason}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn("border-transparent", REQUEST_STATUS_STYLES[r.status])}
+                    >
+                      {t(`dash.requestStatus.${r.status}`)}
+                    </Badge>
+                    {isAdmin && r.status === "pending" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          disabled={saving}
+                          onClick={() => review(r.id, "approved")}
+                        >
+                          <Check className="size-3.5 text-success" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          disabled={saving}
+                          onClick={() => review(r.id, "rejected")}
+                        >
+                          <X className="size-3.5 text-destructive" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {t("dash.requestedBy")}: {r.requestedBy}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t("payments.cancel")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function PayrollPanel() {
   const { t } = useI18n();
+  const role = currentRole();
+  const isAdmin = role === "admin";
   const initialRange = useMemo(currentRange, []);
   const [records, setRecords] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +398,8 @@ export function PayrollPanel() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PayrollStatus>("all");
   const [range, setRange] = useState(initialRange);
+  const [adjusting, setAdjusting] = useState<PayrollRecord | null>(null);
+  const [bonusDialog, setBonusDialog] = useState<PayrollRecord | null>(null);
   const { sort, toggle } = useSortState("createdAt", "desc");
 
   const fetchPayrollRecords = useCallback(async () => {
@@ -125,33 +450,6 @@ export function PayrollPanel() {
         toast.success(t("dash.toast.statusUpdated"));
       } catch (err) {
         console.error("Error updating payroll record status:", err);
-        toast.error(t("dash.errorLoad"));
-      } finally {
-        setActingId(null);
-        await fetchPayrollRecords();
-      }
-    },
-    [fetchPayrollRecords, t],
-  );
-
-  const handleAdjustAmount = useCallback(
-    async (record: PayrollRecord) => {
-      const input = window.prompt(
-        `${t("dash.adjustAmount")} (${t("dash.basePay")}):`,
-        String(record.basePay ?? ""),
-      );
-      if (input === null || input.trim() === "") return;
-      const basePay = Number(input);
-      if (!Number.isFinite(basePay) || basePay < 0) {
-        toast.error(t("dash.errorLoad"));
-        return;
-      }
-      setActingId(record.id);
-      try {
-        await api.patch(`/api/payroll/records/${record.id}/amount`, { basePay });
-        toast.success(t("dash.toast.adjusted"));
-      } catch (err) {
-        console.error("Error adjusting payroll amount:", err);
         toast.error(t("dash.errorLoad"));
       } finally {
         setActingId(null);
@@ -275,7 +573,7 @@ export function PayrollPanel() {
             {calculating ? t("dash.calculating") : t("dash.calculate")}
           </Button>
           <Button variant="outline" onClick={handleNotify} disabled={records.length === 0}>
-            <Plus className="mr-2 size-4" />
+            <Edit className="mr-2 size-4" />
             {t("dash.notifyStaff")}
           </Button>
         </div>
@@ -294,7 +592,7 @@ export function PayrollPanel() {
             >
               {t("dash.payrollFilterAll")}
             </button>
-            {(Object.keys(STATUS_FLOW) as PayrollStatus[]).map((s) => (
+            {(Object.keys(STATUS_STYLES) as PayrollStatus[]).map((s) => (
               <button
                 key={s}
                 className={chip(statusFilter === s)}
@@ -364,12 +662,13 @@ export function PayrollPanel() {
                     />
                     <Stat label={t("dash.hours")} value={`${hours(record.totalHours)}h`} />
                     <Stat label={t("dash.basePay")} value={money(record.basePay)} />
+                    <Stat label={t("dash.commission")} value={money(record.commissionPay)} />
                     <Stat label={t("dash.bonuses")} value={money(record.totalBonuses)} />
                     <Stat label={t("dash.deductions")} value={money(record.totalDeductions)} />
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {record.status === "calculated" && (
+                    {record.status === "calculated" && (isAdmin || role === "payroll") && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -381,7 +680,7 @@ export function PayrollPanel() {
                         {t("dash.submitForApproval")}
                       </Button>
                     )}
-                    {record.status === "pending_approval" && (
+                    {record.status === "pending_approval" && isAdmin && (
                       <>
                         <Button
                           size="sm"
@@ -405,7 +704,7 @@ export function PayrollPanel() {
                         </Button>
                       </>
                     )}
-                    {(record.status === "approved" || record.status === "paid") && (
+                    {record.status === "approved" && isAdmin && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -413,19 +712,30 @@ export function PayrollPanel() {
                         disabled={actingId === record.id}
                         onClick={() => handleStatusChange(record, "paid")}
                       >
-                        <DollarSign className="mr-1.5 size-3.5 text-success" />
+                        <CircleDollarSign className="mr-1.5 size-3.5 text-success" />
                         {t("dash.markAsPaid")}
+                      </Button>
+                    )}
+                    {isAdmin && record.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7"
+                        disabled={actingId === record.id}
+                        onClick={() => setAdjusting(record)}
+                      >
+                        <Edit className="mr-1.5 size-3.5" />
+                        {t("dash.adjustAmount")}
                       </Button>
                     )}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-7"
-                      disabled={actingId === record.id}
-                      onClick={() => handleAdjustAmount(record)}
+                      onClick={() => setBonusDialog(record)}
                     >
-                      <Edit className="mr-1.5 size-3.5" />
-                      {t("dash.adjustAmount")}
+                      <DiamondPlus className="mr-1.5 size-3.5" />
+                      {t("dash.bonusDeductions")}
                     </Button>
                   </div>
                 </div>
@@ -442,6 +752,22 @@ export function PayrollPanel() {
           </>
         )}
       </CardContent>
+
+      {adjusting && (
+        <AdjustAmountDialog
+          record={adjusting}
+          onClose={() => setAdjusting(null)}
+          onSaved={fetchPayrollRecords}
+        />
+      )}
+      {bonusDialog && (
+        <BonusDeductionDialog
+          record={bonusDialog}
+          isAdmin={isAdmin}
+          onClose={() => setBonusDialog(null)}
+          onChanged={fetchPayrollRecords}
+        />
+      )}
     </Card>
   );
 }
