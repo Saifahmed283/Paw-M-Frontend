@@ -95,14 +95,35 @@ export type ClientBooking = {
   createdAt: string;
 };
 
+export type ClientNotification = {
+  id: string;
+  clientId: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
 export type MeProfile = {
-  client: { id: string; email: string; fullName: string; phone: string; createdAt: string };
+  client: {
+    id: string;
+    email: string;
+    fullName: string;
+    phone: string;
+    suspended?: boolean;
+    createdAt: string;
+  };
   pets: Pet[];
   bookings: ClientBooking[];
   orders: Order[];
   prescriptions: Prescription[];
   payments: Payment[];
+  notifications: ClientNotification[];
 };
+
+export async function markNotificationRead(id: string): Promise<ClientNotification> {
+  return api.patch<ClientNotification>(`/me/notifications/${id}/read`);
+}
 
 export type PetHistory = {
   pet: Pet;

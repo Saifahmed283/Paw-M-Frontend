@@ -3,19 +3,53 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Banknote,
+  BellRing,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Delete,
   Eye,
   Mail,
+  MoreHorizontal,
   PawPrint,
   Phone,
   ReceiptText,
+  UserCheck,
+  UserX,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -26,7 +60,10 @@ import {
 } from "@/components/ui/table";
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 import {
+  deleteClient,
   getClient,
+  notifyClient,
+  setClientSuspended,
   useClinicStore,
   type ClientDetail,
   type ClientSummary,
@@ -411,6 +448,211 @@ function typeOf(detail: ClientDetail): ClientType {
   return "new";
 }
 
+function NotifyClientDialog({
+  client,
+  onClose,
+  onDone,
+}: {
+  client: ClientSummary;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const send = async () => {
+    if (!title.trim() || !body.trim()) {
+      toast.error(t("clients.notifyEmpty"));
+      return;
+    }
+    setBusy(true);
+    try {
+      await notifyClient(client.id, { title: title.trim(), body: body.trim() });
+      toast.success(t("clients.notifySent"));
+      onDone();
+      onClose();
+    } catch {
+      toast.error(t("dash.toast.error"));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            <BellRing className="me-2 inline size-4 text-primary" />
+            {t("clients.notify")} — {client.fullName}
+          </DialogTitle>
+          <DialogDescription>{t("clients.notifyDesc")}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label>{t("clients.notifyTitle")}</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t("clients.notifyTitle")}
+              maxLength={200}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>{t("clients.notifyBody")}</Label>
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={5}
+              maxLength={2000}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {t("clients.cancel")}
+          </Button>
+          <Button onClick={send} disabled={busy}>
+            {busy ? "…" : t("clients.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClientActions({ client, onView }: { client: ClientSummary; onView: () => void }) {
+  const { t } = useI18n();
+  const [confirming, setConfirming] = useState<"suspend" | "activate" | "delete" | null>(null);
+  const [notifying, setNotifying] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const suspended = client.suspended === true;
+
+  const doToggle = async () => {
+    setBusy(true);
+    try {
+      await setClientSuspended(client.id, !suspended);
+      toast.success(t(suspended ? "clients.activateDone" : "clients.suspendDone"));
+      setConfirming(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doDelete = async () => {
+    setBusy(true);
+    try {
+      await deleteClient(client.id);
+      toast.success(t("clients.deleteDone"));
+      setConfirming(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2"
+            aria-label={t("clients.actions")}
+            title={t("clients.actions")}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuLabel className="truncate">{client.fullName}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onView}>
+            <Eye className="size-4" /> {t("clients.view")}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={suspended} onClick={() => setNotifying(true)}>
+            <BellRing className="size-4" /> {t("clients.notify")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setConfirming(suspended ? "activate" : "suspend")}>
+            {suspended ? <UserCheck className="size-4" /> : <UserX className="size-4" />}
+            {t(suspended ? "clients.activate" : "clients.suspend")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={() => setConfirming("delete")}
+          >
+            <Delete className="size-4" /> {t("clients.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {confirming && (
+        <AlertDialog open onOpenChange={(o) => !o && setConfirming(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t(
+                  confirming === "delete"
+                    ? "clients.deleteTitle"
+                    : confirming === "suspend"
+                      ? "clients.suspendTitle"
+                      : "clients.activateTitle",
+                )}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t(
+                  confirming === "delete"
+                    ? "clients.deleteConfirm"
+                    : confirming === "suspend"
+                      ? "clients.suspendConfirm"
+                      : "clients.activateConfirm",
+                  { name: client.fullName },
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirming(null)}>
+                {t("clients.cancel")}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={busy}
+                onClick={confirming === "delete" ? doDelete : doToggle}
+                className={
+                  confirming === "delete"
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    : undefined
+                }
+              >
+                {busy ? "…" : t("clients.confirm")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {notifying && (
+        <NotifyClientDialog client={client} onClose={() => setNotifying(false)} onDone={onView} />
+      )}
+    </>
+  );
+}
+
+function SuspendedBadge({ suspended }: { suspended?: boolean | undefined }) {
+  const { t } = useI18n();
+  if (!suspended) return null;
+  return (
+    <Badge variant="outline" className="ms-2 border-transparent bg-destructive/10 text-destructive">
+      {t("clients.suspended")}
+    </Badge>
+  );
+}
+
 export function ClientsPanel() {
   const { t, lang } = useI18n();
   const { clients, settings } = useClinicStore();
@@ -519,7 +761,10 @@ export function ClientsPanel() {
                         onClick={() => setSelectedId(c.id)}
                       >
                         <TableCell>
-                          <div className="whitespace-nowrap font-medium">{c.fullName}</div>
+                          <div className="whitespace-nowrap font-medium">
+                            {c.fullName}
+                            <SuspendedBadge suspended={c.suspended} />
+                          </div>
                           <div className="whitespace-nowrap text-xs text-muted-foreground">
                             {c.phone || c.email || "—"}
                           </div>
@@ -547,18 +792,7 @@ export function ClientsPanel() {
                           {formatTime(c.lastActivity, lang)}
                         </TableCell>
                         <TableCell className="text-end">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2"
-                            aria-label={t("clients.section.appointments")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedId(c.id);
-                            }}
-                          >
-                            <Eye className="size-3.5" />
-                          </Button>
+                          <ClientActions client={c} onView={() => setSelectedId(c.id)} />
                         </TableCell>
                       </TableRow>
                     ))}

@@ -12,6 +12,7 @@ import {
   ReceiptText,
   ShoppingBag,
   Trash2,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -48,6 +49,7 @@ import {
   createPet,
   deletePet,
   getMyProfile,
+  markNotificationRead,
   type ClientBooking,
   type MeProfile,
   type Pet,
@@ -66,7 +68,8 @@ export const Route = createFileRoute("/account")({
   component: AccountPage,
 });
 
-type Tab = "overview" | "pets" | "appointments" | "orders" | "prescriptions" | "bills";
+type Tab =
+  "overview" | "pets" | "appointments" | "orders" | "prescriptions" | "bills" | "notifications";
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -75,6 +78,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "bills", label: "Bills", icon: ReceiptText },
   { id: "prescriptions", label: "Prescriptions", icon: FileText },
+  { id: "notifications", label: "Notifications", icon: BellRing },
 ];
 
 function AccountPage() {
@@ -174,6 +178,8 @@ function AccountPortal() {
               <OrdersTab profile={profile!} />
             ) : tab === "bills" ? (
               <BillsTab profile={profile!} />
+            ) : tab === "notifications" ? (
+              <NotificationsTab profile={profile!} refetch={refetch} />
             ) : (
               <PrescriptionsTab profile={profile!} />
             )}
@@ -647,6 +653,70 @@ function BillsTab({ profile }: { profile: MeProfile }) {
                 ))}
               </ul>
             )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NotificationsTab({ profile, refetch }: { profile: MeProfile; refetch: () => void }) {
+  const notifications = profile.notifications ?? [];
+  const unread = notifications.filter((n) => !n.isRead).length;
+
+  const markRead = async (id: string) => {
+    try {
+      await markNotificationRead(id);
+      refetch();
+    } catch {
+      toast.error("Could not update notification");
+    }
+  };
+
+  return (
+    <div className="grid gap-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Notifications</h2>
+        {unread > 0 && <Badge variant="secondary">{unread} unread</Badge>}
+      </div>
+      {notifications.length === 0 && (
+        <Card>
+          <CardContent className="py-14 text-center text-sm text-muted-foreground">
+            No notifications from the clinic yet.
+          </CardContent>
+        </Card>
+      )}
+      <div className="grid gap-3">
+        {notifications.map((n) => (
+          <div
+            key={n.id}
+            className={cn(
+              "rounded-2xl border border-border p-4",
+              !n.isRead && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">
+                {!n.isRead && (
+                  <span className="me-2 inline-block size-2 rounded-full bg-primary align-middle" />
+                )}
+                {n.title}
+              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">{fmt(n.createdAt)}</p>
+                {!n.isRead && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    onClick={() => markRead(n.id)}
+                  >
+                    Mark read
+                  </Button>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{n.body}</p>
           </div>
         ))}
       </div>

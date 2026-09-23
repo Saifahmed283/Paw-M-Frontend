@@ -146,6 +146,8 @@ export type ClientSummary = {
   fullName: string;
   email: string;
   phone: string;
+  suspended?: boolean;
+  suspendedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   type: ClientType;
@@ -200,6 +202,8 @@ export type ClientDetail = {
     fullName: string;
     email: string;
     phone: string;
+    suspended?: boolean;
+    suspendedAt?: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -903,6 +907,34 @@ export async function settlePayment(id: string, input: { method: PaymentMethod; 
 export async function getClient(id: string) {
   return api.get<ClientDetail>(`/clients/${id}`);
 }
+
+export async function setClientSuspended(id: string, suspended: boolean) {
+  const updated = await api.patch<ClientSummary>(`/clients/${id}`, { suspended });
+  invalidate(QUERY_KEYS.clients);
+  return updated;
+}
+
+export async function deleteClient(id: string) {
+  await api.delete(`/clients/${id}`);
+  invalidate(QUERY_KEYS.clients);
+}
+
+export async function notifyClient(id: string, input: { title: string; body: string }) {
+  const created = await api.post<{ notification: ClientNotification }>(
+    `/clients/${id}/notify`,
+    input,
+  );
+  return created.notification;
+}
+
+export type ClientNotification = {
+  id: string;
+  clientId: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
+};
 
 export async function updateSettings(patch: Partial<ClinicSettings>) {
   const clean: Partial<ClinicSettings> = { ...patch };
