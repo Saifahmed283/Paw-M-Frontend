@@ -154,13 +154,13 @@ export function ProductCard({ product }: { product: Product }) {
       params={{ productId: product.id }}
       className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/30 hover:shadow-raised"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden bg-white">
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
             loading="lazy"
-            className="size-full bg-muted object-contain p-2 sm:p-3"
+            className="size-full bg-white object-contain p-2 sm:p-3"
           />
         ) : (
           <div className="flex size-full items-center justify-center text-muted-foreground">
