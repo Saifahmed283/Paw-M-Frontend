@@ -416,7 +416,11 @@ export function useClinicStore() {
     enabled: mounted,
   });
 
-  const { data: products = seedDefaults.products } = useQuery({
+  const {
+    data: products = seedDefaults.products,
+    isError: productsFailed,
+    error: productsError,
+  } = useQuery({
     queryKey: QUERY_KEYS.products,
     queryFn: fetchAllProducts,
     staleTime: Infinity,
@@ -509,7 +513,7 @@ export function useClinicStore() {
   // first (hydration) render byte-identical to the server render so React never
   // sees a hydration mismatch on the public site data. After mount, flip to the
   // real data.
-  return useMemo<Store>(() => {
+  const store = useMemo<Store>(() => {
     const gated = <T>(value: T, seed: T): T => (mounted ? value : seed);
     return {
       requests: gated(requests, seedDefaults.requests),
@@ -542,6 +546,11 @@ export function useClinicStore() {
     workDays,
     workDay,
   ]);
+
+  // A failed products fetch must not be indistinguishable from an empty
+  // catalogue: `products` falls back to an empty array, which previously made a
+  // request error look exactly like every product having been deleted.
+  return { ...store, productsFailed, productsError };
 }
 
 /** Refreshes all clinic data from the backend (no-op while one is in flight). */
@@ -663,13 +672,20 @@ export async function deleteService(slug: string) {
   }
 }
 
+// Product lists now expose stored base64 images as a generated endpoint URL, so
+// the edit form receives that URL instead of the original data. Echoing it back
+// on save would overwrite the stored image with a URL that points at itself, so
+// it is omitted and PATCH leaves the existing image untouched.
+const GENERATED_IMAGE_URL = /\/api\/products\/[^/]+\/image(?:[?#]|$)/;
+
 function productPayload(product: ProductDraft) {
+  const isGeneratedImage = GENERATED_IMAGE_URL.test(product.image);
   return {
     name: product.name,
     description: product.description,
     price: product.price,
     compareAtPrice: product.compareAtPrice ?? null,
-    image: product.image,
+    ...(isGeneratedImage ? {} : { image: product.image }),
     category: product.category,
     petType: product.petType ?? "both",
     stock: product.stock,

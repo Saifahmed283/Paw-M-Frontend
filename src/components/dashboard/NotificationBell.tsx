@@ -59,9 +59,36 @@ export function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    // Only poll while the tab is actually visible. An unconditional 30s timer
+    // kept spending the server's shared API budget in the background and
+    // prevented the client from ever recovering once a limit was reached.
+    const start = () => {
+      if (timer === undefined) timer = setInterval(fetchNotifications, POLL_INTERVAL);
+    };
+    const stop = () => {
+      if (timer !== undefined) {
+        clearInterval(timer);
+        timer = undefined;
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        fetchNotifications();
+        start();
+      }
+    };
+
     fetchNotifications();
-    const id = setInterval(fetchNotifications, POLL_INTERVAL);
-    return () => clearInterval(id);
+    start();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;

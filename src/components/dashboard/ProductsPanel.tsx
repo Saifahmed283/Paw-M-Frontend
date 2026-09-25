@@ -35,6 +35,7 @@ import {
   createProduct,
   deleteProduct,
   fetchAllProducts,
+  refreshClinicData,
   updateProduct,
   useClinicStore,
   type Product,
@@ -405,7 +406,7 @@ function ProductDialog({
 
 export function ProductsPanel() {
   const { t } = useI18n();
-  const { products, settings } = useClinicStore();
+  const { products, settings, productsFailed } = useClinicStore();
   const [editing, setEditing] = useState<Product | "new" | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
@@ -430,6 +431,14 @@ export function ProductsPanel() {
 
   return (
     <Card>
+      {productsFailed && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-destructive/40 bg-destructive/10 px-6 py-3 text-sm text-destructive">
+          <span>{t("dash.errorLoad")}</span>
+          <Button size="sm" variant="outline" onClick={refreshClinicData}>
+            {t("dash.retry")}
+          </Button>
+        </div>
+      )}
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle className="text-base">{t("dash.products")}</CardTitle>

@@ -34,6 +34,19 @@ export type PaginatedResult<T> = {
   };
 };
 
+// Carries the HTTP status so callers (notably the React Query retry policy) can
+// distinguish a transient server fault from a client error that will never
+// succeed on a retry, such as a 429 once the rate-limit budget is spent.
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 // Send the session that matches the request: the staff JWT takes precedence, so
 // dashboard calls are authenticated even when the API runs on another origin and
 // cross-site cookies are blocked. Falls back to the store customer's token.
@@ -85,7 +98,7 @@ async function apiFetch(
     ) {
       storageRemove("session", ADMIN_SESSION_KEY);
     }
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
+    throw new ApiError(res.status, `API ${res.status}: ${text || res.statusText}`);
   }
   if (res.status === 204) return undefined;
   const json = await res.json();
