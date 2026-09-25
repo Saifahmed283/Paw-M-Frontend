@@ -3,26 +3,29 @@ import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig, type Plugin } from "vite";
 
-// The TanStack Start dev plugin emits both
-//   <script type="module" async src="/@id/virtual:tanstack-start-dev-client-entry">
+// In dev, TanStack Start's generated client manifest hardcodes the dev client in
+// two places: as a route preload and as the route script. The router renders
+// those as
 //   <link rel="modulepreload" href="/@id/virtual:tanstack-start-dev-client-entry">
-// The preload is redundant (the script already loads the module) and Chrome
-// reports it as an unused cross-world preload on every page load, because the
-// dev client is evaluated in a different world. Dropping just the preload link
-// leaves the script tag, so HMR still works.
+//   <script type="module" async src="/@id/virtual:tanstack-start-dev-client-entry">
+// The preload is redundant (the script already loads that module) and Chrome logs
+// it as an unused cross-world preload on every page load, since the dev client is
+// evaluated in a different world. There is no config flag for it, so the preload
+// entry is stripped from the generated manifest; the script entry stays, which
+// keeps HMR working. Dev-only, and production builds never reference this entry.
 function dropRedundantDevClientPreload(): Plugin {
-  const DEV_CLIENT_ENTRY = "/@id/virtual:tanstack-start-dev-client-entry";
+  const preloadEntry = new RegExp(
+    String.raw`preloads:\s*\[\s*['"]/@id/virtual:tanstack-start-dev-client-entry['"]\s*\]`,
+    "g",
+  );
   return {
     name: "pawm:drop-redundant-dev-client-preload",
     apply: "serve",
-    transformIndexHtml: {
-      order: "post",
-      handler(html) {
-        return html.replace(
-          new RegExp(`<link[^>]*rel="modulepreload"[^>]*href="${DEV_CLIENT_ENTRY}"[^>]*>`, "g"),
-          "",
-        );
-      },
+    enforce: "post",
+    transform(code, id) {
+      if (!preloadEntry.test(code)) return null;
+      preloadEntry.lastIndex = 0;
+      return { code: code.replace(preloadEntry, "preloads: []"), map: null };
     },
   };
 }

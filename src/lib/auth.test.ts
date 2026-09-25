@@ -66,6 +66,31 @@ describe("auth", () => {
     expect(await login("admin", "staffpass")).toBe(true);
   });
 
+  it("propagates API failures so the gate can tell them from bad credentials", async () => {
+    // login() rethrows whatever the transport raised; the dashboard gate reads
+    // `.status` off an ApiError to pick the right message.
+    vi.mocked(api.post).mockRejectedValue({ name: "ApiError", status: 400, message: "API 400" });
+    await expect(login("admin", "")).rejects.toMatchObject({ status: 400 });
+
+    vi.mocked(api.post).mockRejectedValue({
+      name: "ApiError",
+      status: 429,
+      message: "API 429",
+      retryAfterMinutes: 7,
+    });
+    await expect(login("admin", "staffpass")).rejects.toMatchObject({
+      status: 429,
+      retryAfterMinutes: 7,
+    });
+
+    // A plain network failure is not an ApiError but must still reject, never
+    // resolve to false (which the gate would render as "invalid credentials").
+    vi.mocked(api.post).mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(login("admin", "staffpass")).rejects.toBeInstanceOf(TypeError);
+
+    expect(isAuthed()).toBe(false);
+  });
+
   it("login sends the credentials to the API", async () => {
     vi.mocked(api.post).mockResolvedValue({ ok: true, role: "staff" });
     await login("Admin ", "staffpass");
