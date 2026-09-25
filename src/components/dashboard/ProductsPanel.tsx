@@ -35,20 +35,13 @@ import {
   createProduct,
   deleteProduct,
   fetchAllProducts,
-  importProducts,
-  parseProductCsv,
-  previewProductImports,
   updateProduct,
   useClinicStore,
   type Product,
-  type ProductImportItem,
-  type ProductImportMode,
-  type ProductImportPreviewRow,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
-import { ProductImportResolveDialog } from "./ProductImportResolveDialog";
 
 const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
 const PET_TYPES = ["dog", "cat", "both"] as const;
@@ -66,14 +59,6 @@ const EMPTY_PRODUCT = {
   featured: false,
   barcode: "",
   barcodeImage: "",
-};
-
-type PendingProductImport = {
-  fileName: string;
-  items: ProductImportItem[];
-  invalidRows: number[];
-  duplicateCount: number;
-  conflicts: ProductImportPreviewRow[];
 };
 
 function ProductDialog({
@@ -425,11 +410,6 @@ export function ProductsPanel() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [petType, setPetType] = useState<string>("all");
-  const [importOpen, setImportOpen] = useState(false);
-  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
-  const [pendingImport, setPendingImport] = useState<PendingProductImport | null>(null);
-  const [resolutions, setResolutions] = useState<Record<number, ProductImportMode>>({});
-  const [importing, setImporting] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Product, b: Product) => number> = {
     name: (a, b) => a.name.localeCompare(b.name),
@@ -448,108 +428,6 @@ export function ProductsPanel() {
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["name", "category", "id"]);
 
-  const closeImport = () => {
-    if (importing) return;
-    setImportOpen(false);
-    setDuplicateDialogOpen(false);
-    setPendingImport(null);
-    setResolutions({});
-  };
-
-  const handleImportFile = async (file: File | null) => {
-    if (!file) return;
-    setPendingImport(null);
-    try {
-      const parsed = parseProductCsv(await file.text(), t("dash.importProductsDefaultDesc"));
-      if (parsed.items.length === 0) {
-        toast.error(t("dash.importProductsNoValidRows"));
-        return;
-      }
-      setPendingImport({
-        fileName: file.name,
-        items: parsed.items,
-        invalidRows: parsed.invalidRows,
-        duplicateCount: previewProductImports(products, parsed.items).duplicateCount,
-        conflicts: [],
-      });
-      if (parsed.invalidRows.length > 0) {
-        toast.warning(
-          t("dash.importProductsInvalidRows", { count: String(parsed.invalidRows.length) }),
-        );
-      }
-    } catch (err) {
-      console.error("Failed to parse product CSV", err);
-      toast.error(
-        err instanceof Error && err.message === "missing-required-columns"
-          ? t("dash.importProductsMissingColumns")
-          : t("dash.importProductsError"),
-      );
-    }
-  };
-
-  const runImport = async () => {
-    if (!pendingImport) return;
-    setImporting(true);
-    try {
-      const decisions =
-        pendingImport.conflicts.length > 0
-          ? pendingImport.items.map(
-              (_, index) => resolutions[index] ?? ("skip" as ProductImportMode),
-            )
-          : undefined;
-      const result = await importProducts(pendingImport.items, "skip", decisions);
-      toast.success(
-        t("dash.importProductsResult", {
-          created: String(result.summary.created),
-          updated: String(result.summary.updated),
-          skipped: String(result.summary.skipped),
-        }),
-      );
-      setImportOpen(false);
-      setDuplicateDialogOpen(false);
-      setPendingImport(null);
-      setResolutions({});
-    } catch (err) {
-      console.error("Failed to import products", err);
-      toast.error(t("dash.importProductsError"));
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const setAllResolutions = (mode: ProductImportMode) => {
-    if (!pendingImport) return;
-    setResolutions(Object.fromEntries(pendingImport.conflicts.map((row) => [row.index, mode])));
-  };
-
-  const beginImport = async () => {
-    if (!pendingImport) return;
-    setImporting(true);
-    try {
-      const currentProducts = await fetchAllProducts();
-      const currentPreview = previewProductImports(currentProducts, pendingImport.items);
-      if (currentPreview.duplicateCount > 0) {
-        const conflicts = currentPreview.rows.filter((row) => row.duplicate);
-        setPendingImport((current) =>
-          current
-            ? { ...current, duplicateCount: currentPreview.duplicateCount, conflicts }
-            : current,
-        );
-        setResolutions(
-          Object.fromEntries(conflicts.map((row) => [row.index, "skip" as ProductImportMode])),
-        );
-        setDuplicateDialogOpen(true);
-        return;
-      }
-      await runImport();
-    } catch (err) {
-      console.error("Failed to check product import", err);
-      toast.error(t("dash.importProductsError"));
-    } finally {
-      setImporting(false);
-    }
-  };
-
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
@@ -559,9 +437,6 @@ export function ProductsPanel() {
         </div>
         <Button size="sm" onClick={() => setEditing("new")}>
           <Plus className="size-4" /> {t("dash.addProduct")}
-        </Button>
-        <Button size="sm" onClick={() => setImportOpen(true)}>
-          <UploadCloud className="size-4" /> {t("dash.importProducts")}
         </Button>
       </CardHeader>
       <CardContent>
@@ -758,73 +633,6 @@ export function ProductsPanel() {
           product={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
           products={products}
-        />
-      )}
-
-      <Dialog
-        open={importOpen && !duplicateDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) closeImport();
-        }}
-      >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("dash.importProducts")}</DialogTitle>
-            <DialogDescription>{t("dash.importProductsHint")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <label className="flex flex-col space-y-1">
-              <span className="text-sm font-medium">{t("dash.uploadFile")}</span>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                disabled={importing}
-                onChange={(event) => void handleImportFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            {pendingImport && (
-              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                <p className="font-medium">{pendingImport.fileName}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {t("dash.importProductsReady", {
-                    newCount: String(pendingImport.items.length - pendingImport.duplicateCount),
-                    duplicateCount: String(pendingImport.duplicateCount),
-                  })}
-                </p>
-                {pendingImport.invalidRows.length > 0 && (
-                  <p className="mt-1 text-amber-600">
-                    {t("dash.importProductsInvalidRows", {
-                      count: String(pendingImport.invalidRows.length),
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeImport} disabled={importing}>
-              {t("dash.cancel")}
-            </Button>
-            <Button onClick={() => void beginImport()} disabled={!pendingImport || importing}>
-              {importing ? t("dash.importing") : t("dash.import")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {pendingImport && (
-        <ProductImportResolveDialog
-          open={duplicateDialogOpen}
-          onOpenChange={setDuplicateDialogOpen}
-          rows={pendingImport.conflicts}
-          newCount={pendingImport.items.length - pendingImport.conflicts.length}
-          resolutions={resolutions}
-          onResolutionChange={(index, mode) =>
-            setResolutions((current) => ({ ...current, [index]: mode }))
-          }
-          onBulkChange={setAllResolutions}
-          onConfirm={() => void runImport()}
-          importing={importing}
         />
       )}
     </Card>

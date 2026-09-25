@@ -10,17 +10,12 @@ import {
   deleteService,
   fetchAllProducts,
   get,
-  importProducts,
-  parseProductCsv,
-  previewProductImports,
-  productImportKey,
   resetAll,
   saveDoctor,
   saveService,
   setBookingStatus,
   updateSettings,
   type Product,
-  type ProductImportItem,
 } from "@/lib/clinic-store";
 
 vi.mock("@/lib/api", () => ({
@@ -217,92 +212,7 @@ describe("clinic-store bookings", () => {
   });
 });
 
-describe("product CSV import", () => {
-  it("parses quoted fields, K/g weights, localized prices, stock, and valid row numbers", () => {
-    const csv = [
-      "\uFEFFNo,Name,Type,Category,K/g,Barcode / QR value,Price,Stock",
-      '1,"Food, Treats",Cat,Food,500 g,ABC-123,"19,50",7',
-      "2,Invalid,,Food,,,not-a-price,2",
-      "3,,,,,,,",
-    ].join("\n");
-
-    const result = parseProductCsv(csv, "Imported product");
-
-    expect(result.items).toEqual([
-      {
-        name: "Food, Treats",
-        description: "500 g Cat",
-        price: 19.5,
-        category: "food",
-        petType: "cat",
-        stock: 7,
-        barcode: "ABC-123",
-      },
-    ]);
-    expect(result.invalidRows).toEqual([3]);
-  });
-
-  it("requires the core product columns", () => {
-    expect(() => parseProductCsv("Name,Type\nFood,Cat", "Imported product")).toThrow(
-      "missing-required-columns",
-    );
-  });
-
-  it("matches duplicates by normalized barcode or fallback product details", () => {
-    const existing = [
-      makeProduct({ id: "barcode-product", name: "Cat Food", barcode: " 001 " }),
-      makeProduct({
-        id: "detail-product",
-        name: "Dog Treats",
-        description: "Natural",
-        category: "treats",
-        petType: "dog",
-      }),
-    ];
-    const items: ProductImportItem[] = [
-      {
-        name: "Updated Cat Food",
-        description: "New",
-        price: 20,
-        category: "food",
-        petType: "cat",
-        stock: 2,
-        barcode: "001",
-      },
-      {
-        name: " dog treats ",
-        description: "changed description",
-        price: 10,
-        category: "Treats",
-        petType: "dog",
-        stock: 1,
-        barcode: null,
-      },
-      {
-        name: "New Toy",
-        description: "Rope",
-        price: 5,
-        category: "toys",
-        petType: "both",
-        stock: 4,
-        barcode: "NEW-1",
-      },
-    ];
-
-    const result = previewProductImports(existing, items);
-
-    expect(result).toEqual({
-      rows: [
-        expect.objectContaining({ duplicate: true, existing: existing[0] }),
-        expect.objectContaining({ duplicate: true, existing: existing[1] }),
-        expect.objectContaining({ duplicate: false, existing: null }),
-      ],
-      duplicateCount: 2,
-      newCount: 1,
-    });
-    expect(productImportKey(items[0]!)).toBe(productImportKey(existing[0]!));
-  });
-
+describe("products", () => {
   it("fetches every product page", async () => {
     const first = makeProduct({ id: "p1", name: "First" });
     const second = makeProduct({ id: "p2", name: "Second" });
@@ -319,120 +229,5 @@ describe("product CSV import", () => {
     await expect(fetchAllProducts()).resolves.toEqual([first, second]);
     expect(api.getPage).toHaveBeenNthCalledWith(1, "/products?limit=200&page=1");
     expect(api.getPage).toHaveBeenNthCalledWith(2, "/products?limit=200&page=2");
-  });
-
-  it("sends one atomic import request with the selected duplicate mode", async () => {
-    const products: ProductImportItem[] = [
-      {
-        name: "Food",
-        description: "500 g",
-        price: 10,
-        category: "food",
-        petType: "both",
-        stock: 2,
-        barcode: null,
-      },
-    ];
-    vi.mocked(api.post).mockResolvedValue({
-      summary: { created: 1, updated: 0, skipped: 0 },
-    });
-
-    await importProducts(products, "skip");
-
-    expect(api.post).toHaveBeenCalledTimes(1);
-    expect(api.post).toHaveBeenCalledWith("/products/import", {
-      products,
-      duplicateAction: "skip",
-    });
-  });
-
-  it("sends per-row resolutions so each duplicate is decided individually", async () => {
-    const products: ProductImportItem[] = [
-      {
-        name: "Food",
-        description: "500 g",
-        price: 10,
-        category: "food",
-        petType: "both",
-        stock: 2,
-        barcode: null,
-      },
-      {
-        name: "Toy",
-        description: "Rope",
-        price: 5,
-        category: "toys",
-        petType: "both",
-        stock: 1,
-        barcode: null,
-      },
-    ];
-    vi.mocked(api.post).mockResolvedValue({
-      summary: { created: 1, updated: 1, skipped: 0 },
-      results: [
-        { index: 0, action: "updated" },
-        { index: 1, action: "created" },
-      ],
-    });
-
-    const result = await importProducts(products, "skip", ["replace", "skip"]);
-
-    expect(api.post).toHaveBeenCalledWith("/products/import", {
-      products,
-      duplicateAction: "skip",
-      resolutions: ["replace", "skip"],
-    });
-    expect(result.results).toEqual([
-      { index: 0, action: "updated" },
-      { index: 1, action: "created" },
-    ]);
-  });
-
-  it("tags every preview row with its position in the uploaded file", () => {
-    const existing = [makeProduct({ id: "p1", name: "Cat Food", barcode: "001" })];
-    const items: ProductImportItem[] = [
-      {
-        name: "Cat Food",
-        description: "New",
-        price: 20,
-        category: "food",
-        petType: "both",
-        stock: 2,
-        barcode: "001",
-      },
-      {
-        name: "Toy",
-        description: "Rope",
-        price: 5,
-        category: "toys",
-        petType: "both",
-        stock: 4,
-        barcode: "NEW-1",
-      },
-    ];
-
-    const result = previewProductImports(existing, items);
-
-    expect(result.rows.map((row) => row.index)).toEqual([0, 1]);
-    expect(result.rows.map((row) => row.duplicate)).toEqual([true, false]);
-  });
-
-  it("marks a repeated row inside the same file as a duplicate with no existing match", () => {
-    const item: ProductImportItem = {
-      name: "Cat Food",
-      description: "New",
-      price: 20,
-      category: "food",
-      petType: "both",
-      stock: 2,
-      barcode: "001",
-    };
-
-    const result = previewProductImports([], [item, { ...item }]);
-
-    expect(result.duplicateCount).toBe(1);
-    expect(result.rows[1]).toEqual(
-      expect.objectContaining({ index: 1, duplicate: true, existing: null }),
-    );
   });
 });
