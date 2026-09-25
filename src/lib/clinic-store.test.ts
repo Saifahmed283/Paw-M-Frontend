@@ -345,4 +345,94 @@ describe("product CSV import", () => {
       duplicateAction: "skip",
     });
   });
+
+  it("sends per-row resolutions so each duplicate is decided individually", async () => {
+    const products: ProductImportItem[] = [
+      {
+        name: "Food",
+        description: "500 g",
+        price: 10,
+        category: "food",
+        petType: "both",
+        stock: 2,
+        barcode: null,
+      },
+      {
+        name: "Toy",
+        description: "Rope",
+        price: 5,
+        category: "toys",
+        petType: "both",
+        stock: 1,
+        barcode: null,
+      },
+    ];
+    vi.mocked(api.post).mockResolvedValue({
+      summary: { created: 1, updated: 1, skipped: 0 },
+      results: [
+        { index: 0, action: "updated" },
+        { index: 1, action: "created" },
+      ],
+    });
+
+    const result = await importProducts(products, "skip", ["replace", "skip"]);
+
+    expect(api.post).toHaveBeenCalledWith("/products/import", {
+      products,
+      duplicateAction: "skip",
+      resolutions: ["replace", "skip"],
+    });
+    expect(result.results).toEqual([
+      { index: 0, action: "updated" },
+      { index: 1, action: "created" },
+    ]);
+  });
+
+  it("tags every preview row with its position in the uploaded file", () => {
+    const existing = [makeProduct({ id: "p1", name: "Cat Food", barcode: "001" })];
+    const items: ProductImportItem[] = [
+      {
+        name: "Cat Food",
+        description: "New",
+        price: 20,
+        category: "food",
+        petType: "both",
+        stock: 2,
+        barcode: "001",
+      },
+      {
+        name: "Toy",
+        description: "Rope",
+        price: 5,
+        category: "toys",
+        petType: "both",
+        stock: 4,
+        barcode: "NEW-1",
+      },
+    ];
+
+    const result = previewProductImports(existing, items);
+
+    expect(result.rows.map((row) => row.index)).toEqual([0, 1]);
+    expect(result.rows.map((row) => row.duplicate)).toEqual([true, false]);
+  });
+
+  it("marks a repeated row inside the same file as a duplicate with no existing match", () => {
+    const item: ProductImportItem = {
+      name: "Cat Food",
+      description: "New",
+      price: 20,
+      category: "food",
+      petType: "both",
+      stock: 2,
+      barcode: "001",
+    };
+
+    const result = previewProductImports([], [item, { ...item }]);
+
+    expect(result.duplicateCount).toBe(1);
+    expect(result.rows[1]).toEqual(
+      expect.objectContaining({ index: 1, duplicate: true, existing: null }),
+    );
+  });
 });

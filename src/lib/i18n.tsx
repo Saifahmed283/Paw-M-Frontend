@@ -1205,9 +1205,17 @@ export const EN: Dict = {
     "Import complete: {created} added, {updated} replaced, {skipped} skipped.",
   "dash.importProductsDuplicatesTitle": "Duplicates found",
   "dash.importProductsDuplicatesDescription":
-    "{count} products already exist. Replace their details or keep the current products.",
+    "{count} products in this file already exist in your store. Choose per product whether to keep what you have or update it with the file's values. New products are always added.",
   "dash.skipDuplicates": "Skip duplicates",
   "dash.replaceDuplicates": "Replace duplicates",
+  "dash.importProductsKeepCurrent": "Keep",
+  "dash.importProductsUpdateExisting": "Update",
+  "dash.importProductsKeepAll": "Keep all",
+  "dash.importProductsUpdateAll": "Update all",
+  "dash.importProductsPlan": "{added} new · {updated} updated · {kept} kept",
+  "dash.importProductsNoChanges": "Same as your current product",
+  "dash.importProductsRepeatRow": "Repeats an earlier row in this file",
+  "dash.importProductsConfirm": "Import {added} new, update {updated}",
   "dash.importing": "Importing…",
   "dash.importProductsError": "Could not import products. No products were changed.",
   "dash.uploadFile": "Choose CSV file",
@@ -1275,7 +1283,6 @@ export const EN: Dict = {
   "dash.notificationNew": "New order or booking received!",
   "dash.expandSidebar": "Expand sidebar",
   "dash.collapseSidebar": "Collapse sidebar",
-  "dash.importProductsDefaultDesc": "Pet food product",
 
   // Homepage reviews section
   "homepage.clinicReviews.eyebrow": "Google Reviews",
@@ -2452,9 +2459,17 @@ const AR: Dict = {
     "اكتمل الاستيراد: {created} مضاف، {updated} تم استبداله، {skipped} تم تخطيه.",
   "dash.importProductsDuplicatesTitle": "تم العثور على تكرارات",
   "dash.importProductsDuplicatesDescription":
-    "{count} منتجات موجودة بالفعل. استبدل بياناتها أو احتفظ بالمنتجات الحالية.",
+    "{count} منتجات في هذا الملف موجودة بالفعل في متجرك. اختر لكل منتج هل تريد الاحتفاظ الحالي أو تحديثه بقيم الملف. المنتجات الجديدة تُضاف دائماً.",
   "dash.skipDuplicates": "تخطي التكرارات",
   "dash.replaceDuplicates": "استبدال التكرارات",
+  "dash.importProductsKeepCurrent": "إبقاء",
+  "dash.importProductsUpdateExisting": "تحديث",
+  "dash.importProductsKeepAll": "إبقاء الكل",
+  "dash.importProductsUpdateAll": "تحديث الكل",
+  "dash.importProductsPlan": "{added} جديد · {updated} تم تحديثه · {kept} تم إبقاؤه",
+  "dash.importProductsNoChanges": "مطابق لمنتجك الحالي",
+  "dash.importProductsRepeatRow": "يكرر صفاً سابقاً في هذا الملف",
+  "dash.importProductsConfirm": "استيراد {added} جديد، تحديث {updated}",
   "dash.importing": "جارٍ الاستيراد…",
   "dash.importProductsError": "تعذر استيراد المنتجات. لم يتم تغيير أي منتج.",
   "dash.uploadFile": "اختر ملف CSV",
@@ -2522,7 +2537,6 @@ const AR: Dict = {
   "dash.notificationNew": "تم استلام طلب أو حجز جديد!",
   "dash.expandSidebar": "توسيع الشريط الجانبي",
   "dash.collapseSidebar": "طي الشريط الجانبي",
-  "dash.importProductsDefaultDesc": "منتج غذاء للحيوانات",
 
   // Homepage reviews section
   "homepage.clinicReviews.eyebrow": "آراء غوغل",

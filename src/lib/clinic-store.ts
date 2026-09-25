@@ -82,9 +82,12 @@ export type ProductImportResult = {
     updated: number;
     skipped: number;
   };
+  results?: { index: number; action: "created" | "updated" | "skipped" }[];
+  detail?: string;
 };
 
-type ProductImportPreviewRow = {
+export type ProductImportPreviewRow = {
+  index: number;
   item: ProductImportItem;
   duplicate: boolean;
   existing: Product | null;
@@ -254,12 +257,12 @@ export function previewProductImports(existingProducts: Product[], incoming: Pro
     existingProducts.map((product) => [productImportKey(product), product]),
   );
   const seen = new Set<string>();
-  const rows: ProductImportPreviewRow[] = incoming.map((item) => {
+  const rows: ProductImportPreviewRow[] = incoming.map((item, index) => {
     const key = productImportKey(item);
     const existing = existingByKey.get(key) ?? null;
     const duplicate = Boolean(existing) || seen.has(key);
     seen.add(key);
-    return { item, duplicate, existing };
+    return { index, item, duplicate, existing };
   });
   const duplicateCount = rows.filter((row) => row.duplicate).length;
   return { rows, duplicateCount, newCount: rows.length - duplicateCount };
@@ -916,11 +919,13 @@ export async function updateProduct(id: string, product: ProductDraft) {
 export async function importProducts(
   products: ProductImportItem[],
   duplicateAction: ProductImportMode,
+  resolutions?: ProductImportMode[],
 ) {
   try {
     const result = await api.post<ProductImportResult>("/products/import", {
       products,
       duplicateAction,
+      ...(resolutions ? { resolutions } : {}),
     });
     invalidate(QUERY_KEYS.products);
     return result;

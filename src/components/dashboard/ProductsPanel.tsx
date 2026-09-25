@@ -6,16 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -53,10 +43,12 @@ import {
   type Product,
   type ProductImportItem,
   type ProductImportMode,
+  type ProductImportPreviewRow,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import { ProductImportResolveDialog } from "./ProductImportResolveDialog";
 
 const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
 const PET_TYPES = ["dog", "cat", "both"] as const;
@@ -81,6 +73,7 @@ type PendingProductImport = {
   items: ProductImportItem[];
   invalidRows: number[];
   duplicateCount: number;
+  conflicts: ProductImportPreviewRow[];
 };
 
 function ProductDialog({
@@ -435,6 +428,7 @@ export function ProductsPanel() {
   const [importOpen, setImportOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<PendingProductImport | null>(null);
+  const [resolutions, setResolutions] = useState<Record<number, ProductImportMode>>({});
   const [importing, setImporting] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Product, b: Product) => number> = {
@@ -459,6 +453,7 @@ export function ProductsPanel() {
     setImportOpen(false);
     setDuplicateDialogOpen(false);
     setPendingImport(null);
+    setResolutions({});
   };
 
   const handleImportFile = async (file: File | null) => {
@@ -475,6 +470,7 @@ export function ProductsPanel() {
         items: parsed.items,
         invalidRows: parsed.invalidRows,
         duplicateCount: previewProductImports(products, parsed.items).duplicateCount,
+        conflicts: [],
       });
       if (parsed.invalidRows.length > 0) {
         toast.warning(
@@ -491,11 +487,17 @@ export function ProductsPanel() {
     }
   };
 
-  const runImport = async (duplicateAction: ProductImportMode) => {
+  const runImport = async () => {
     if (!pendingImport) return;
     setImporting(true);
     try {
-      const result = await importProducts(pendingImport.items, duplicateAction);
+      const decisions =
+        pendingImport.conflicts.length > 0
+          ? pendingImport.items.map(
+              (_, index) => resolutions[index] ?? ("skip" as ProductImportMode),
+            )
+          : undefined;
+      const result = await importProducts(pendingImport.items, "skip", decisions);
       toast.success(
         t("dash.importProductsResult", {
           created: String(result.summary.created),
@@ -506,12 +508,18 @@ export function ProductsPanel() {
       setImportOpen(false);
       setDuplicateDialogOpen(false);
       setPendingImport(null);
+      setResolutions({});
     } catch (err) {
       console.error("Failed to import products", err);
       toast.error(t("dash.importProductsError"));
     } finally {
       setImporting(false);
     }
+  };
+
+  const setAllResolutions = (mode: ProductImportMode) => {
+    if (!pendingImport) return;
+    setResolutions(Object.fromEntries(pendingImport.conflicts.map((row) => [row.index, mode])));
   };
 
   const beginImport = async () => {
@@ -521,13 +529,19 @@ export function ProductsPanel() {
       const currentProducts = await fetchAllProducts();
       const currentPreview = previewProductImports(currentProducts, pendingImport.items);
       if (currentPreview.duplicateCount > 0) {
+        const conflicts = currentPreview.rows.filter((row) => row.duplicate);
         setPendingImport((current) =>
-          current ? { ...current, duplicateCount: currentPreview.duplicateCount } : current,
+          current
+            ? { ...current, duplicateCount: currentPreview.duplicateCount, conflicts }
+            : current,
+        );
+        setResolutions(
+          Object.fromEntries(conflicts.map((row) => [row.index, "skip" as ProductImportMode])),
         );
         setDuplicateDialogOpen(true);
         return;
       }
-      await runImport("skip");
+      await runImport();
     } catch (err) {
       console.error("Failed to check product import", err);
       toast.error(t("dash.importProductsError"));
@@ -748,7 +762,7 @@ export function ProductsPanel() {
       )}
 
       <Dialog
-        open={importOpen}
+        open={importOpen && !duplicateDialogOpen}
         onOpenChange={(open) => {
           if (!open) closeImport();
         }}
@@ -798,37 +812,20 @@ export function ProductsPanel() {
         </DialogContent>
       </Dialog>
 
-      {pendingImport && duplicateDialogOpen && (
-        <AlertDialog
+      {pendingImport && (
+        <ProductImportResolveDialog
           open={duplicateDialogOpen}
-          onOpenChange={(open) => {
-            if (!open && !importing) setDuplicateDialogOpen(false);
-          }}
-        >
-          <AlertDialogContent className="sm:max-w-sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("dash.importProductsDuplicatesTitle")}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("dash.importProductsDuplicatesDescription", {
-                  count: String(pendingImport.duplicateCount),
-                })}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={importing}>{t("dash.cancel")}</AlertDialogCancel>
-              <AlertDialogAction
-                variant="outline"
-                disabled={importing}
-                onClick={() => void runImport("skip")}
-              >
-                {t("dash.skipDuplicates")}
-              </AlertDialogAction>
-              <AlertDialogAction disabled={importing} onClick={() => void runImport("replace")}>
-                {t("dash.replaceDuplicates")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onOpenChange={setDuplicateDialogOpen}
+          rows={pendingImport.conflicts}
+          newCount={pendingImport.items.length - pendingImport.conflicts.length}
+          resolutions={resolutions}
+          onResolutionChange={(index, mode) =>
+            setResolutions((current) => ({ ...current, [index]: mode }))
+          }
+          onBulkChange={setAllResolutions}
+          onConfirm={() => void runImport()}
+          importing={importing}
+        />
       )}
     </Card>
   );
