@@ -740,7 +740,7 @@ function CashierApp() {
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="size-14 shrink-0 rounded-lg border border-border object-cover"
+                          className="size-14 shrink-0 rounded-lg border border-border bg-muted object-contain p-1"
                         />
                       ) : (
                         <div className="size-14 shrink-0 rounded-lg border border-border bg-muted" />

@@ -436,7 +436,7 @@ function CheckoutForm() {
                       <img
                         src={item.image}
                         alt=""
-                        className="size-14 shrink-0 rounded-xl border border-border object-cover"
+                        className="size-14 shrink-0 rounded-xl border border-border bg-muted object-contain p-1"
                       />
                     ) : (
                       <div className="size-14 shrink-0 rounded-xl border border-border bg-muted" />

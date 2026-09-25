@@ -64,7 +64,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                         <img
                           src={item.image}
                           alt=""
-                          className="size-16 shrink-0 rounded-xl border border-border object-cover"
+                          className="size-16 shrink-0 rounded-xl border border-border bg-muted object-contain p-1"
                         />
                       ) : (
                         <div className="size-16 shrink-0 rounded-xl border border-border bg-muted" />

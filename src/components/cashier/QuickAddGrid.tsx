@@ -118,7 +118,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
                     <img
                       src={p.image}
                       alt={p.name}
-                      className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="size-full bg-muted object-contain p-2"
                       loading="lazy"
                     />
                   ) : (

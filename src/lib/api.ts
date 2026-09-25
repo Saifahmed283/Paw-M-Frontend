@@ -24,6 +24,16 @@ function resolveApiBase(): string {
 
 const API_BASE = resolveApiBase();
 
+export type PaginatedResult<T> = {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+};
+
 // Send the session that matches the request: the staff JWT takes precedence, so
 // dashboard calls are authenticated even when the API runs on another origin and
 // cross-site cookies are blocked. Falls back to the store customer's token.
@@ -46,7 +56,11 @@ function csrfHeaders(): Record<string, string> {
   return match ? { "X-CSRF-Token": decodeURIComponent(match[1] ?? "") } : {};
 }
 
-async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
+async function apiFetch(
+  path: string,
+  init?: RequestInit,
+  unwrapPagination = true,
+): Promise<unknown> {
   const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
 
   const headers = new Headers({
@@ -76,6 +90,7 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
   if (res.status === 204) return undefined;
   const json = await res.json();
   if (
+    unwrapPagination &&
     json &&
     typeof json === "object" &&
     "data" in json &&
@@ -89,6 +104,8 @@ async function apiFetch(path: string, init?: RequestInit): Promise<unknown> {
 
 export const api = {
   get: <T = unknown>(path: string, init?: RequestInit) => apiFetch(path, init) as Promise<T>,
+  getPage: <T = unknown>(path: string) =>
+    apiFetch(path, undefined, false) as Promise<PaginatedResult<T>>,
   post: <T = unknown>(path: string, body?: unknown) =>
     apiFetch(path, { method: "POST", body: JSON.stringify(body) }) as Promise<T>,
   patch: <T = unknown>(path: string, body?: unknown) =>

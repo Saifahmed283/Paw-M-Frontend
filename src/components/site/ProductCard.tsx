@@ -160,7 +160,7 @@ export function ProductCard({ product }: { product: Product }) {
             src={product.image}
             alt={product.name}
             loading="lazy"
-            className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+            className="size-full bg-muted object-contain p-2 sm:p-3"
           />
         ) : (
           <div className="flex size-full items-center justify-center text-muted-foreground">

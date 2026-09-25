@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,7 +41,19 @@ import {
   useGrid,
   useSortState,
 } from "@/components/dash-grid";
-import { useClinicStore, saveProduct, deleteProduct, type Product } from "@/lib/clinic-store";
+import {
+  createProduct,
+  deleteProduct,
+  fetchAllProducts,
+  importProducts,
+  parseProductCsv,
+  previewProductImports,
+  updateProduct,
+  useClinicStore,
+  type Product,
+  type ProductImportItem,
+  type ProductImportMode,
+} from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
@@ -52,6 +74,13 @@ const EMPTY_PRODUCT = {
   featured: false,
   barcode: "",
   barcodeImage: "",
+};
+
+type PendingProductImport = {
+  fileName: string;
+  items: ProductImportItem[];
+  invalidRows: number[];
+  duplicateCount: number;
 };
 
 function ProductDialog({
@@ -165,23 +194,22 @@ function ProductDialog({
       toast.error(t("dash.form.product.requiredStock"));
       return;
     }
+    const draft = {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      price,
+      compareAtPrice: compareAt,
+      stock,
+      image: form.image.trim(),
+      category: form.category || "accessories",
+      petType: form.petType,
+      featured: form.featured,
+      barcode: form.barcode.trim(),
+      barcodeImage: form.barcodeImage,
+    };
     try {
-      await saveProduct({
-        id: product?.id ?? `prod-${Date.now().toString(36)}`,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        price,
-        compareAtPrice: compareAt,
-        stock,
-        image: form.image.trim(),
-        category: form.category || "accessories",
-        petType: form.petType,
-        featured: form.featured,
-        barcode: form.barcode.trim(),
-        barcodeImage: form.barcodeImage,
-        createdAt: product?.createdAt ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      if (product) await updateProduct(product.id, draft);
+      else await createProduct(draft);
     } catch (err) {
       console.error("Failed to save product", err);
       toast.error(t("dash.toast.error"));
@@ -324,7 +352,7 @@ function ProductDialog({
                 <img
                   src={form.image}
                   alt=""
-                  className="h-20 w-20 rounded-lg border border-border object-cover"
+                  className="h-20 w-20 rounded-lg border border-border bg-muted object-contain p-1"
                 />
                 <Button
                   type="button"
@@ -405,6 +433,9 @@ export function ProductsPanel() {
   const [category, setCategory] = useState<string>("all");
   const [petType, setPetType] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<PendingProductImport | null>(null);
+  const [importing, setImporting] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Product, b: Product) => number> = {
     name: (a, b) => a.name.localeCompare(b.name),
@@ -422,6 +453,88 @@ export function ProductsPanel() {
   );
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["name", "category", "id"]);
+
+  const closeImport = () => {
+    if (importing) return;
+    setImportOpen(false);
+    setDuplicateDialogOpen(false);
+    setPendingImport(null);
+  };
+
+  const handleImportFile = async (file: File | null) => {
+    if (!file) return;
+    setPendingImport(null);
+    try {
+      const parsed = parseProductCsv(await file.text(), t("dash.importProductsDefaultDesc"));
+      if (parsed.items.length === 0) {
+        toast.error(t("dash.importProductsNoValidRows"));
+        return;
+      }
+      setPendingImport({
+        fileName: file.name,
+        items: parsed.items,
+        invalidRows: parsed.invalidRows,
+        duplicateCount: previewProductImports(products, parsed.items).duplicateCount,
+      });
+      if (parsed.invalidRows.length > 0) {
+        toast.warning(
+          t("dash.importProductsInvalidRows", { count: String(parsed.invalidRows.length) }),
+        );
+      }
+    } catch (err) {
+      console.error("Failed to parse product CSV", err);
+      toast.error(
+        err instanceof Error && err.message === "missing-required-columns"
+          ? t("dash.importProductsMissingColumns")
+          : t("dash.importProductsError"),
+      );
+    }
+  };
+
+  const runImport = async (duplicateAction: ProductImportMode) => {
+    if (!pendingImport) return;
+    setImporting(true);
+    try {
+      const result = await importProducts(pendingImport.items, duplicateAction);
+      toast.success(
+        t("dash.importProductsResult", {
+          created: String(result.summary.created),
+          updated: String(result.summary.updated),
+          skipped: String(result.summary.skipped),
+        }),
+      );
+      setImportOpen(false);
+      setDuplicateDialogOpen(false);
+      setPendingImport(null);
+    } catch (err) {
+      console.error("Failed to import products", err);
+      toast.error(t("dash.importProductsError"));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const beginImport = async () => {
+    if (!pendingImport) return;
+    setImporting(true);
+    try {
+      const currentProducts = await fetchAllProducts();
+      const currentPreview = previewProductImports(currentProducts, pendingImport.items);
+      if (currentPreview.duplicateCount > 0) {
+        setPendingImport((current) =>
+          current ? { ...current, duplicateCount: currentPreview.duplicateCount } : current,
+        );
+        setDuplicateDialogOpen(true);
+        return;
+      }
+      await runImport("skip");
+    } catch (err) {
+      console.error("Failed to check product import", err);
+      toast.error(t("dash.importProductsError"));
+    } finally {
+      setImporting(false);
+    }
+  };
 
   return (
     <Card>
@@ -516,7 +629,7 @@ export function ProductsPanel() {
                         <img
                           src={p.image}
                           alt=""
-                          className="size-10 rounded-lg border border-border object-cover"
+                          className="size-10 rounded-lg border border-border bg-muted object-contain p-0.5"
                         />
                       )}
                       <span className="whitespace-nowrap font-medium">{p.name}</span>
@@ -564,7 +677,7 @@ export function ProductsPanel() {
                       aria-label={t("dash.form.product.featured")}
                       onClick={async () => {
                         try {
-                          await saveProduct({ ...p, featured: !p.featured });
+                          await updateProduct(p.id, { ...p, featured: !p.featured });
                           toast.success(t("dash.toast.saved"));
                         } catch (err) {
                           console.error("Failed to toggle featured", err);
@@ -634,11 +747,10 @@ export function ProductsPanel() {
         />
       )}
 
-      {/* Import Products Dialog */}
       <Dialog
         open={importOpen}
         onOpenChange={(open) => {
-          if (!open) setImportOpen(false);
+          if (!open) closeImport();
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -646,120 +758,78 @@ export function ProductsPanel() {
             <DialogTitle>{t("dash.importProducts")}</DialogTitle>
             <DialogDescription>{t("dash.importProductsHint")}</DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              const formEl = e.currentTarget;
-              const fileInput = formEl.elements.namedItem("file") as HTMLInputElement | null;
-              const file = fileInput?.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = async (event) => {
-                const csvText =
-                  typeof event.target?.result === "string" ? event.target.result : null;
-                if (!csvText) return;
-                // Parse CSV and import products
-                const lines = csvText.trim().split("\n");
-                const headerLine = lines[0];
-                if (!headerLine) return;
-                const headers = headerLine.split(",").map((h: string) => h.trim());
-                // Find column indices
-                const nameIdx = headers.findIndex((h: string) => h === "Name" || h === "Name ");
-                const typeIdx = headers.findIndex((h: string) => h === "Type" || h === "Type ");
-                const categoryIdx = headers.findIndex(
-                  (h: string) => h === "Category" || h === "Category ",
-                );
-                const kgIdx = headers.findIndex((h: string) => h === "Kg" || h === "Kg ");
-                const priceIdx = headers.findIndex((h: string) => h === "Price" || h === "Price ");
-                if (nameIdx === -1 || categoryIdx === -1 || kgIdx === -1 || priceIdx === -1) {
-                  toast.error(t("dash.importProductsMissingColumns"));
-                  return;
-                }
-                const productsToImport: Product[] = [];
-                for (let i = 1; i < lines.length; i++) {
-                  const rawLine = lines[i];
-                  if (!rawLine) continue;
-                  const line = rawLine.trim();
-                  if (!line) continue;
-                  const values = line.split(",").map((v: string) => v.trim());
-                  const name = values[nameIdx] || "";
-                  const type = values[typeIdx] !== undefined ? values[typeIdx] : "";
-                  const category = values[categoryIdx] || "";
-                  const kg = values[kgIdx] || "";
-                  const priceStr = values[priceIdx] || "0";
-                  if (!name || !category) continue;
-                  const price = parseFloat(priceStr);
-                  if (isNaN(price)) continue;
-                  let petType = "both";
-                  if (type) {
-                    const lowerType = type.toLowerCase();
-                    if (lowerType.includes("dog")) petType = "dog";
-                    else if (lowerType.includes("cat")) petType = "cat";
-                  }
-                  let description = "";
-                  if (kg) {
-                    description = kg;
-                  }
-                  if (type && type !== kg) {
-                    description = description ? `${description} ${type}`.trim() : type;
-                  }
-                  if (!description) {
-                    description = t("dash.importProductsDefaultDesc");
-                  }
-                  const now = new Date().toISOString();
-                  productsToImport.push({
-                    id: `prod-${Date.now().toString(36)}-${i}`,
-                    name,
-                    description,
-                    price,
-                    compareAtPrice: null,
-                    image: "",
-                    category,
-                    petType,
-                    stock: 0,
-                    featured: false,
-                    barcode: "",
-                    createdAt: now,
-                    updatedAt: now,
-                  });
-                }
-                // Import products
-                const importPromises = productsToImport.map((product) => saveProduct(product));
-                await Promise.all(importPromises);
-                toast.success(
-                  t("dash.importProductsSuccess", { count: String(productsToImport.length) }),
-                );
-                setImportOpen(false);
-              };
-              reader.onerror = () => {
-                toast.error(t("dash.importProductsError"));
-              };
-              reader.readAsText(file);
-            }}
-          >
-            <div className="space-y-4">
-              <label className="flex flex-col space-y-1">
-                <span className="text-sm font-medium">{t("dash.uploadFile")}</span>
-                <input
-                  type="file"
-                  accept=".csv"
-                  id="file"
-                  required
-                  onChange={(e) => {
-                    // Reset form if needed
-                  }}
-                />
-              </label>
-              <Button type="submit">{t("dash.import")}</Button>
-            </div>
-          </form>
+          <div className="space-y-4">
+            <label className="flex flex-col space-y-1">
+              <span className="text-sm font-medium">{t("dash.uploadFile")}</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                disabled={importing}
+                onChange={(event) => void handleImportFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            {pendingImport && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <p className="font-medium">{pendingImport.fileName}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {t("dash.importProductsReady", {
+                    newCount: String(pendingImport.items.length - pendingImport.duplicateCount),
+                    duplicateCount: String(pendingImport.duplicateCount),
+                  })}
+                </p>
+                {pendingImport.invalidRows.length > 0 && (
+                  <p className="mt-1 text-amber-600">
+                    {t("dash.importProductsInvalidRows", {
+                      count: String(pendingImport.invalidRows.length),
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportOpen(false)}>
+            <Button variant="outline" onClick={closeImport} disabled={importing}>
               {t("dash.cancel")}
+            </Button>
+            <Button onClick={() => void beginImport()} disabled={!pendingImport || importing}>
+              {importing ? t("dash.importing") : t("dash.import")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pendingImport && duplicateDialogOpen && (
+        <AlertDialog
+          open={duplicateDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && !importing) setDuplicateDialogOpen(false);
+          }}
+        >
+          <AlertDialogContent className="sm:max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("dash.importProductsDuplicatesTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("dash.importProductsDuplicatesDescription", {
+                  count: String(pendingImport.duplicateCount),
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={importing}>{t("dash.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                variant="outline"
+                disabled={importing}
+                onClick={() => void runImport("skip")}
+              >
+                {t("dash.skipDuplicates")}
+              </AlertDialogAction>
+              <AlertDialogAction disabled={importing} onClick={() => void runImport("replace")}>
+                {t("dash.replaceDuplicates")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }

@@ -307,12 +307,12 @@ function ProductPage() {
             <WishlistButton productId={product.id} />
           </div>
           <div className="mt-6 grid gap-10 lg:grid-cols-2">
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-card">
+            <div className="relative overflow-hidden rounded-3xl border border-border bg-muted shadow-card">
               {product.image ? (
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="aspect-square size-full object-cover"
+                  className="aspect-square size-full bg-muted object-contain p-4 sm:p-8"
                 />
               ) : (
                 <div className="aspect-square size-full bg-muted" />

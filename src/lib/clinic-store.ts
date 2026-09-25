@@ -55,11 +55,215 @@ export type Product = {
   petType?: string;
   stock: number;
   featured: boolean;
-  barcode?: string;
-  barcodeImage?: string;
+  barcode?: string | null;
+  barcodeImage?: string | null;
+  minStockAlert?: number;
   createdAt: string;
   updatedAt: string;
 };
+
+export type ProductDraft = Omit<Product, "id" | "createdAt" | "updatedAt">;
+
+export type ProductImportItem = {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  petType: "dog" | "cat" | "both";
+  stock: number;
+  barcode: string | null;
+};
+
+export type ProductImportMode = "replace" | "skip";
+
+export type ProductImportResult = {
+  summary: {
+    created: number;
+    updated: number;
+    skipped: number;
+  };
+};
+
+type ProductImportPreviewRow = {
+  item: ProductImportItem;
+  duplicate: boolean;
+  existing: Product | null;
+};
+
+function normalizeProductText(value: unknown) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function normalizeImportHeader(value: string) {
+  return value
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function findImportHeader(headers: string[], aliases: string[]) {
+  const normalized = new Set(aliases.map(normalizeImportHeader));
+  return headers.findIndex((header) => normalized.has(normalizeImportHeader(header)));
+}
+
+function parseCsvRows(csvText: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = "";
+  let quoted = false;
+
+  for (let index = 0; index < csvText.length; index += 1) {
+    const character = csvText[index]!;
+    if (quoted) {
+      if (character === '"' && csvText[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      } else {
+        value += character;
+      }
+      continue;
+    }
+    if (character === '"') {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(value.trim());
+      value = "";
+    } else if (character === "\n") {
+      row.push(value.trim());
+      if (row.some((cell) => cell !== "")) rows.push(row);
+      row = [];
+      value = "";
+    } else if (character !== "\r") {
+      value += character;
+    }
+  }
+
+  row.push(value.trim());
+  if (row.some((cell) => cell !== "")) rows.push(row);
+  return rows;
+}
+
+function parseImportNumber(rawValue: string) {
+  let value = rawValue.trim().replace(/\s/g, "");
+  if (!value) return Number.NaN;
+  const lastComma = value.lastIndexOf(",");
+  const lastDot = value.lastIndexOf(".");
+  if (lastComma !== -1 && lastDot !== -1) {
+    value =
+      lastComma > lastDot ? value.replace(/,/g, "") : value.replace(/\./g, "").replace(",", ".");
+  } else if (lastComma !== -1) {
+    value = value.replace(",", ".");
+  }
+  return Number(value.replace(/[^0-9.+-]/g, ""));
+}
+
+export function productImportKey(product: {
+  name: string;
+  category: string;
+  petType?: string;
+  barcode?: string | null;
+}) {
+  const barcode = normalizeProductText(product.barcode);
+  if (barcode) return `barcode:${barcode}`;
+  return [
+    "details",
+    normalizeProductText(product.name),
+    normalizeProductText(product.category),
+    normalizeProductText(product.petType ?? "both"),
+  ].join("|");
+}
+
+export function parseProductCsv(csvText: string, defaultDescription: string) {
+  const rows = parseCsvRows(csvText.replace(/^\uFEFF/, ""));
+  const headers = rows[0];
+  if (!headers) throw new Error("missing-required-columns");
+
+  const nameIndex = findImportHeader(headers, ["Name"]);
+  const typeIndex = findImportHeader(headers, ["Type"]);
+  const categoryIndex = findImportHeader(headers, ["Category"]);
+  const weightIndex = findImportHeader(headers, ["Kg", "K/g"]);
+  const priceIndex = findImportHeader(headers, ["Price"]);
+  const barcodeIndex = findImportHeader(headers, ["Barcode / QR value", "Barcode / QR", "Barcode"]);
+  const stockIndex = findImportHeader(headers, ["Stock"]);
+
+  if (nameIndex === -1 || categoryIndex === -1 || priceIndex === -1) {
+    throw new Error("missing-required-columns");
+  }
+
+  const items: ProductImportItem[] = [];
+  const invalidRows: number[] = [];
+  const getValue = (values: string[], index: number) => (index === -1 ? "" : (values[index] ?? ""));
+
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+    const values = rows[rowIndex]!;
+    const name = getValue(values, nameIndex).trim();
+    const type = getValue(values, typeIndex).trim();
+    const categoryValue = getValue(values, categoryIndex).trim();
+    const weight = getValue(values, weightIndex).trim();
+    const priceValue = getValue(values, priceIndex).trim();
+    const barcodeValue = getValue(values, barcodeIndex).trim();
+    const stockValue = getValue(values, stockIndex).trim();
+
+    if (![name, type, categoryValue, weight, priceValue, barcodeValue, stockValue].some(Boolean)) {
+      continue;
+    }
+
+    const price = parseImportNumber(priceValue);
+    const stock = stockValue ? parseImportNumber(stockValue) : 0;
+    if (!name || !categoryValue || !Number.isFinite(price) || price < 0) {
+      invalidRows.push(rowIndex + 1);
+      continue;
+    }
+    if (!Number.isInteger(stock) || stock < 0) {
+      invalidRows.push(rowIndex + 1);
+      continue;
+    }
+
+    const normalizedType = normalizeProductText(type);
+    const isDog = normalizedType.includes("dog");
+    const isCat = normalizedType.includes("cat");
+    const petType: ProductImportItem["petType"] =
+      isDog && isCat ? "both" : isDog ? "dog" : isCat ? "cat" : "both";
+    const category = normalizeProductText(categoryValue);
+    const description =
+      Array.from(new Set([weight, type].filter(Boolean))).join(" ") || defaultDescription;
+
+    items.push({
+      name,
+      description,
+      price,
+      category,
+      petType,
+      stock,
+      barcode: barcodeValue || null,
+    });
+  }
+
+  return { items, invalidRows };
+}
+
+export function previewProductImports(existingProducts: Product[], incoming: ProductImportItem[]) {
+  const existingByKey = new Map(
+    existingProducts.map((product) => [productImportKey(product), product]),
+  );
+  const seen = new Set<string>();
+  const rows: ProductImportPreviewRow[] = incoming.map((item) => {
+    const key = productImportKey(item);
+    const existing = existingByKey.get(key) ?? null;
+    const duplicate = Boolean(existing) || seen.has(key);
+    seen.add(key);
+    return { item, duplicate, existing };
+  });
+  const duplicateCount = rows.filter((row) => row.duplicate).length;
+  return { rows, duplicateCount, newCount: rows.length - duplicateCount };
+}
 
 export type OrderItem = {
   id: string;
@@ -373,6 +577,21 @@ function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+export async function fetchAllProducts() {
+  const products: Product[] = [];
+  let page = 1;
+  let pageCount = 1;
+
+  do {
+    const result = await api.getPage<Product>(`/products?limit=200&page=${page}`);
+    products.push(...result.data);
+    pageCount = Math.max(1, result.pagination.pages);
+    page += 1;
+  } while (page <= pageCount);
+
+  return products;
+}
+
 export function useClinicStore() {
   const qc = useQueryClient();
   queryClientInstance = qc;
@@ -400,7 +619,7 @@ export function useClinicStore() {
 
   const { data: products = seedDefaults.products } = useQuery({
     queryKey: QUERY_KEYS.products,
-    queryFn: () => api.get<Product[]>("/products"),
+    queryFn: fetchAllProducts,
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.products,
     enabled: mounted,
@@ -645,16 +864,68 @@ export async function deleteService(slug: string) {
   }
 }
 
-export async function saveProduct(product: Product) {
+function productPayload(product: ProductDraft) {
+  return {
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice ?? null,
+    image: product.image,
+    category: product.category,
+    petType: product.petType ?? "both",
+    stock: product.stock,
+    featured: product.featured,
+    barcode: product.barcode?.trim() || null,
+    barcodeImage: product.barcodeImage || null,
+  };
+}
+
+function cacheProduct(product: Product) {
+  const queryClient = getQc();
+  if (!queryClient) return;
+  queryClient.setQueryData<Product[]>(QUERY_KEYS.products, (current = []) => [
+    product,
+    ...current.filter((item) => item.id !== product.id),
+  ]);
+}
+
+export async function createProduct(product: ProductDraft) {
   try {
-    const current = getQc()?.getQueryData<Product[]>(QUERY_KEYS.products) ?? [];
-    const exists = current.some((p) => p.id === product.id);
-    const saved = exists
-      ? await api.patch<Product>(`/products/${product.id}`, product)
-      : await api.post<Product>("/products", product);
+    const saved = await api.post<Product>("/products", productPayload(product));
+    cacheProduct(saved);
     invalidate(QUERY_KEYS.products);
+    return saved;
   } catch (err) {
-    console.error("Failed to save product", err);
+    console.error("Failed to create product", err);
+    throw err;
+  }
+}
+
+export async function updateProduct(id: string, product: ProductDraft) {
+  try {
+    const saved = await api.patch<Product>(`/products/${id}`, productPayload(product));
+    cacheProduct(saved);
+    invalidate(QUERY_KEYS.products);
+    return saved;
+  } catch (err) {
+    console.error("Failed to update product", err);
+    throw err;
+  }
+}
+
+export async function importProducts(
+  products: ProductImportItem[],
+  duplicateAction: ProductImportMode,
+) {
+  try {
+    const result = await api.post<ProductImportResult>("/products/import", {
+      products,
+      duplicateAction,
+    });
+    invalidate(QUERY_KEYS.products);
+    return result;
+  } catch (err) {
+    console.error("Failed to import products", err);
     throw err;
   }
 }
