@@ -77,6 +77,7 @@ import {
   logout,
   remainingLockMs,
 } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
 import { allowedTabsForRole } from "@/lib/roles";
@@ -247,8 +248,18 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
       } else {
         setError(remainingLockMs() > 0 ? t("auth.locked") : t("auth.invalidCreds"));
       }
-    } catch {
-      setError(t("auth.invalidCreds"));
+    } catch (err) {
+      // Only a rejected credential pair means "invalid credentials". A 400 is a
+      // validation failure, 429 is the auth rate limiter, and a fetch rejection
+      // means the API is unreachable — each needs its own message.
+      if (err instanceof ApiError) {
+        if (err.status === 400) setError(t("auth.missingFields"));
+        else if (err.status === 429)
+          setError(t("auth.locked", { minutes: String(err.retryAfterMinutes ?? 15) }));
+        else setError(t("auth.unreachable"));
+      } else {
+        setError(t("auth.unreachable"));
+      }
     } finally {
       setBusy(false);
     }

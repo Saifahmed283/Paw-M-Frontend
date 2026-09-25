@@ -39,11 +39,14 @@ export type PaginatedResult<T> = {
 // succeed on a retry, such as a 429 once the rate-limit budget is spent.
 export class ApiError extends Error {
   readonly status: number;
+  /** Minutes until a rate-limited window resets, from the RateLimit-Reset header. */
+  readonly retryAfterMinutes?: number;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, retryAfterMinutes?: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    if (retryAfterMinutes !== undefined) this.retryAfterMinutes = retryAfterMinutes;
   }
 }
 
@@ -98,7 +101,17 @@ async function apiFetch(
     ) {
       storageRemove("session", ADMIN_SESSION_KEY);
     }
-    throw new ApiError(res.status, `API ${res.status}: ${text || res.statusText}`);
+    // RateLimit-Reset is the number of seconds until the window resets.
+    const resetHeader = res.headers.get("RateLimit-Reset");
+    const resetSeconds = resetHeader ? Number(resetHeader) : Number.NaN;
+    const retryAfterMinutes = Number.isFinite(resetSeconds)
+      ? Math.max(1, Math.ceil(resetSeconds / 60))
+      : undefined;
+    throw new ApiError(
+      res.status,
+      `API ${res.status}: ${text || res.statusText}`,
+      retryAfterMinutes,
+    );
   }
   if (res.status === 204) return undefined;
   const json = await res.json();

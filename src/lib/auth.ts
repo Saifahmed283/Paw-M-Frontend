@@ -24,21 +24,24 @@ function saveSession(username: string, role: string, token?: string): void {
   storageSet("session", SESSION_KEY, JSON.stringify(session));
 }
 
-/** Sign in with staff credentials; opens a session on success. */
+/**
+ * Sign in with staff credentials; opens a session on success.
+ *
+ * Returns false only when the server actually rejected the credentials. Transport
+ * and server failures throw an {@link ApiError} instead, so the caller can tell
+ * "wrong password" apart from "empty field", "rate limited" and "API unreachable" —
+ * previously every failure collapsed into the same "invalid credentials" message.
+ */
 export async function login(username: string, password: string): Promise<boolean> {
-  try {
-    const r = await api.post<{ ok: boolean; role?: string; token?: string }>("/auth/login", {
-      username: username.trim(),
-      password,
-    });
-    if (!r.ok) {
-      return false;
-    }
-    saveSession(username.trim(), r.role ?? "staff", r.token);
-    return true;
-  } catch {
+  const r = await api.post<{ ok: boolean; role?: string; token?: string }>("/auth/login", {
+    username: username.trim(),
+    password,
+  });
+  if (!r.ok) {
     return false;
   }
+  saveSession(username.trim(), r.role ?? "staff", r.token);
+  return true;
 }
 
 /** Change the staff username and/or password. Throws if the current password is wrong. */
