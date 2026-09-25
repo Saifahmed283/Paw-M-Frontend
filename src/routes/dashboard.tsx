@@ -72,13 +72,9 @@ import {
   changeCredentials,
   currentRole,
   currentUsername,
-  isAuthConfigured,
   isAuthed,
   login,
   logout,
-  MIN_PASSWORD,
-  MIN_USERNAME,
-  register,
   remainingLockMs,
 } from "@/lib/auth";
 import { useNotificationSound } from "@/lib/use-notification-sound";
@@ -232,46 +228,24 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
   const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [lockedFor, setLockedFor] = useState(remainingLockMs());
-  const [setup, setSetup] = useState(false);
-  const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    isAuthConfigured()
-      .then((configured) => {
-        setSetup(!configured);
-        setChecked(true);
-      })
-      .catch(() => setChecked(true));
-  }, []);
-
+  // Staff accounts are provisioned out of band (the Postman collection), so this
+  // gate is sign-in only. It used to probe /auth/config and fall back to a
+  // "create the first admin" form, which meant any API hiccup looked like an
+  // unconfigured install and offered account creation to anyone who loaded it.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setError(null);
     setBusy(true);
     try {
-      if (setup) {
-        if (username.trim().length < MIN_USERNAME) {
-          setError(t("auth.usernameTooShort"));
-        } else if (password.length < MIN_PASSWORD) {
-          setError(t("auth.passTooShort"));
-        } else if (password !== confirm) {
-          setError(t("auth.mismatch"));
-        } else {
-          await register(username, password);
-          await login(username, password);
-          onUnlocked(currentRole());
-        }
+      if (await login(username, password)) {
+        onUnlocked(currentRole());
       } else {
-        if (await login(username, password)) {
-          onUnlocked(currentRole());
-        } else {
-          setError(remainingLockMs() > 0 ? t("auth.locked") : t("auth.invalidCreds"));
-        }
+        setError(remainingLockMs() > 0 ? t("auth.locked") : t("auth.invalidCreds"));
       }
     } catch {
       setError(t("auth.invalidCreds"));
@@ -279,14 +253,6 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
       setBusy(false);
     }
   };
-
-  if (!checked) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5 py-32">
-        <div className="text-sm text-muted-foreground">…</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5 py-32">
@@ -306,12 +272,8 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
         <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Lock className="size-5" />
         </span>
-        <h1 className="mt-5 text-center text-xl font-bold">
-          {setup ? t("auth.setupTitle") : t("auth.signIn")}
-        </h1>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          {setup ? t("auth.setupDesc") : t("auth.signInDesc")}
-        </p>
+        <h1 className="mt-5 text-center text-xl font-bold">{t("auth.signIn")}</h1>
+        <p className="mt-2 text-center text-sm text-muted-foreground">{t("auth.signInDesc")}</p>
 
         <div className="mt-5 grid gap-4">
           <Field label={t("auth.username")}>
@@ -327,7 +289,7 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
           <Field label={t("auth.password")}>
             <Input
               type="password"
-              autoComplete={setup ? "new-password" : "current-password"}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t("auth.passwordPlaceholder")}
@@ -336,21 +298,6 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
           </Field>
         </div>
 
-        {setup && (
-          <div className="mt-4">
-            <Field label={t("auth.setupConfirm")}>
-              <Input
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder={t("auth.passwordPlaceholder")}
-                maxLength={128}
-              />
-            </Field>
-          </div>
-        )}
-
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
         {lockedFor > 0 && (
           <p className="mt-2 text-xs text-amber-600">
@@ -358,11 +305,9 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
           </p>
         )}
 
-        {!setup && (
-          <div className="mt-3 text-center">
-            <span className="text-xs text-muted-foreground">{t("auth.signInHelp")}</span>
-          </div>
-        )}
+        <div className="mt-3 text-center">
+          <span className="text-xs text-muted-foreground">{t("auth.signInHelp")}</span>
+        </div>
 
         <Button type="submit" disabled={busy} className="mt-6 w-full shadow-glow">
           {t("auth.unlock")}

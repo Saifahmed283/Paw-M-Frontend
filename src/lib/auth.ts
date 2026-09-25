@@ -14,31 +14,6 @@ type Session = {
   token?: string;
 };
 
-export async function isAuthConfigured(): Promise<boolean> {
-  try {
-    const r = await api.get<{ configured: boolean }>("/auth/config");
-    return r.configured;
-  } catch {
-    return false;
-  }
-}
-
-/** Create the staff account on first run. Throws if one already exists. */
-export async function register(username: string, password: string): Promise<void> {
-  const name = username.trim();
-  if (name.length < MIN_USERNAME) {
-    throw new Error(`Username must be at least ${MIN_USERNAME} characters.`);
-  }
-  if (password.length < MIN_PASSWORD) {
-    throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
-  }
-  const r = await api.post<{ configured: boolean; role?: string; token?: string }>(
-    "/auth/register",
-    { username: name, password },
-  );
-  saveSession(name, r.role ?? "staff", r.token);
-}
-
 function saveSession(username: string, role: string, token?: string): void {
   const session: Session = {
     username,

@@ -6,12 +6,10 @@ import {
   currentRole,
   currentUsername,
   hasMinRole,
-  isAuthConfigured,
   isAuthed,
   isLocked,
   login,
   logout,
-  register,
 } from "@/lib/auth";
 
 vi.mock("@/lib/api", () => ({
@@ -60,27 +58,12 @@ afterEach(() => {
 });
 
 describe("auth", () => {
-  it("allows first-run registration, then signs in", async () => {
-    vi.mocked(api.get).mockResolvedValue({ configured: false });
-    expect(await isAuthConfigured()).toBe(false);
-
-    vi.mocked(api.post).mockResolvedValue({ configured: true });
-    await register("admin", "staffpass");
-
-    vi.mocked(api.get).mockResolvedValue({ configured: true });
-    expect(await isAuthConfigured()).toBe(true);
-
+  it("rejects bad credentials and accepts good ones", async () => {
     vi.mocked(api.post).mockResolvedValue({ ok: false });
     expect(await login("admin", "wrongpass")).toBe(false);
 
     vi.mocked(api.post).mockResolvedValue({ ok: true, role: "admin" });
     expect(await login("admin", "staffpass")).toBe(true);
-  });
-
-  it("rejects a username or password that is too short", async () => {
-    await expect(register("ab", "staffpass")).rejects.toThrow("at least 3");
-    await expect(register("admin", "12345")).rejects.toThrow("at least 6");
-    expect(api.post).not.toHaveBeenCalled();
   });
 
   it("login sends the credentials to the API", async () => {
