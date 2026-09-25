@@ -36,7 +36,9 @@ function buildSecurityHeaders(apiOrigin: string): Record<string, string> {
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: https:",
+    // Product images are streamed from the API origin (see the /products/:id/image
+    // route), so that origin has to be allowed here and not only in connect-src.
+    `img-src 'self' data: https: ${apiOrigin}`,
     `connect-src 'self' ${apiOrigin}${isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
     "frame-src https://www.openstreetmap.org https://www.google.com/maps",
     "frame-ancestors 'none'",
