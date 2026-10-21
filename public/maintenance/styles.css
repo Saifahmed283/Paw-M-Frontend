@@ -1,0 +1,79 @@
+:root{
+  --paper:#eef3ec; --ink:#14261c; --muted:#4d6556; --sage:#7BA882; --deep:#1f4a30; --amber:#c9831f; --line:rgba(20,38,28,.14);
+  --head:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  min-height:100vh;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  font:400 1.0625rem/1.6 var(--body);color:var(--ink);background:var(--paper);
+  background-image:radial-gradient(circle at 1px 1px,rgba(20,38,28,.09) 1px,transparent 0);background-size:22px 22px;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--deep);outline-offset:3px;border-radius:4px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:8px;z-index:9}
+.skip:focus{left:8px}
+
+.top,main,.foot{width:min(1120px,100% - 3rem);margin-inline:auto}
+.top{display:flex;justify-content:space-between;align-items:center;padding:1.75rem 0}
+.brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;font:700 1.35rem var(--head);letter-spacing:-.02em}
+.pill{display:flex;align-items:center;gap:.55rem;font-size:.9rem;font-weight:600;padding:.45rem .95rem;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.55)}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:blink 1.6s ease-in-out infinite}
+
+main{flex:1;padding-top:clamp(2rem,7vh,5rem)}
+.hero{max-width:46rem}
+h1{font:700 clamp(2.5rem,7.5vw,5.25rem)/1 var(--head);letter-spacing:-.035em;text-wrap:balance}
+.lede{margin-top:1.5rem;max-width:34rem;color:var(--muted);font-size:1.2rem}
+.eta{display:inline-block;margin-top:1.25rem;padding:.4rem .9rem;border-radius:8px;background:var(--deep);color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* The one memorable element: a heartbeat that runs the full width of the page */
+.pulse{width:100vw;margin:clamp(2rem,6vh,4rem) calc(50% - 50vw);height:clamp(70px,12vw,140px)}
+.pulse svg{width:100%;height:100%;display:block;overflow:visible}
+.pulse path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.pulse .base{stroke:var(--line);stroke-width:2}
+.pulse .beat{stroke:var(--sage);stroke-width:4;stroke-dasharray:.16 1;stroke-dashoffset:.16;animation:run 3.2s cubic-bezier(.5,0,.3,1) infinite;filter:drop-shadow(0 0 6px rgba(123,168,130,.9))}
+@keyframes run{to{stroke-dashoffset:-1}}
+@keyframes blink{50%{opacity:.25}}
+
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(2rem,6vw,5rem);align-items:start;padding-bottom:clamp(2.5rem,7vh,5rem)}
+h2{font:700 1.35rem/1.25 var(--head);letter-spacing:-.015em;margin-bottom:1rem}
+
+.status{list-style:none;padding:0;border-top:1px solid var(--line)}
+.status li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.9rem;padding:1rem 0;border-bottom:1px solid var(--line)}
+.status b{font-weight:600}
+.status em{font-style:normal;color:var(--muted);font-size:.95rem}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.ok{background:var(--sage)}
+.dot.work{background:var(--amber);box-shadow:0 0 0 0 rgba(201,131,31,.5);animation:ring 2s infinite}
+@keyframes ring{70%,100%{box-shadow:0 0 0 10px rgba(201,131,31,0)}}
+
+.sos{background:var(--deep);color:#f2f7f1;padding:clamp(1.5rem,3vw,2.25rem);border-radius:22px 22px 22px 4px}
+.sos h2{margin-bottom:.5rem}
+.sos p{color:#c5d8c9}
+.sos .num{margin-top:1.25rem;color:#fff;font:700 1.6rem var(--head);letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.sos :focus-visible{outline-color:#fff}
+
+/* Two contact options: call or WhatsApp */
+.actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem}
+.btn{flex:1 1 9rem;display:inline-flex;align-items:center;justify-content:center;gap:.6rem;padding:.9rem 1.25rem;border-radius:99px;text-decoration:none;font:700 1.05rem var(--head);transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-2px)}
+.call{background:#f2f7f1;color:var(--ink)}
+.call:hover{background:#fff}
+.wa{background:#25d366;color:#08210f}
+.wa:hover{background:#3be57b}
+
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem 2rem;padding:1.5rem 0 2rem;border-top:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+.foot a{text-underline-offset:3px}
+
+@media (max-width:760px){
+  .top,main,.foot{width:calc(100% - 2rem)}
+  .grid{grid-template-columns:1fr}
+  .pill{font-size:.8rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .pulse .beat{stroke-dasharray:none}
+}

@@ -127,14 +127,16 @@ function resolveApiOrigin(request) {
 	return "http://localhost:3001";
 }
 function buildSecurityHeaders(apiOrigin) {
+	const isDev = typeof process !== "undefined" ? false : false;
 	return {
 		"Content-Security-Policy": [
 			"default-src 'self'",
 			"script-src 'self' 'unsafe-inline'",
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 			"font-src 'self' https://fonts.gstatic.com data:",
-			"img-src 'self' data: https:",
-			`connect-src 'self' ${apiOrigin}${(typeof process !== "undefined" ? false : false) ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
+			`img-src 'self' data: https: ${apiOrigin}`,
+			"worker-src 'self' blob:",
+			`connect-src 'self' ${apiOrigin}${isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
 			"frame-src https://www.openstreetmap.org https://www.google.com/maps",
 			"frame-ancestors 'none'",
 			"object-src 'none'",
@@ -149,7 +151,7 @@ function buildSecurityHeaders(apiOrigin) {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-wAbX5qzv.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-Bam9Mf8N.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response, apiOrigin) {

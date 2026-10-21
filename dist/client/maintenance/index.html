@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paw-M is getting a check-up · Back shortly</title>
+<meta name="description" content="Paw-M Veterinary Clinic's website is briefly down for maintenance. For a pet emergency, call or WhatsApp 012 10105624.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#7BA882">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐾%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/maintenance/styles.css">
+</head>
+<!-- Set the expected return time (ISO 8601) to show a live countdown, e.g. data-eta="2026-10-21T22:00:00+03:00" -->
+<body data-eta="">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <a class="brand" href="/" aria-label="Paw-M Veterinary Clinic">
+    <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#14261c"/><g fill="#7BA882"><ellipse cx="10" cy="13" rx="2.4" ry="3.2"/><ellipse cx="22" cy="13" rx="2.4" ry="3.2"/><ellipse cx="14" cy="8.5" rx="2.2" ry="3"/><ellipse cx="18" cy="8.5" rx="2.2" ry="3"/><path d="M16 14c4 0 7 3.600 7 6.800 0 2.200-1.800 3.200-3.600 3.200-1.300 0-2.200-.7-3.400-.7s-2.100.7-3.400.7C10.800 24 9 23 9 20.800 9 17.600 12 14 16 14z"/></g></svg>
+    <span>Paw-M</span>
+  </a>
+  <p class="pill"><i aria-hidden="true"></i>Scheduled maintenance</p>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <h1>We're giving the clinic a check-up.</h1>
+    <p class="lede">Our website is briefly offline while we make booking faster and keep your pet's records safer. It won't take long.</p>
+    <p class="eta" id="eta" hidden></p>
+  </section>
+
+  <div class="pulse" aria-hidden="true">
+    <svg viewBox="0 0 1200 140" preserveAspectRatio="none">
+      <path class="base" d="M0 70H300l14-10 14 10h70l18-52 24 104 20-52h60l12-9 12 9H700l14-10 14 10h70l18-52 24 104 20-52h60l12-9 12 9H1200"/>
+      <path class="beat" pathLength="1" d="M0 70H300l14-10 14 10h70l18-52 24 104 20-52h60l12-9 12 9H700l14-10 14 10h70l18-52 24 104 20-52h60l12-9 12 9H1200"/>
+    </svg>
+  </div>
+
+  <section class="grid">
+    <div>
+      <h2>What's happening</h2>
+      <ul class="status">
+        <li><span class="dot work"></span><b>Online booking</b><em>Being upgraded</em></li>
+        <li><span class="dot ok"></span><b>Medical records</b><em>Safe and untouched</em></li>
+        <li><span class="dot ok"></span><b>Vaccination reminders</b><em>Still going out</em></li>
+      </ul>
+    </div>
+
+    <aside class="sos" aria-labelledby="sos-h">
+      <h2 id="sos-h">Is your pet in an emergency?</h2>
+      <p>Don't wait for the website. Reach the clinic now and tell us what's happening.</p>
+      <p class="num">012 10105624</p>
+      <div class="actions">
+        <a class="btn call" href="tel:+201210105624">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6.600 10.800a15 15 0 0 0 6.600 6.600l2.200-2.200a1 1 0 0 1 1-.25c1.100.37 2.300.57 3.600.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.500a1 1 0 0 1 1 1c0 1.300.2 2.500.57 3.600a1 1 0 0 1-.25 1z"/></svg>
+          Call now
+        </a>
+        <a class="btn wa" href="https://wa.me/201210105624?text=Hello%20Paw-M%2C%20I%20need%20help%20with%20my%20pet." target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+          WhatsApp
+        </a>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<footer class="foot">
+  <a href="https://maps.app.goo.gl/uGR5EibNi28JSVmP7" rel="noopener">Paw Clinic Madinaty, Craft Zoon, Second New Cairo, Cairo 19519</a>
+  <span>© <span id="yr">2026</span> Paw-M Veterinary Clinic</span>
+</footer>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var el = document.getElementById('eta'), t = Date.parse(document.body.dataset.eta);
+  if (isNaN(t)) return;
+  function tick() {
+    var ms = t - Date.now();
+    if (ms <= 0) { el.textContent = "We're finishing up. Please refresh in a moment."; return; }
+    var m = Math.ceil(ms / 60000), h = Math.floor(m / 60);
+    el.textContent = 'Expected back in ' + (h ? h + ' h ' : '') + (m % 60) + ' min';
+  }
+  el.hidden = false; tick(); setInterval(tick, 30000);
+})();
+</script>
+</body>
+</html>
