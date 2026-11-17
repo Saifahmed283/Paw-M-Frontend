@@ -1,6 +1,6 @@
 import { getSessionToken, SESSION_KEY as ADMIN_SESSION_KEY } from "@/lib/auth";
 import { storageRemove } from "@/lib/storage";
-import { getClientToken } from "@/lib/client-auth";
+import { CLIENT_SESSION_KEY, getClientToken } from "@/lib/client-auth";
 
 const ENV_API_BASE =
   typeof import.meta !== "undefined"
@@ -50,13 +50,31 @@ export class ApiError extends Error {
   }
 }
 
-// Send the session that matches the request: the staff JWT takes precedence, so
-// dashboard calls are authenticated even when the API runs on another origin and
-// cross-site cookies are blocked. Falls back to the store customer's token.
-function authHeaders(): Record<string, string> {
+// Pick the session that matches the request. Staff and client sessions are
+// different token formats and authenticate against different endpoints, so a
+// staff JWT sent to a client route (or vice versa) is rejected with 401. Client
+// routes must therefore prefer the client token whenever one exists; staff
+// routes keep their previous behaviour (staff first, then client fallback).
+function isClientRoute(path: string, method: string): boolean {
+  const p = path.startsWith("/api/") ? path.slice(4) : path;
+  if (p === "/me" || p.startsWith("/me/")) return true;
+  if (p.startsWith("/client-auth")) return true;
+  if (p.startsWith("/pets") && method === "POST") return true;
+  // Booking creation and order placement/proof are client actions. The same
+  // paths are read/managed with staff tokens for the dashboard (GET/PATCH/etc).
+  if (p === "/bookings" && method === "POST") return true;
+  if (p.startsWith("/orders") && method === "POST") return true;
+  if (p.startsWith("/bookings/") && p.endsWith("/clinical")) return true;
+  return false;
+}
+
+function authHeaders(path: string, method: string): Record<string, string> {
   const staffToken = getSessionToken();
-  if (staffToken) return { Authorization: `Bearer ${staffToken}` };
   const clientToken = getClientToken();
+  if (isClientRoute(path, method)) {
+    return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
+  }
+  if (staffToken) return { Authorization: `Bearer ${staffToken}` };
   return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
 }
 
@@ -81,7 +99,7 @@ async function apiFetch(
 
   const headers = new Headers({
     "Content-Type": "application/json",
-    ...authHeaders(),
+    ...authHeaders(normalizedPath, init?.method ?? "GET"),
     ...csrfHeaders(),
     ...(init?.headers ?? {}),
   });
@@ -93,13 +111,15 @@ async function apiFetch(
   });
   if (!res.ok) {
     const text = await res.text();
-    // If the staff JWT was rejected, drop the stale local session so the
-    // dashboard falls back to the login gate (and stores a fresh token).
-    if (
-      res.status === 401 &&
-      /Unauthorized — no session|Session expired|Invalid session|User not found/.test(text)
-    ) {
-      storageRemove("session", ADMIN_SESSION_KEY);
+    // If a session was rejected, drop the stale local token so the UI falls
+    // back to its login gate instead of retrying with the same bad token.
+    if (res.status === 401) {
+      if (/Unauthorized — no session|Session expired|Invalid session|User not found/.test(text)) {
+        storageRemove("session", ADMIN_SESSION_KEY);
+      }
+      if (/client session|Client account not found|Account suspended/i.test(text)) {
+        storageRemove("session", CLIENT_SESSION_KEY);
+      }
     }
     // RateLimit-Reset is the number of seconds until the window resets.
     const resetHeader = res.headers.get("RateLimit-Reset");
