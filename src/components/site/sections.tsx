@@ -29,6 +29,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { CountUp, Reveal } from "@/components/motion-primitives";
+import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
+import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
+import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
 import { BOOKING_STEPS, FAQS, STATS, upcomingAvailability, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
@@ -113,28 +117,29 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
       <div className="hero-gradient absolute inset-0 -z-10" />
-
-      {/* Paw print drift animation - subtle brand touch */}
-      <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-        <div className="pawm-paw-drift" style={{ left: '5%', top: '15%', width: '24px', height: '24px', animationDelay: '0s', animationDuration: '10s' }} />
-        <div className="pawm-paw-drift" style={{ left: '15%', top: '5%', width: '16px', height: '16px', animationDelay: '-2s', animationDuration: '14s' }} />
-        <div className="pawm-paw-drift" style={{ left: '35%', top: '25%', width: '20px', height: '20px', animationDelay: '-4s', animationDuration: '12s' }} />
-        <div className="pawm-paw-drift" style={{ left: '60%', top: '10%', width: '18px', height: '18px', animationDelay: '-1s', animationDuration: '11s' }} />
-        <div className="pawm-paw-drift" style={{ left: '80%', top: '30%', width: '22px', height: '22px', animationDelay: '-3s', animationDuration: '13s' }} />
-        <div className="pawm-paw-drift" style={{ left: '90%', top: '60%', width: '14px', height: '14px', animationDelay: '-5s', animationDuration: '9s' }} />
-        <div className="pawm-paw-drift" style={{ left: '20%', top: '70%', width: '16px', height: '16px', animationDelay: '-6s', animationDuration: '10s' }} />
-        <div className="pawm-paw-drift" style={{ left: '75%', top: '80%', width: '20px', height: '20px', animationDelay: '-7s', animationDuration: '12s' }} />
-      </div>
+      <AmbientGlobs className="-z-[5]" />
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           <h1 className="text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
             {t("hero.title.a")}{" "}
-            <span className="text-brass-strong">{t("hero.title.b")}</span>
+            <RotatingText
+              texts={[
+                t("hero.rotating.0"),
+                t("hero.rotating.1"),
+                t("hero.rotating.2"),
+                t("hero.rotating.3"),
+                t("hero.rotating.4"),
+              ]}
+              className="align-baseline"
+              splitBy="words"
+              staggerDuration={0.05}
+              rotationInterval={2600}
+            />
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
@@ -170,22 +175,25 @@ export function Hero() {
 
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
             {STATS.map((stat, i) => (
-              <div key={stat.label} className="animate-fade-in">
+              <Reveal key={stat.label} delay={i * 60}>
                 <dt className="text-2xl font-bold tracking-tight text-foreground">
-                  {i === 1 ? doctors.length : stat.value}{stat.suffix ?? ""}
+                  <CountUp
+                    value={i === 1 ? doctors.length : stat.value}
+                    suffix={i === 1 ? "" : stat.suffix}
+                  />
                 </dt>
                 <dd className="mt-1 text-xs leading-snug text-muted-foreground">
                   {t(`stats.${i}`)}
                 </dd>
-              </div>
+              </Reveal>
             ))}
           </dl>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
           className="relative"
         >
           <div className="overflow-hidden rounded-3xl border border-border shadow-lg">
@@ -257,7 +265,7 @@ export function WhyUs() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
       <div className="grid items-center gap-12 lg:grid-cols-2">
-        <div className="animate-fade-in">
+        <Reveal>
           <div className="overflow-hidden rounded-3xl border border-border shadow-lg">
             <img
               src={clinicImage}
@@ -268,7 +276,7 @@ export function WhyUs() {
               className="h-full w-full object-cover"
             />
           </div>
-        </div>
+        </Reveal>
 
         <div>
           <SectionHeading
@@ -586,13 +594,16 @@ export function CtaBand() {
   const { settings } = useClinicStore();
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <div className="animate-fade-in">
+      <Reveal>
         <div className="relative overflow-hidden rounded-3xl border border-border bg-card px-8 py-14 text-center shadow-lg sm:px-16">
           <div className="hero-gradient absolute inset-0" />
+          <AmbientGlobs className="opacity-70" />
           <div className="relative">
             <h2 className="text-3xl font-bold sm:text-4xl">
               {t("cta.title.a")}{" "}
-              <span className="text-brass-strong">{t("cta.title.b")}</span>{" "}
+              <GradientText className="font-bold" animationSpeed={6}>
+                {t("cta.title.b")}
+              </GradientText>{" "}
               {t("cta.title.c")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
@@ -613,7 +624,7 @@ export function CtaBand() {
             </div>
           </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
