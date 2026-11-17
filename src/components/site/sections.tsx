@@ -68,35 +68,29 @@ export function SectionHeading({
 }) {
   return (
     <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <Reveal>
-        <span
-          className={cn(
-            "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass-strong",
-            center && "justify-center",
-          )}
-        >
-          <span className="h-px w-10 bg-gradient-to-r from-transparent via-brass/60 to-brass/60" />
-          {eyebrow}
-          {center && (
-            <span className="h-px w-10 bg-gradient-to-l from-transparent via-brass/60 to-brass/60" />
-          )}
-        </span>
-      </Reveal>
-      <Reveal delay={0.05}>
-        {as === "h1" ? (
-          <h1 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
-            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
-          </h1>
-        ) : (
-          <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
-            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
-          </h2>
+      <span
+        className={cn(
+          "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass-strong animate-fade-in",
+          center && "justify-center",
         )}
-      </Reveal>
+      >
+        <span className="h-px w-10 bg-gradient-to-r from-transparent via-brass/60 to-brass/60" />
+        {eyebrow}
+        {center && (
+          <span className="h-px w-10 bg-gradient-to-l from-transparent via-brass/60 to-brass/60" />
+        )}
+      </span>
+      {as === "h1" ? (
+        <h1 className="mt-4 text-3xl font-semibold sm:text-[2.75rem] animate-fade-in delay-100">
+          <span className="text-brass-strong">{title}</span>
+        </h1>
+      ) : (
+        <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem] animate-fade-in delay-100">
+          <span className="text-brass-strong">{title}</span>
+        </h2>
+      )}
       {description && (
-        <Reveal delay={0.1}>
-          <p className="mt-5 text-base leading-relaxed text-muted-foreground">{description}</p>
-        </Reveal>
+        <p className="mt-5 text-base leading-relaxed text-muted-foreground animate-fade-in delay-200">{description}</p>
       )}
     </div>
   );
@@ -229,7 +223,7 @@ export function ServicesGrid({ limit }: { limit?: number }) {
       {items.map((service, i) => {
         const Icon = SERVICE_ICONS[service.icon] ?? Stethoscope;
         return (
-          <Reveal key={service.slug} delay={(i % 3) * 0.06}>
+          <div key={service.slug} className="animate-fade-in" style={{ animationDelay: `${(i % 3) * 60}ms` }}>
             <article className="group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
               <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-5" />
@@ -241,7 +235,7 @@ export function ServicesGrid({ limit }: { limit?: number }) {
                 {tOr(`svc.${service.slug}.desc`, service.description)}
               </p>
             </article>
-          </Reveal>
+          </div>
         );
       })}
     </div>
@@ -253,7 +247,7 @@ export function WhyUs() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
       <div className="grid items-center gap-12 lg:grid-cols-2">
-        <Reveal>
+        <div className="animate-fade-in">
           <div className="overflow-hidden rounded-3xl border border-border shadow-lg">
             <img
               src={clinicImage}
@@ -264,7 +258,7 @@ export function WhyUs() {
               className="h-full w-full object-cover"
             />
           </div>
-        </Reveal>
+        </div>
 
         <div>
           <SectionHeading
@@ -275,7 +269,7 @@ export function WhyUs() {
           <ul className="mt-8 space-y-5">
             {WHY_US.map((item, i) => (
               <li key={item.title}>
-                <Reveal delay={i * 0.05}>
+                <div className="animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                   <div className="flex gap-4">
                     <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-success/15 text-success">
                       <Check className="size-3.5" strokeWidth={3} />
@@ -289,7 +283,7 @@ export function WhyUs() {
                       </p>
                     </div>
                   </div>
-                </Reveal>
+                </div>
               </li>
             ))}
           </ul>
@@ -367,7 +361,7 @@ export function DoctorCard({
 }) {
   const { t } = useI18n();
   return (
-    <Reveal delay={(index % 3) * 0.06}>
+    <div className="animate-fade-in" style={{ animationDelay: `${(index % 3) * 60}ms` }}>
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:-translate-y-1 hover:shadow-raised">
         <div className="flex h-32 items-end justify-between bg-primary/8 p-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground">
@@ -436,7 +430,7 @@ export function DoctorCard({
           </div>
         </div>
       </article>
-    </Reveal>
+    </div>
   );
 }
 
@@ -454,7 +448,7 @@ export function BookingTimeline() {
         <ol className="mt-14 grid gap-8 md:grid-cols-5">
           {BOOKING_STEPS.map((step, i) => (
             <li key={step.title} className="relative">
-              <Reveal delay={i * 0.08}>
+              <div className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
                 <div className="flex items-center gap-3 md:block">
                   <span className="grid size-10 place-items-center rounded-full border-2 border-primary bg-background text-sm font-bold text-primary">
                     {i + 1}
@@ -465,7 +459,7 @@ export function BookingTimeline() {
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {t(`step.${i}.detail`)}
                 </p>
-              </Reveal>
+              </div>
             </li>
           ))}
         </ol>
@@ -508,7 +502,7 @@ export function Testimonials() {
         />
       </div>
 
-      <Reveal>
+      <div className="animate-fade-in">
         <figure className="mx-auto mt-12 max-w-3xl rounded-3xl border border-border bg-card p-8 text-center shadow-card sm:p-12">
           <Quote className="mx-auto size-8 text-primary/30" />
           <motion.blockquote
@@ -530,7 +524,7 @@ export function Testimonials() {
             <p className="text-sm text-muted-foreground">{t("reviews.googleSource")}</p>
           </figcaption>
         </figure>
-      </Reveal>
+      </div>
       <div className="mt-8 flex justify-center gap-1">
         {testimonials.map((review, i) => (
           <button
@@ -582,16 +576,13 @@ export function CtaBand() {
   const { settings } = useClinicStore();
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <Reveal>
+      <div className="animate-fade-in">
         <div className="relative overflow-hidden rounded-3xl border border-border bg-card px-8 py-14 text-center shadow-lg sm:px-16">
           <div className="hero-gradient absolute inset-0" />
-          <AmbientGlobs className="opacity-70" />
           <div className="relative">
             <h2 className="text-3xl font-bold sm:text-4xl">
               {t("cta.title.a")}{" "}
-              <GradientText className="font-bold" animationSpeed={6}>
-                {t("cta.title.b")}
-              </GradientText>{" "}
+              <span className="text-brass-strong">{t("cta.title.b")}</span>{" "}
               {t("cta.title.c")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
@@ -612,7 +603,7 @@ export function CtaBand() {
             </div>
           </div>
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }
