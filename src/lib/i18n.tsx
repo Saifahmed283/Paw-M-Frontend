@@ -786,7 +786,8 @@ export const EN: Dict = {
   // Contact form
   "contact.form.eyebrow": "Send us a message",
   "contact.form.title": "We'd love to hear from you",
-  "contact.form.desc": "Fill out the form and we'll get back to you within 24 hours during business days.",
+  "contact.form.desc":
+    "Fill out the form and we'll get back to you within 24 hours during business days.",
   "contact.form.name": "Full name",
   "contact.form.namePlaceholder": "John Doe",
   "contact.form.email": "Email address",
