@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/accordion";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
-import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
+import { GradientText } from "@/components/reactbits/TextAnimations";
 import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
 import { BOOKING_STEPS, FAQS, STATS, upcomingAvailability, WHY_US } from "@/lib/clinic-data";
