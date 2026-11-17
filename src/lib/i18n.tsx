@@ -497,8 +497,11 @@ export const EN: Dict = {
   "booking.pet.otherType": "Other type",
   "booking.owner.summary": "Not signed in",
   "booking.owner.account": "Account holder",
+  "booking.owner.guest": "Guest booking",
   "booking.owner.hint":
     "Your booking is automatically linked to your account. Reception verifies these details before the visit.",
+  "booking.owner.hintGuest":
+    "We'll use these details to confirm your appointment. Reception verifies them before the visit.",
   "booking.pet.addNew": "New pet",
   "booking.pet.loading": "Loading your pets…",
   "booking.pet.chooseSaved": "Choose a saved pet",
@@ -1766,8 +1769,11 @@ const AR: Dict = {
   "booking.pet.otherType": "نوع آخر",
   "booking.owner.summary": "غير مسجل",
   "booking.owner.account": "صاحب الحساب",
+  "booking.owner.guest": "حجز كضيف",
   "booking.owner.hint":
     "يتم ربط الحجز تلقائيًا بحسابك. يتحقق الاستقبال من هذه البيانات قبل الزيارة.",
+  "booking.owner.hintGuest":
+    "سنستخدم هذه البيانات لتأكيد موعدك. يتحقق الاستقبال منها قبل الزيارة.",
   "booking.pet.addNew": "حيوان جديد",
   "booking.pet.loading": "جارٍ تحميل حيواناتك…",
   "booking.pet.chooseSaved": "اختر حيوانًا مسجلًا",

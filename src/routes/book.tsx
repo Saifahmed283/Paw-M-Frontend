@@ -5,7 +5,6 @@ import { ArrowLeft, ArrowRight, Banknote, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { ClientAuthGate } from "@/components/ClientAuthGate";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,11 +71,9 @@ export const Route = createFileRoute("/book")({
 });
 
 function BookPage() {
-  return (
-    <ClientAuthGate>
-      <BookingForm />
-    </ClientAuthGate>
-  );
+  // Booking is open to guests — signed-in clients get their details prefilled
+  // and their saved pets, but an account is no longer required to book.
+  return <BookingForm />;
 }
 
 function BookingForm() {
@@ -97,18 +94,39 @@ function BookingForm() {
     doctorId: doctor ?? firstDoctor?.id ?? "",
   });
   const [myPets, setMyPets] = useState<Pet[]>([]);
-  const [petMode, setPetMode] = useState<"saved" | "new">("saved");
+  const [petMode, setPetMode] = useState<"saved" | "new">(() =>
+    clientIsAuthed() ? "saved" : "new",
+  );
   const client = currentClient();
 
-  // Pull the account holder's details straight from the session so the owner
-  // step acts as a summary instead of a blank form.
+  // Load any in-progress draft first. The account prefill below runs after
+  // this so a stale draft (possibly left by a different account) can never
+  // overwrite the signed-in client's identity.
+  useEffect(() => {
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(DRAFT_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    if (raw) {
+      try {
+        setDraft((d) => ({ ...d, ...(JSON.parse(raw) as Draft), doctorId: doctor ?? d.doctorId }));
+      } catch {
+        /* ignore malformed draft */
+      }
+    }
+  }, [doctor]);
+
+  // Signed-in clients: the account is the source of truth for contact details.
+  // Guests: keep whatever they typed into the editable owner step.
   useEffect(() => {
     if (!client) return;
     setDraft((d) => ({
       ...d,
-      ownerName: d.ownerName || client.fullName,
-      phone: d.phone || client.phone,
-      email: d.email || client.email,
+      ownerName: client.fullName,
+      phone: client.phone,
+      email: client.email,
     }));
   }, [client]);
 
@@ -133,22 +151,6 @@ function BookingForm() {
   }, []);
 
   useEffect(() => {
-    let raw: string | null = null;
-    try {
-      raw = localStorage.getItem(DRAFT_KEY);
-    } catch {
-      /* storage unavailable */
-    }
-    if (raw) {
-      try {
-        setDraft((d) => ({ ...d, ...(JSON.parse(raw) as Draft), doctorId: doctor ?? d.doctorId }));
-      } catch {
-        /* ignore malformed draft */
-      }
-    }
-  }, [doctor]);
-
-  useEffect(() => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {
@@ -164,7 +166,9 @@ function BookingForm() {
   const booked = draft.date ? bookedSlotsFor(draft.date, draft.doctorId, activeBookings) : [];
 
   const valid = [
-    draft.ownerName.trim().length > 1 && draft.phone.trim().length > 5,
+    draft.ownerName.trim().length > 1 &&
+      draft.phone.trim().length > 5 &&
+      /^\S+@\S+\.\S+$/.test(draft.email.trim()),
     draft.petName.trim().length > 0 && draft.animalType.length > 0,
     draft.symptoms.trim().length > 4,
     Boolean(draft.date && draft.time),
@@ -277,24 +281,50 @@ function BookingForm() {
           >
             {step === 0 && (
               <div className="grid gap-5">
-                <div className="rounded-xl border border-border bg-muted/40 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                      {(draft.ownerName || "?").charAt(0).toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {draft.ownerName || t("booking.owner.summary")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{draft.email}</p>
-                      <p className="text-xs text-muted-foreground">{draft.phone}</p>
-                    </div>
-                    <span className="ml-auto rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
-                      {t("booking.owner.account")}
-                    </span>
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">
+                    {(draft.ownerName || "?").charAt(0).toUpperCase()}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {draft.ownerName || t("booking.owner.summary")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {client ? t("booking.owner.account") : t("booking.owner.guest")}
+                    </p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{t("booking.owner.hint")}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={t("booking.owner.fullName")} required>
+                    <Input
+                      value={draft.ownerName}
+                      onChange={(e) => set("ownerName", e.target.value)}
+                      autoComplete="name"
+                      placeholder={t("booking.owner.fullName")}
+                    />
+                  </Field>
+                  <Field label={t("booking.owner.phone")} required>
+                    <Input
+                      value={draft.phone}
+                      onChange={(e) => set("phone", e.target.value)}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="01xxxxxxxxx"
+                    />
+                  </Field>
+                  <Field label={t("booking.owner.email")} required className="sm:col-span-2">
+                    <Input
+                      type="email"
+                      value={draft.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                    />
+                  </Field>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {client ? t("booking.owner.hint") : t("booking.owner.hintGuest")}
+                </p>
               </div>
             )}
 
