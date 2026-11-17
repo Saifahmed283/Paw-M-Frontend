@@ -379,7 +379,7 @@ export function DoctorCard({
 }) {
   const { t } = useI18n();
   return (
-    <div className="animate-fade-in" style={{ animationDelay: `${(index % 3) * 60}ms` }}>
+    <Reveal delay={(index % 3) * 60}>
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:-translate-y-1 hover:shadow-raised">
         <div className="flex h-32 items-end justify-between bg-primary/8 p-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground">
@@ -448,8 +448,8 @@ export function DoctorCard({
           </div>
         </div>
       </article>
-    </div>
-  );
+  </Reveal>
+);
 }
 
 export function BookingTimeline() {
@@ -466,7 +466,7 @@ export function BookingTimeline() {
         <ol className="mt-14 grid gap-8 md:grid-cols-5">
           {BOOKING_STEPS.map((step, i) => (
             <li key={step.title} className="relative">
-              <div className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
+              <Reveal delay={i * 80}>
                 <div className="flex items-center gap-3 md:block">
                   <span className="grid size-10 place-items-center rounded-full border-2 border-primary bg-background text-sm font-bold text-primary">
                     {i + 1}
@@ -478,6 +478,7 @@ export function BookingTimeline() {
                   {t(`step.${i}.detail`)}
                 </p>
               </div>
+            </Reveal>
             </li>
           ))}
         </ol>
@@ -570,21 +571,25 @@ export function Faq() {
   const { t } = useI18n();
   return (
     <section className="border-t border-border bg-surface py-20">
-      <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <SectionHeading center eyebrow={t("faq.eyebrow")} title={t("faq.title")} />
-        <Accordion type="single" collapsible className="mt-10 w-full">
-          {FAQS.map((faq, i) => (
-            <AccordionItem key={faq.q} value={`item-${i}`}>
-              <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
-                {t(`faq.${i}.q`)}
-              </AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-                {t(`faq.${i}.a`)}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
+      <Reveal>
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <SectionHeading center eyebrow={t("faq.eyebrow")} title={t("faq.title")} />
+          <Accordion type="single" collapsible className="mt-10 w-full">
+            {FAQS.map((faq, i) => (
+              <Reveal key={faq.q} delay={i * 80}>
+                <AccordionItem value={`item-${i}`}>
+                  <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+                    {t(`faq.${i}.q`)}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                    {t(`faq.${i}.a`)}
+                  </AccordionContent>
+                </AccordionItem>
+              </Reveal>
+            ))}
+          </Accordion>
+        </div>
+      </Reveal>
     </section>
   );
 }
