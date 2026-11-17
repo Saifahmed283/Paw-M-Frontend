@@ -477,8 +477,7 @@ export function BookingTimeline() {
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {t(`step.${i}.detail`)}
                 </p>
-              </div>
-            </Reveal>
+              </Reveal>
             </li>
           ))}
         </ol>
