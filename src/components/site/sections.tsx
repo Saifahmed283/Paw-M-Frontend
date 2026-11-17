@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +29,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CountUp, Reveal } from "@/components/motion-primitives";
-import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
-import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
-import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
 import { BOOKING_STEPS, FAQS, STATS, upcomingAvailability, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
@@ -107,64 +103,32 @@ export function SectionHeading({
 }
 
 export function Hero() {
-  const reduce = useReducedMotion();
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [mounted, setMounted] = useState(false);
-  const frameRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   const { settings, doctors, requests } = useClinicStore();
   const { lang } = useI18n();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const firstDoctor = doctors[0];
   const nextDay = useMemo(
     () =>
-      // Availability depends on today's date, which differs between the server
-      // render and the browser. Only compute it after mount so the hydration
-      // pass renders the same fallback on both sides.
-      mounted && firstDoctor
+      firstDoctor
         ? upcomingAvailability(firstDoctor, 1, new Date(), requests, lang === "ar" ? "ar" : "en-US")
         : [],
-    [mounted, firstDoctor, requests, lang],
+    [firstDoctor, requests, lang],
   );
-
-  useEffect(() => {
-    if (reduce) return;
-    const onMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 16;
-      const y = (e.clientY / window.innerHeight - 0.5) * 12;
-      setOffset({ x, y });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, [reduce]);
-
-  const ease = [0.16, 1, 0.3, 1] as const;
-  const rotatingTexts = Array.from({ length: 5 }, (_, i) => t(`hero.rotating.${i}`));
 
   return (
     <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
       <div className="hero-gradient absolute inset-0 -z-10" />
-      <AmbientGlobs className="-z-[5]" />
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
-          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }) : false}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h1 className="text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
             {t("hero.title.a")}{" "}
-            <RotatingText
-              texts={rotatingTexts}
-              className="align-baseline"
-              splitBy="words"
-              staggerDuration={0.05}
-              rotationInterval={2600}
-            />
+            <span className="text-brass-strong">{t("hero.title.b")}</span>
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
@@ -200,28 +164,23 @@ export function Hero() {
 
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
             {STATS.map((stat, i) => (
-              <Reveal key={stat.label} delay={i * 0.06}>
+              <div key={stat.label} className="animate-fade-in">
                 <dt className="text-2xl font-bold tracking-tight text-foreground">
-                  <CountUp
-                    value={i === 1 ? doctors.length : stat.value}
-                    suffix={i === 1 ? "" : stat.suffix}
-                  />
+                  {i === 1 ? doctors.length : stat.value}{stat.suffix ?? ""}
                 </dt>
                 <dd className="mt-1 text-xs leading-snug text-muted-foreground">
                   {t(`stats.${i}`)}
                 </dd>
-              </Reveal>
+              </div>
             ))}
           </dl>
         </motion.div>
 
         <motion.div
-          ref={frameRef}
-          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }) : false}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease, delay: 0.1 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
           className="relative"
-          style={{ transform: reduce ? "none" : `translate3d(${offset.x}px, ${offset.y}px, 0)` }}
         >
           <div className="overflow-hidden rounded-3xl border border-border shadow-lg">
             <img
@@ -234,25 +193,15 @@ export function Hero() {
             />
           </div>
 
-          <motion.div
-            initial={mounted ? { opacity: 0, y: 14 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease, delay: 0.45 }}
-            className="glass absolute -bottom-10 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8"
-          >
+          <div className="glass absolute -bottom-10 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8 animate-slide-up">
             <p className="text-xs font-medium text-muted-foreground">{t("hero.triage")}</p>
             <p className="mt-1 text-2xl font-bold text-foreground">4m 12s</p>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
               <div className="h-full w-3/4 rounded-full bg-success" />
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={mounted ? { opacity: 0, y: 14 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease, delay: 0.6 }}
-            className="glass absolute -right-10 -top-12 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-10 rtl:sm:-left-8"
-          >
+          <div className="glass absolute -right-10 -top-12 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-10 rtl:sm:-left-8 animate-slide-up delay-100">
             <p className="text-xs font-medium text-muted-foreground">{t("hero.nextAvailable")}</p>
             {nextDay[0] ? (
               <>
@@ -264,7 +213,7 @@ export function Hero() {
             ) : (
               <p className="mt-1 text-sm font-semibold text-foreground">—</p>
             )}
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </section>
