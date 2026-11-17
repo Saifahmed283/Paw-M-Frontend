@@ -12,6 +12,6 @@ static_sites:
   environment_slug: node-js
   envs:
   - key: VITE_API_URL
-    value: https://paw-m-backend-4ak5h.ondigitalocean.app
+    value: https://paw-m-backend-4ak5h.ondigitalocean.app/api
   - key: NODE_ENV
     value: production
