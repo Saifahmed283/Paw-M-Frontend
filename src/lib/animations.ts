@@ -317,7 +317,7 @@ export function revealText(element: HTMLElement, delay = 0) {
  * Draw SVG path on scroll into view
  */
 export function drawOnScroll(svg: SVGElement, threshold = 0.3) {
-  const paths = svg.querySelectorAll('path, circle, rect, line, polyline, polygon');
+  const paths = svg.querySelectorAll<SVGGeometryElement>('path, circle, rect, line, polyline, polygon');
   paths.forEach((path) => {
     const length = path.getTotalLength();
     path.style.strokeDasharray = `${length}`;
@@ -418,7 +418,8 @@ export function useDrawOnScroll(threshold = 0.3) {
 export function useParallax(speed = 0.15) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (ref.current) return parallax(ref.current, speed);
+    if (!ref.current) return;
+    return parallax(ref.current, speed);
   }, [speed]);
   return ref;
 }
@@ -426,7 +427,8 @@ export function useParallax(speed = 0.15) {
 export function useMagnetic(strength = 0.15) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (ref.current) return magnetic(ref.current, strength);
+    if (!ref.current) return;
+    return magnetic(ref.current, strength);
   }, [strength]);
   return ref;
 }
@@ -434,11 +436,10 @@ export function useMagnetic(strength = 0.15) {
 export function usePawPrints(count = 8) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (ref.current) {
-      const paws = createPawPrints(count);
-      paws.forEach((p) => ref.current?.appendChild(p));
-      return () => paws.forEach((p) => p.remove());
-    }
+    if (!ref.current) return;
+    const paws = createPawPrints(count);
+    paws.forEach((p) => ref.current?.appendChild(p));
+    return () => paws.forEach((p) => p.remove());
   }, [count]);
   return ref;
 }
