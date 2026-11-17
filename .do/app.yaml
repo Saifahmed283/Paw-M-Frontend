@@ -5,8 +5,8 @@ static_sites:
   github:
     repo: Saifahmed283/Paw-M-Frontend
     branch: main
-  # No dockerfile_path - uses Node.js buildpack
-  build_command: npm ci && npm run build
+  # Use Bun (detected from bun.lock) - use bun commands
+  build_command: bun install && bun run build
   # TanStack Start with prerender outputs static assets to dist/client
   output_dir: dist/client
   environment_slug: node-js
