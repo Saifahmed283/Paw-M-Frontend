@@ -561,7 +561,6 @@ export function Testimonials() {
             />
           </button>
         ))}
-      </div>
       </Reveal>
     </section>
   );
