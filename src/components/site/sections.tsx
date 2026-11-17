@@ -521,7 +521,7 @@ export function Testimonials() {
         />
       </div>
 
-      <div className="animate-fade-in">
+      <Reveal>
         <figure className="mx-auto mt-12 max-w-3xl rounded-3xl border border-border bg-card p-8 text-center shadow-card sm:p-12">
           <Quote className="mx-auto size-8 text-primary/30" />
           <motion.blockquote
@@ -543,8 +543,8 @@ export function Testimonials() {
             <p className="text-sm text-muted-foreground">{t("reviews.googleSource")}</p>
           </figcaption>
         </figure>
-      </div>
-      <div className="mt-8 flex justify-center gap-1">
+      </Reveal>
+      <Reveal delay={200}>
         {testimonials.map((review, i) => (
           <button
             key={review.id}
