@@ -44,7 +44,15 @@ function readImageFile(file: File | undefined): Promise<string> {
   });
 }
 
-function OrderCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) => void }) {
+function OrderCard({
+  order,
+  phone,
+  onUpdated,
+}: {
+  order: Order;
+  phone: string;
+  onUpdated: (o: Order) => void;
+}) {
   const { t } = useI18n();
   const { settings } = useClinicStore();
   const [ref, setRef] = useState("");
@@ -69,6 +77,9 @@ function OrderCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) =
       const updated = await submitPaymentProof(order.id, {
         paymentRef: ref.trim() || undefined,
         proofImage: hasImage ? proofImage : undefined,
+        // Guests have no client session; the API verifies order ownership with
+        // the same order id + phone pair used for the public tracker lookup.
+        phone,
       });
       onUpdated(updated);
       setRef("");
@@ -294,7 +305,7 @@ function TrackPage() {
           </div>
         </form>
 
-        {order && <OrderCard order={order} onUpdated={setOrder} />}
+        {order && <OrderCard order={order} phone={phone.trim()} onUpdated={setOrder} />}
 
         <p className="mt-6 text-center text-xs text-muted-foreground">{t("track.help")}</p>
       </div>

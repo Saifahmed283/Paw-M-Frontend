@@ -68,10 +68,16 @@ function isClientRoute(path: string, method: string): boolean {
   return false;
 }
 
-function authHeaders(path: string, method: string): Record<string, string> {
+type AuthMode = "staff" | "client";
+
+function authHeaders(path: string, method: string, authMode?: AuthMode): Record<string, string> {
   const staffToken = getSessionToken();
   const clientToken = getClientToken();
-  if (isClientRoute(path, method)) {
+  // Shared endpoints (notably POST /orders) need an explicit choice: the
+  // storefront checks out as a client/guest, while the cashier creates the same
+  // order at the counter with a staff session and POS price overrides.
+  if (authMode === "staff") return staffToken ? { Authorization: `Bearer ${staffToken}` } : {};
+  if (authMode === "client" || isClientRoute(path, method)) {
     return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
   }
   if (staffToken) return { Authorization: `Bearer ${staffToken}` };
@@ -94,12 +100,13 @@ async function apiFetch(
   path: string,
   init?: RequestInit,
   unwrapPagination = true,
+  authMode?: AuthMode,
 ): Promise<unknown> {
   const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
 
   const headers = new Headers({
     "Content-Type": "application/json",
-    ...authHeaders(normalizedPath, init?.method ?? "GET"),
+    ...authHeaders(normalizedPath, init?.method ?? "GET", authMode),
     ...csrfHeaders(),
     ...(init?.headers ?? {}),
   });
@@ -152,8 +159,8 @@ export const api = {
   get: <T = unknown>(path: string, init?: RequestInit) => apiFetch(path, init) as Promise<T>,
   getPage: <T = unknown>(path: string) =>
     apiFetch(path, undefined, false) as Promise<PaginatedResult<T>>,
-  post: <T = unknown>(path: string, body?: unknown) =>
-    apiFetch(path, { method: "POST", body: JSON.stringify(body) }) as Promise<T>,
+  post: <T = unknown>(path: string, body?: unknown, options?: { auth?: AuthMode }) =>
+    apiFetch(path, { method: "POST", body: JSON.stringify(body) }, true, options?.auth) as Promise<T>,
   patch: <T = unknown>(path: string, body?: unknown) =>
     apiFetch(path, { method: "PATCH", body: JSON.stringify(body) }) as Promise<T>,
   put: <T = unknown>(path: string, body: unknown) =>
