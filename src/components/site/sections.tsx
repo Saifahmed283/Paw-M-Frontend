@@ -114,6 +114,18 @@ export function Hero() {
     <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
       <div className="hero-gradient absolute inset-0 -z-10" />
 
+      {/* Paw print drift animation - subtle brand touch */}
+      <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="pawm-paw-drift" style={{ left: '5%', top: '15%', width: '24px', height: '24px', animationDelay: '0s', animationDuration: '10s' }} />
+        <div className="pawm-paw-drift" style={{ left: '15%', top: '5%', width: '16px', height: '16px', animationDelay: '-2s', animationDuration: '14s' }} />
+        <div className="pawm-paw-drift" style={{ left: '35%', top: '25%', width: '20px', height: '20px', animationDelay: '-4s', animationDuration: '12s' }} />
+        <div className="pawm-paw-drift" style={{ left: '60%', top: '10%', width: '18px', height: '18px', animationDelay: '-1s', animationDuration: '11s' }} />
+        <div className="pawm-paw-drift" style={{ left: '80%', top: '30%', width: '22px', height: '22px', animationDelay: '-3s', animationDuration: '13s' }} />
+        <div className="pawm-paw-drift" style={{ left: '90%', top: '60%', width: '14px', height: '14px', animationDelay: '-5s', animationDuration: '9s' }} />
+        <div className="pawm-paw-drift" style={{ left: '20%', top: '70%', width: '16px', height: '16px', animationDelay: '-6s', animationDuration: '10s' }} />
+        <div className="pawm-paw-drift" style={{ left: '75%', top: '80%', width: '20px', height: '20px', animationDelay: '-7s', animationDuration: '12s' }} />
+      </div>
+
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -219,11 +231,11 @@ export function ServicesGrid({ limit }: { limit?: number }) {
   const { tOr } = useI18n();
   const items = limit ? services.slice(0, limit) : services;
   return (
-    <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="pawm-stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((service, i) => {
         const Icon = SERVICE_ICONS[service.icon] ?? Stethoscope;
         return (
-          <div key={service.slug} className="animate-fade-in" style={{ animationDelay: `${(i % 3) * 60}ms` }}>
+          <article key={service.slug} className="pawm-stagger-item group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
             <article className="group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
               <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-5" />
@@ -266,10 +278,10 @@ export function WhyUs() {
             title={t("why.title")}
             description={t("why.desc")}
           />
-          <ul className="mt-8 space-y-5">
+          <ul className="pawm-stagger mt-8 space-y-5">
             {WHY_US.map((item, i) => (
               <li key={item.title}>
-                <div className="animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="pawm-stagger-item">
                   <div className="flex gap-4">
                     <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-success/15 text-success">
                       <Check className="size-3.5" strokeWidth={3} />

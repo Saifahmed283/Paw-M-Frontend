@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, Suspense, type ReactNode } from "react";
 import { motion } from "motion/react";
+import { injectPawMAnimations } from "@/lib/animations";
 
 import appCss from "../styles.css?url";
 import { IntroAnimation } from "@/components/IntroAnimation";
@@ -249,6 +250,11 @@ function RootComponent() {
   const { queryClient, lang, dark } = Route.useRouteContext();
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
+
+  useEffect(() => {
+    // Inject Paw-M animations on mount (client-side only)
+    injectPawMAnimations();
+  }, []);
 
   useEffect(() => {
     // Kick off the clinic-data fetch only after the hydration pass has fully
