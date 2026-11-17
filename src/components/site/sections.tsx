@@ -236,18 +236,16 @@ export function ServicesGrid({ limit }: { limit?: number }) {
         const Icon = SERVICE_ICONS[service.icon] ?? Stethoscope;
         return (
           <article key={service.slug} className="pawm-stagger-item group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
-            <article className="group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
-              <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <Icon className="size-5" />
-              </span>
-              <h3 className="mt-5 text-base font-semibold">
-                {tOr(`svc.${service.slug}.title`, service.title)}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {tOr(`svc.${service.slug}.desc`, service.description)}
-              </p>
-            </article>
-          </div>
+            <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <Icon className="size-5" />
+            </span>
+            <h3 className="mt-5 text-base font-semibold">
+              {tOr(`svc.${service.slug}.title`, service.title)}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {tOr(`svc.${service.slug}.desc`, service.description)}
+            </p>
+          </article>
         );
       })}
     </div>
