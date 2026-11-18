@@ -95,7 +95,7 @@ export type Order = {
   createdAt: string;
 };
 
-export type PaymentKind = "order" | "visit" | "manual";
+export type PaymentKind = "order" | "visit" | "manual" | "refund";
 export type PaymentItemKind = "service" | "product" | "other";
 
 export type PaymentItem = {
@@ -393,6 +393,36 @@ export async function fetchAllProducts() {
   return products;
 }
 
+export async function fetchAllPayments() {
+  const payments: Payment[] = [];
+  let page = 1;
+  let pageCount = 1;
+
+  do {
+    const result = await api.getPage<Payment>(`/payments?limit=200&page=${page}`);
+    payments.push(...result.data);
+    pageCount = Math.max(1, result.pagination.pages);
+    page += 1;
+  } while (page <= pageCount);
+
+  return payments;
+}
+
+export async function fetchAllOrders() {
+  const orders: Order[] = [];
+  let page = 1;
+  let pageCount = 1;
+
+  do {
+    const result = await api.getPage<Order>(`/orders?limit=200&page=${page}`);
+    orders.push(...result.data);
+    pageCount = Math.max(1, result.pagination.pages);
+    page += 1;
+  } while (page <= pageCount);
+
+  return orders;
+}
+
 export function useClinicStore() {
   const qc = useQueryClient();
   queryClientInstance = qc;
@@ -440,7 +470,7 @@ export function useClinicStore() {
 
   const { data: orders = seedDefaults.orders } = useQuery({
     queryKey: QUERY_KEYS.orders,
-    queryFn: () => api.get<Order[]>("/orders?limit=200"),
+    queryFn: fetchAllOrders,
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.orders,
     enabled: mounted && isAuthed(),
@@ -456,7 +486,7 @@ export function useClinicStore() {
 
   const { data: payments = seedDefaults.payments } = useQuery({
     queryKey: QUERY_KEYS.payments,
-    queryFn: () => api.get<Payment[]>("/payments?limit=200"),
+    queryFn: fetchAllPayments,
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.payments,
     enabled: mounted && isAuthed(),

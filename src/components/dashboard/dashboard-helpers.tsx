@@ -68,6 +68,7 @@ export function PaymentKindBadge({ kind }: { kind: PaymentKind }) {
     order: "bg-amber-500/15 text-amber-600",
     visit: "bg-primary/15 text-primary",
     manual: "bg-muted text-muted-foreground",
+    refund: "bg-destructive/15 text-destructive",
   };
   return (
     <Badge variant="outline" className={cn("border-transparent", styles[kind ?? "manual"])}>

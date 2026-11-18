@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Banknote, CalendarClock, ListChecks, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Banknote, CalendarClock, ListChecks, Pencil, Plus, Trash2, Undo2, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,7 +187,7 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
 
 export function PaymentsPanel() {
   const { t, lang } = useI18n();
-  const { payments, settings } = useClinicStore();
+  const { payments, orders, settings } = useClinicStore();
   const [editing, setEditing] = useState<Payment | null>(null);
   const [adding, setAdding] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>("all");
@@ -200,6 +200,27 @@ export function PaymentsPanel() {
   const [savingProvider, setSavingProvider] = useState(false);
   const settlingPayment = payments.find((p) => p.id === settling?.id) ?? settling;
 
+  // Older sales were stored only as Orders. Surface them as read-only payment
+  // rows so Finance collects every sale, while new sales already have a Payment.
+  const linkedOrderIds = new Set(
+    payments.filter((p) => p.orderId).map((p) => p.orderId as string),
+  );
+  const orderRows: Payment[] = orders
+    .filter((o) => !linkedOrderIds.has(o.id) && !o.archived && o.status !== "cancelled")
+    .map((o) => ({
+      id: `order-${o.id}`,
+      title: `${o.source === "pos" ? "POS" : "Store"} — ${o.customerName}`,
+      amount: o.total,
+      method: o.paymentMethod,
+      status: o.paymentStatus,
+      date: (o.createdAt || "").slice(0, 10),
+      notes: "Order payment",
+      orderId: o.id,
+      kind: "order",
+      createdAt: o.createdAt,
+    }));
+  const rows: Payment[] = [...payments, ...orderRows];
+
   // Keep the editable draft in sync when settings are refreshed elsewhere.
   useEffect(() => setInstapayDraft(settings.instapay), [settings.instapay]);
   const { sort, toggle } = useSortState("date", "desc");
@@ -211,12 +232,19 @@ export function PaymentsPanel() {
 
   const now = new Date();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const collected = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-  const pending = payments
-    .filter((p) => p.status !== "paid")
+  // Refunds are negative paid rows; keep them visible but out of sales totals.
+  const sales = rows.filter((p) => p.kind !== "refund");
+  const collected = sales
+    .filter((p) => p.status === "paid" && p.amount > 0)
     .reduce((s, p) => s + p.amount, 0);
-  const thisMonth = payments
-    .filter((p) => p.status === "paid" && (p.date ?? "").startsWith(monthPrefix))
+  const pending = sales
+    .filter((p) => p.status !== "paid" && p.amount > 0)
+    .reduce((s, p) => s + p.amount, 0);
+  const refunded = rows
+    .filter((p) => p.kind === "refund" && p.status === "paid")
+    .reduce((s, p) => s + Math.abs(p.amount), 0);
+  const thisMonth = sales
+    .filter((p) => p.status === "paid" && p.amount > 0 && (p.date ?? "").startsWith(monthPrefix))
     .reduce((s, p) => s + p.amount, 0);
 
   const summary = [
@@ -239,14 +267,20 @@ export function PaymentsPanel() {
       tone: "text-primary",
     },
     {
+      key: "payments.summary.refunded",
+      value: formatMoney(refunded, settings.currency),
+      icon: Undo2,
+      tone: "text-destructive",
+    },
+    {
       key: "payments.summary.records",
-      value: String(payments.length),
+      value: String(rows.length),
       icon: ListChecks,
       tone: "text-violet-500",
     },
   ];
 
-  const filtered = payments.filter((p) => {
+  const filtered = rows.filter((p) => {
     if (methodFilter !== "all" && p.method !== methodFilter) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
     return true;
@@ -504,36 +538,42 @@ export function PaymentsPanel() {
                           </div>
                         </TableCell>
                         <TableCell className="text-end">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {p.status !== "paid" && (
+                          {p.id.startsWith("order-") ? (
+                            <Badge variant="outline" className="border-transparent bg-muted text-[10px] text-muted-foreground">
+                              {t("payments.kind.order")}
+                            </Badge>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1.5">
+                              {p.status !== "paid" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2"
+                                  onClick={() => setSettling(p)}
+                                >
+                                  {t("payments.settle")}
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
-                                variant="outline"
+                                variant="ghost"
                                 className="h-7 px-2"
-                                onClick={() => setSettling(p)}
+                                aria-label={t("dash.edit")}
+                                onClick={() => setEditing(p)}
                               >
-                                {t("payments.settle")}
+                                <Pencil className="size-3.5" />
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2"
-                              aria-label={t("dash.edit")}
-                              onClick={() => setEditing(p)}
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                              aria-label={t("dash.delete")}
-                              onClick={() => setPendingDelete(p)}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                                aria-label={t("dash.delete")}
+                                onClick={() => setPendingDelete(p)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

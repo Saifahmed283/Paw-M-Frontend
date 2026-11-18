@@ -35,8 +35,8 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
   };
 
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 p-1.5">
-      <span className="ps-1 text-[10px] font-bold uppercase tracking-wider text-white/50">
+    <div className="flex items-center gap-1.5 rounded-xl border bg-muted/40 p-1.5">
+      <span className="ps-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {t("cashier.cashReceived")}
       </span>
 
@@ -58,9 +58,9 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           }}
           placeholder="0.00"
           aria-label={t("cashier.cashReceived")}
-          className="h-8 w-24 border-0 bg-transparent p-0 pe-8 text-center text-sm font-bold tabular-nums text-white shadow-none placeholder:text-white/30 focus-visible:ring-0"
+          className="h-8 w-24 border-0 bg-transparent p-0 pe-8 text-center text-sm font-bold tabular-nums text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
         />
-        <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[10px] text-white/40">
+        <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
           {currency}
         </span>
       </div>
@@ -70,14 +70,14 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
         variant="secondary"
         size="sm"
         onClick={() => setAmt(total)}
-        className="h-8 gap-1 border-0 bg-white/15 px-2 text-xs text-white hover:bg-white/25"
+        className="h-8 gap-1 px-2 text-xs"
         title={t("cashier.exact")}
       >
         <Banknote className="size-3.5" />
         <span className="hidden 2xl:inline">{t("cashier.exact")}</span>
       </Button>
 
-      <span className="h-5 w-px bg-white/15" />
+      <span className="h-5 w-px bg-border" />
 
       <Input
         type="number"
@@ -94,7 +94,7 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
         }}
         placeholder="+ 0.00"
         aria-label={t("cashier.extraAmount")}
-        className="h-8 w-16 border-0 bg-transparent p-0 text-center text-xs font-semibold tabular-nums text-white shadow-none placeholder:text-white/30 focus-visible:ring-0"
+        className="h-8 w-16 border-0 bg-transparent p-0 text-center text-xs font-semibold tabular-nums text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
       />
       <Button
         type="button"
@@ -103,7 +103,7 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
         onClick={addExtra}
         aria-label={t("cashier.addAmount")}
         title={t("cashier.addAmount")}
-        className="size-8 text-white/70 hover:bg-white/10 hover:text-white"
+        className="size-8 text-muted-foreground hover:text-foreground"
       >
         <Plus className="size-3.5" />
       </Button>
@@ -111,7 +111,7 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
       <span
         className={cn(
           "flex min-w-[92px] items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tabular-nums",
-          settled ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-200",
+          settled ? "bg-success/15 text-success" : "bg-amber-500/15 text-amber-600",
         )}
       >
         {settled && <Check className="size-3" />}

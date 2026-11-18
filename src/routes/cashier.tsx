@@ -26,7 +26,6 @@ import {
   Sun,
   Trash2,
   Undo2,
-  UserRound,
   Wallet,
   X,
 } from "lucide-react";
@@ -35,6 +34,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -71,7 +71,6 @@ import { ClinicServicePanel } from "@/components/cashier/ClinicServicePanel";
 import { HoldManager } from "@/components/cashier/HoldManager";
 import { DiscountPanel } from "@/components/cashier/DiscountPanel";
 import { PerItemDiscount } from "@/components/cashier/PerItemDiscount";
-import { CustomerInfoPanel } from "@/components/cashier/CustomerInfo";
 import { QuickCashCalculator } from "@/components/cashier/QuickCashCalculator";
 import { SplitPayment } from "@/components/cashier/SplitPayment";
 import { ReceiptPreview } from "@/components/cashier/ReceiptPreview";
@@ -389,7 +388,6 @@ function CashierApp() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
-  const [customerOpen, setCustomerOpen] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [result, setResult] = useState<{
     id: string;
@@ -757,25 +755,25 @@ function CashierApp() {
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col gap-3 bg-muted/20 p-3 sm:p-4">
       {/* ── TOP COMMAND BAR ─────────────────────────────────────────────── */}
-      <section className="animate-in fade-in slide-in-from-top-3 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-3.5 text-white shadow-lg shadow-slate-900/10 ring-1 ring-white/10 duration-500">
+      <section className="animate-in fade-in slide-in-from-top-3 rounded-2xl border bg-card p-3.5 shadow-sm duration-500">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           {/* Big total readout */}
           <div className="min-w-[150px]">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
               {t("cashier.total")}
             </p>
-            <p className="text-3xl font-black leading-tight tabular-nums tracking-tight text-white">
+            <p className="text-3xl font-black leading-tight tabular-nums tracking-tight text-foreground">
               {formatPrice(totals.total, settings.currency)}
             </p>
-            <p className="text-[11px] text-white/50">
+            <p className="text-[11px] text-muted-foreground">
               {itemCount} {t("cashier.items").toLowerCase()}
             </p>
           </div>
 
-          <div className="hidden h-12 w-px bg-white/15 sm:block" />
+          <div className="hidden h-12 w-px bg-border sm:block" />
 
           {/* Payment method selector */}
-          <div className="flex items-center gap-1 rounded-xl bg-white/10 p-1">
+          <div className="flex items-center gap-1 rounded-xl bg-muted p-1">
             {PAYMENT_METHODS.map((m) => (
               <button
                 key={m.value}
@@ -786,8 +784,8 @@ function CashierApp() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all",
                   method === m.value
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-white/60 hover:bg-white/10 hover:text-white",
+                    ? "bg-background text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
                 )}
               >
                 <m.icon className="size-4" />
@@ -814,7 +812,7 @@ function CashierApp() {
               onClick={() => setRefundOpen(true)}
               title={t("cashier.refund")}
               aria-label={t("cashier.refund")}
-              className="text-white/70 hover:bg-white/10 hover:text-white"
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <Undo2 className="size-4" />
             </Button>
@@ -826,7 +824,7 @@ function CashierApp() {
               disabled={cart.length === 0}
               title={t("cashier.receiptPreview")}
               aria-label={t("cashier.receiptPreview")}
-              className="text-white/70 hover:bg-white/10 hover:text-white"
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <ReceiptText className="size-4" />
             </Button>
@@ -843,34 +841,64 @@ function CashierApp() {
           </div>
         </div>
 
-        {/* Slim status / summary row */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 pt-2 text-[11px] text-white/60">
-          <span className="flex items-center gap-1.5 font-medium">
-            <span
-              className={cn(
-                "size-1.5 rounded-full",
-                checkedIn ? "animate-pulse bg-success" : "bg-amber-500",
-              )}
-            />
-            {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
-          </span>
-          <span>
-            {t("cashier.subtotal")}: {formatPrice(totals.subtotal, settings.currency)}
-          </span>
-          {discountAmount > 0 && (
-            <span className="font-semibold text-rose-300">
-              −{formatPrice(discountAmount, settings.currency)}
+        {/* Customer details stay visible for every receipt, plus a slim status line. */}
+        <div className="mt-2.5 flex flex-wrap items-end gap-x-4 gap-y-2 border-t pt-2.5">
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="cashier-customer-name" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t("cashier.customerName")}
+              </Label>
+              <Input
+                id="cashier-customer-name"
+                value={customer.name}
+                onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder={t("cashier.customerNamePlaceholder")}
+                className="h-8 w-36 text-xs"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="cashier-customer-phone" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t("cashier.customerPhone")}
+              </Label>
+              <Input
+                id="cashier-customer-phone"
+                value={customer.phone}
+                onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder={t("cashier.customerPhonePlaceholder")}
+                className="h-8 w-40 text-xs"
+                inputMode="tel"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <div className="mb-1 flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  checkedIn ? "animate-pulse bg-success" : "bg-amber-500",
+                )}
+              />
+              {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
             </span>
-          )}
-          {customer.name && <span className="max-w-[160px] truncate text-white">{customer.name}</span>}
-          <button
-            type="button"
-            onClick={() => setShortcutsOpen(true)}
-            className="ms-auto flex items-center gap-1 transition-colors hover:text-white"
-          >
-            <Keyboard className="size-3.5" />
-            {t("cashier.keyboardShortcuts")}
-          </button>
+            <span>
+              {t("cashier.subtotal")}: {formatPrice(totals.subtotal, settings.currency)}
+            </span>
+            {discountAmount > 0 && (
+              <span className="font-semibold text-destructive">
+                −{formatPrice(discountAmount, settings.currency)}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setShortcutsOpen(true)}
+              className="ms-auto flex items-center gap-1 transition-colors hover:text-foreground"
+            >
+              <Keyboard className="size-3.5" />
+              {t("cashier.keyboardShortcuts")}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1110,21 +1138,6 @@ function CashierApp() {
             </div>
 
             <div className="w-full space-y-1.5">
-              <Collapsible open={customerOpen} onOpenChange={setCustomerOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full justify-between font-medium">
-                    <span className="flex items-center gap-2">
-                      <UserRound className="size-4 text-muted-foreground" />
-                      {customer.name || t("cashier.walkInCustomer")}
-                    </span>
-                    <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", customerOpen && "rotate-180")} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <CustomerInfoPanel customer={customer} onChange={setCustomer} />
-                </CollapsibleContent>
-              </Collapsible>
-
               <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full justify-between font-medium">
