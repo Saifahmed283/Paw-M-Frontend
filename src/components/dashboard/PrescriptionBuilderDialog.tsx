@@ -30,9 +30,11 @@ import {
   type RxItem,
 } from "@/lib/client-medical";
 import { useClinicStore } from "@/lib/clinic-store";
+import { useI18n } from "@/lib/i18n";
 import { carePlanFor, RX_CARE_PLAN } from "@/lib/rx-options";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 const EMPTY_ITEM: RxItem = {
   medication: "",
@@ -43,9 +45,7 @@ const EMPTY_ITEM: RxItem = {
   note: "",
 };
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+type RxStatus = "draft" | "issued" | "void";
 
 export function PrescriptionBuilderDialog({
   open,
@@ -60,6 +60,7 @@ export function PrescriptionBuilderDialog({
   preset?: { petId?: string; doctorId?: string; bookingId?: string; diagnosis?: string };
   editing?: Prescription | null;
 }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { doctors } = useClinicStore();
   const { data: pets = [] } = useQuery({
@@ -88,10 +89,11 @@ export function PrescriptionBuilderDialog({
   );
   const [instructions, setInstructions] = useState(editing?.instructions ?? "");
   const [followUpDate, setFollowUpDate] = useState((editing?.followUpDate ?? "").slice(0, 10));
-  const [status, setStatus] = useState<"draft" | "issued" | "void">(
+  const [status, setStatus] = useState<RxStatus>(
     editing?.status === "issued" || editing?.status === "void" ? editing.status : "draft",
   );
   const [busy, setBusy] = useState(false);
+  const [confirmVoid, setConfirmVoid] = useState(false);
 
   const selectedPet = pets.find((p) => p.id === petId);
   const isWalkIn = !petId;
@@ -132,7 +134,7 @@ export function PrescriptionBuilderDialog({
   };
 
   const valid =
-    doctorId &&
+    Boolean(doctorId) &&
     items.length > 0 &&
     items.every((i) => i.medication.trim() && i.dose.trim() && i.frequency.trim()) &&
     (isWalkIn ? patientName.trim().length > 0 : true);
@@ -140,11 +142,8 @@ export function PrescriptionBuilderDialog({
   const setItem = (index: number, key: keyof RxItem, value: string) =>
     setItems((list) => list.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
 
-  const save = async () => {
-    if (!valid) {
-      toast.error("Medication, dose and frequency are required on every line");
-      return;
-    }
+  const performSave = async () => {
+    if (busy) return;
     setBusy(true);
     const payload = {
       diagnosis: diagnosis.trim(),
@@ -158,15 +157,16 @@ export function PrescriptionBuilderDialog({
       })),
       instructions: instructions.trim(),
       followUpDate,
-      status: editing ? (status === "void" ? "void" : "issued") : status,
     };
     try {
       if (editing) {
+        // The update API only accepts issued/void — make issuing an edited
+        // draft explicit in the UI instead of silently changing its status.
         await updatePrescription(editing.id, {
           ...payload,
           status: status === "void" ? "void" : "issued",
         });
-        toast.success(editing.status === "void" ? "Prescription updated" : "Prescription updated");
+        toast.success(t("rx.builder.updated"));
       } else {
         await createPrescription({
           ...payload,
@@ -178,37 +178,56 @@ export function PrescriptionBuilderDialog({
           doctorId,
           bookingId: bookingId || null,
         });
-        toast.success(status === "draft" ? "Draft saved" : "Prescription issued");
+        toast.success(status === "draft" ? t("rx.builder.savedDraft") : t("rx.builder.issued"));
       }
-      qc.invalidateQueries({ queryKey: ["prescriptions"] });
+      // The list panel invalidates ["prescriptions"] through onSaved().
       qc.invalidateQueries({ queryKey: ["me"] });
+      setConfirmVoid(false);
       onSaved();
       onClose();
     } catch (err) {
       toast.error(
-        err instanceof Error
-          ? (err.message.split(": ").pop() ?? "Failed to save")
-          : "Failed to save",
+        err instanceof Error ? err.message.split(": ").pop() ?? t("rx.builder.failed") : t("rx.builder.failed"),
       );
     } finally {
       setBusy(false);
     }
   };
 
+  const save = () => {
+    if (busy || !valid) {
+      if (!valid) toast.error(t("rx.builder.required"));
+      return;
+    }
+    // Voiding an issued prescription is irreversible — require a second step.
+    if (editing && status === "void" && editing.status !== "void") {
+      setConfirmVoid(true);
+      return;
+    }
+    void performSave();
+  };
+
+  const saveLabel = busy
+    ? t("dash.saving")
+    : editing
+      ? t("dash.save")
+      : status === "issued"
+        ? t("rx.builder.issue")
+        : t("rx.builder.saveDraft");
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{editing ? `Edit ${editing.rxNumber}` : "Write a prescription"}</DialogTitle>
-          <DialogDescription>
-            The signed document becomes printable and verifiable once issued. A signature (if set on
-            the clinician) is captured on the prescription.
-          </DialogDescription>
+          <DialogTitle>
+            {editing ? t("rx.builder.editTitle", { code: editing.rxNumber }) : t("rx.builder.title")}
+          </DialogTitle>
+          <DialogDescription>{t("rx.builder.hint")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Patient">
+            <Field label={t("rx.builder.patient")}>
               <Select
                 value={petId || "__walkin"}
                 onValueChange={(v) => setPetId(v === "__walkin" ? "" : v)}
@@ -225,7 +244,7 @@ export function PrescriptionBuilderDialog({
                         : ""}
                     </SelectItem>
                   ))}
-                  <SelectItem value="__walkin">Walk-in patient (no pet file)</SelectItem>
+                  <SelectItem value="__walkin">{t("rx.builder.walkIn")}</SelectItem>
                 </SelectContent>
               </Select>
               {isWalkIn && (
@@ -234,12 +253,12 @@ export function PrescriptionBuilderDialog({
                     <Input
                       value={patientName}
                       onChange={(e) => setPatientName(e.target.value)}
-                      placeholder="Patient name"
+                      placeholder={t("rx.builder.patientName")}
                     />
                     <Input
                       value={patientBreed}
                       onChange={(e) => setPatientBreed(e.target.value)}
-                      placeholder="Breed (optional)"
+                      placeholder={t("rx.builder.breed")}
                     />
                   </div>
                   <Select value={planSpecies} onValueChange={setPlanSpecies}>
@@ -257,28 +276,34 @@ export function PrescriptionBuilderDialog({
                 </div>
               )}
             </Field>
-            <Field label="Prescribing clinician">
-              <Select value={doctorId} onValueChange={setDoctorId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {doctors.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Field label={t("rx.builder.clinician")}>
+              {doctors.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+                  {t("rx.builder.noClinician")}
+                </p>
+              ) : (
+                <Select value={doctorId} onValueChange={setDoctorId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </Field>
           </div>
 
-          <Field label="Diagnosis">
+          <Field label={t("rx.builder.diagnosis")}>
             <Textarea
               rows={2}
               value={diagnosis}
               onChange={(e) => setDiagnosis(e.target.value)}
-              placeholder="Clinical diagnosis for this visit"
+              placeholder={t("rx.builder.diagnosisPlaceholder")}
             />
           </Field>
 
@@ -286,11 +311,11 @@ export function PrescriptionBuilderDialog({
             {plan.length > 0 && (
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <p className="mb-2 text-xs font-semibold text-foreground">
-                  {planSpecies} wellness &amp; care plan
+                  {t("rx.builder.carePlan", { species: planSpecies })}
                 </p>
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-3">
-                    <Field label="Species">
+                    <Field label={t("rx.builder.species")}>
                       <Select value={planSpecies} onValueChange={setPlanSpecies}>
                         <SelectTrigger>
                           <SelectValue />
@@ -304,7 +329,7 @@ export function PrescriptionBuilderDialog({
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Category">
+                    <Field label={t("rx.builder.category")}>
                       <Select value={planCategory} onValueChange={changePlanCategory}>
                         <SelectTrigger>
                           <SelectValue />
@@ -318,7 +343,7 @@ export function PrescriptionBuilderDialog({
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Care item">
+                    <Field label={t("rx.builder.careItem")}>
                       <Select value={planItem} onValueChange={setPlanItem}>
                         <SelectTrigger>
                           <SelectValue />
@@ -335,95 +360,109 @@ export function PrescriptionBuilderDialog({
                       </Select>
                     </Field>
                   </div>
-                  <Button size="sm" variant="outline" className="h-9" onClick={addPlanItem}>
-                    <Plus className="size-3.5" /> Add
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9"
+                    onClick={addPlanItem}
+                    disabled={busy}
+                  >
+                    <Plus className="size-3.5" /> {t("rx.builder.add")}
                   </Button>
                 </div>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-muted-foreground">Medication lines</Label>
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t("rx.builder.medicationLines")}
+              </Label>
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 className="h-7"
                 onClick={() => setItems((list) => [...list, { ...EMPTY_ITEM }])}
-                disabled={items.length >= 30}
+                disabled={busy || items.length >= 30}
               >
-                <Plus className="size-3.5" /> Add line
+                <Plus className="size-3.5" /> {t("rx.builder.addLine")}
               </Button>
             </div>
             <ItemTable
               items={items}
               setItem={setItem}
               onRemove={(i) => setItems((list) => list.filter((_, j) => j !== i))}
+              disabled={busy}
             />
           </div>
 
-          <Field label="Instructions">
+          <Field label={t("rx.builder.instructions")}>
             <Textarea
               rows={2}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="How the medication should be administered"
+              placeholder={t("rx.builder.instructionsPlaceholder")}
             />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Follow-up date">
+            <Field label={t("rx.builder.followUp")}>
               <Input
                 type="date"
                 value={followUpDate}
                 onChange={(e) => setFollowUpDate(e.target.value)}
               />
             </Field>
-            <Field label="Status">
-              <Select
-                value={status}
-                onValueChange={(v) => setStatus(v as "draft" | "issued" | "void")}
-              >
+            <Field label={t("rx.builder.status")}>
+              <Select value={status} onValueChange={(v) => setStatus(v as RxStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {editing ? (
-                    <>
-                      <SelectItem value="issued">Issued — printable &amp; verifiable</SelectItem>
-                      <SelectItem value="void">Void — invalidated</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="draft">Draft — not yet handed out</SelectItem>
-                      <SelectItem value="issued">Issue now — printable &amp; verifiable</SelectItem>
-                    </>
+                  {!editing && (
+                    <SelectItem value="draft">{t("rx.builder.status.draft")}</SelectItem>
+                  )}
+                  <SelectItem value="issued">
+                    {editing ? t("rx.status.issued") : t("rx.builder.status.issued")}
+                  </SelectItem>
+                  {editing && (
+                    <SelectItem value="void">{t("rx.builder.status.void")}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
+              {editing?.status === "draft" && (
+                <p className="mt-1 text-xs text-amber-600">{t("rx.builder.draftWillIssue")}</p>
+              )}
             </Field>
           </div>
 
           {editing?.booking?.id && (
             <p className="text-xs text-muted-foreground">
-              Linked to booking {editing.booking.date} {editing.booking.time}
+              {t("rx.builder.linkedBooking", {
+                date: editing.booking.date,
+                time: editing.booking.time,
+              })}
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
+          <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+            {t("dash.cancel")}
           </Button>
-          <Button onClick={save} disabled={busy || !valid}>
-            {busy
-              ? "Saving…"
-              : editing
-                ? "Save changes"
-                : status === "issued"
-                  ? "Issue prescription"
-                  : "Save draft"}
+          <Button type="button" onClick={save} disabled={busy || !valid}>
+            {saveLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmActionDialog
+        open={confirmVoid}
+        title={t("rx.void")}
+        description={t("rx.voidConfirm", { code: editing?.rxNumber ?? "" })}
+        busy={busy}
+        onConfirm={performSave}
+        onClose={() => !busy && setConfirmVoid(false)}
+      />
     </Dialog>
   );
 }
@@ -432,55 +471,63 @@ function ItemTable({
   items,
   setItem,
   onRemove,
+  disabled = false,
 }: {
   items: RxItem[];
   setItem: (index: number, key: keyof RxItem, value: string) => void;
   onRemove: (index: number) => void;
+  disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const inputCls =
     "h-9 rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus:border-primary";
+  const columns: { key: keyof RxItem; label: string; required?: boolean }[] = [
+    { key: "medication", label: t("rx.builder.medication"), required: true },
+    { key: "dose", label: t("rx.builder.dose"), required: true },
+    { key: "frequency", label: t("rx.builder.frequency"), required: true },
+    { key: "route", label: t("rx.builder.route") },
+    { key: "duration", label: t("rx.builder.duration") },
+    { key: "note", label: t("rx.builder.note") },
+  ];
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="text-left text-xs font-medium text-muted-foreground">
-            <th className="p-1.5">Medication *</th>
-            <th className="p-1.5">Dose *</th>
-            <th className="p-1.5">Frequency *</th>
-            <th className="p-1.5">Route</th>
-            <th className="p-1.5">Duration</th>
-            <th className="p-1.5">Note</th>
+            {columns.map((c) => (
+              <th key={c.key} className="p-1.5">
+                {c.label}
+              </th>
+            ))}
             <th className="w-8" />
           </tr>
         </thead>
         <tbody>
           {items.map((item, i) => (
             <tr key={i}>
-              {(["medication", "dose", "frequency", "route", "duration", "note"] as const).map(
-                (key) => (
-                  <td key={key} className={cn("p-1.5", key === "note" ? "w-32" : "")}>
-                    <input
-                      value={item[key]}
-                      onChange={(e) => setItem(i, key, e.target.value)}
-                      className={cn(
-                        inputCls,
-                        "w-full",
-                        (key === "medication" || key === "dose" || key === "frequency") &&
-                          !item[key] &&
-                          "border-rose-300",
-                      )}
-                    />
-                  </td>
-                ),
-              )}
+              {columns.map((c) => (
+                <td key={c.key} className={cn("p-1.5", c.key === "note" ? "w-32" : "")}>
+                  <input
+                    value={item[c.key]}
+                    onChange={(e) => setItem(i, c.key, e.target.value)}
+                    disabled={disabled}
+                    className={cn(
+                      inputCls,
+                      "w-full",
+                      c.required && !item[c.key] && "border-rose-300",
+                    )}
+                  />
+                </td>
+              ))}
               <td className="p-1.5">
                 <Button
+                  type="button"
                   size="sm"
                   variant="ghost"
                   className="h-9 w-8 px-0 text-muted-foreground hover:text-destructive"
-                  aria-label="Remove line"
+                  aria-label={t("rx.builder.removeLine")}
                   onClick={() => onRemove(i)}
-                  disabled={items.length === 1}
+                  disabled={disabled || items.length === 1}
                 >
                   <Trash2 className="size-4" />
                 </Button>

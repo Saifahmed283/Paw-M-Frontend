@@ -13,8 +13,10 @@ import {
 } from "@/lib/clinic-store";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { changeCredentials, MIN_PASSWORD, MIN_USERNAME } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 import {
   ALL_TAB_IDS,
   DEFAULT_ROLE_PERMISSIONS,
@@ -29,6 +31,11 @@ export function SettingsPanel() {
   const [gsBusy, setGsBusy] = useState(false);
   const [gsResult, setGsResult] = useState<{ synced: number; total: number } | null>(null);
   const [gsError, setGsError] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [savingPerms, setSavingPerms] = useState(false);
+  const [credsBusy, setCredsBusy] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [credsForm, setCredsForm] = useState({
     currentPassword: "",
     newUsername: "",
@@ -80,24 +87,85 @@ export function SettingsPanel() {
   };
 
   const savePerms = async () => {
+    if (savingPerms) return;
+    setSavingPerms(true);
     try {
       await updateSettings({ rolePermissions: perms });
       toast.success(t("dash.toast.saved"));
     } catch {
       toast.error(t("dash.toast.error"));
+    } finally {
+      setSavingPerms(false);
+    }
+  };
+
+  const resetPerms = async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      await updateSettings({ rolePermissions: DEFAULT_ROLE_PERMISSIONS });
+      setPerms({ ...DEFAULT_ROLE_PERMISSIONS });
+      setConfirmReset(false);
+      toast.success(t("dash.toast.saved"));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setResetting(false);
     }
   };
 
   const save = async () => {
+    if (savingSettings) return;
     if (!form.currency.trim()) {
       toast.error(t("dash.settings.currencyEmpty"));
       return;
     }
+    setSavingSettings(true);
     try {
       await updateSettings({ ...form, currency: form.currency.trim() });
       toast.success(t("dash.toast.saved"));
     } catch {
       toast.error(t("dash.toast.error"));
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const saveCreds = async () => {
+    if (credsBusy) return;
+    if (credsForm.newPassword !== credsForm.confirm) {
+      toast.error(t("auth.mismatch"));
+      return;
+    }
+    if (credsForm.newUsername && credsForm.newUsername.trim().length < MIN_USERNAME) {
+      toast.error(t("auth.usernameTooShort"));
+      return;
+    }
+    if (credsForm.newPassword && credsForm.newPassword.length < MIN_PASSWORD) {
+      toast.error(t("auth.passTooShort"));
+      return;
+    }
+    if (!credsForm.newUsername && !credsForm.newPassword) {
+      toast.error(t("auth.nothingToChange"));
+      return;
+    }
+    const payload: { currentPassword: string; newUsername?: string; newPassword?: string } = {
+      currentPassword: credsForm.currentPassword,
+    };
+    if (credsForm.newUsername) payload.newUsername = credsForm.newUsername;
+    if (credsForm.newPassword) payload.newPassword = credsForm.newPassword;
+    setCredsBusy(true);
+    try {
+      await changeCredentials(payload);
+      toast.success(t("auth.credsChanged"));
+      setCredsForm({ currentPassword: "", newUsername: "", newPassword: "", confirm: "" });
+    } catch (err) {
+      // Only a 401 means the current password was wrong — never blame it for
+      // network/server failures or validation errors.
+      if (err instanceof ApiError && err.status === 401) toast.error(t("auth.wrongCurrent"));
+      else toast.error(t("dash.toast.error"));
+    } finally {
+      setCredsBusy(false);
     }
   };
 
@@ -190,7 +258,9 @@ export function SettingsPanel() {
             />
           </Field>
           <div className="flex items-center gap-3">
-            <Button onClick={save}>{t("dash.save")}</Button>
+            <Button onClick={save} disabled={savingSettings}>
+              {savingSettings ? t("dash.saving") : t("dash.save")}
+            </Button>
             <span className="rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground">
               {t("dash.settings.persist")}
             </span>
@@ -265,46 +335,8 @@ export function SettingsPanel() {
             />
           </Field>
           <div className="flex items-center gap-3">
-            <Button
-              onClick={async () => {
-                if (credsForm.newPassword !== credsForm.confirm) {
-                  toast.error(t("auth.mismatch"));
-                  return;
-                }
-                if (credsForm.newUsername && credsForm.newUsername.trim().length < MIN_USERNAME) {
-                  toast.error(t("auth.usernameTooShort"));
-                  return;
-                }
-                if (credsForm.newPassword && credsForm.newPassword.length < MIN_PASSWORD) {
-                  toast.error(t("auth.passTooShort"));
-                  return;
-                }
-                if (!credsForm.newUsername && !credsForm.newPassword) {
-                  toast.error(t("auth.nothingToChange"));
-                  return;
-                }
-                try {
-                  const payload: {
-                    currentPassword: string;
-                    newUsername?: string;
-                    newPassword?: string;
-                  } = { currentPassword: credsForm.currentPassword };
-                  if (credsForm.newUsername) payload.newUsername = credsForm.newUsername;
-                  if (credsForm.newPassword) payload.newPassword = credsForm.newPassword;
-                  await changeCredentials(payload);
-                  toast.success(t("auth.credsChanged"));
-                  setCredsForm({
-                    currentPassword: "",
-                    newUsername: "",
-                    newPassword: "",
-                    confirm: "",
-                  });
-                } catch {
-                  toast.error(t("auth.wrongCurrent"));
-                }
-              }}
-            >
-              {t("auth.changeCredentials")}
+            <Button onClick={saveCreds} disabled={credsBusy}>
+              {credsBusy ? t("dash.saving") : t("auth.changeCredentials")}
             </Button>
           </div>
         </CardContent>
@@ -378,13 +410,24 @@ export function SettingsPanel() {
           </div>
           <p className="text-xs text-muted-foreground">{t("dash.settings.rolesNote")}</p>
           <div className="flex items-center gap-3">
-            <Button onClick={savePerms}>{t("dash.save")}</Button>
-            <Button variant="outline" onClick={() => setPerms({ ...DEFAULT_ROLE_PERMISSIONS })}>
+            <Button onClick={savePerms} disabled={savingPerms}>
+              {savingPerms ? t("dash.saving") : t("dash.save")}
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmReset(true)}>
               {t("dash.settings.rolesReset")}
             </Button>
           </div>
         </CardContent>
       </Card>
+      <ConfirmActionDialog
+        open={confirmReset}
+        title={t("dash.settings.rolesReset")}
+        description={t("dash.settings.rolesResetConfirm")}
+        confirmLabel={t("dash.settings.rolesReset")}
+        busy={resetting}
+        onConfirm={resetPerms}
+        onClose={() => !resetting && setConfirmReset(false)}
+      />
     </div>
   );
 }
