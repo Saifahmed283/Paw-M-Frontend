@@ -17,15 +17,9 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
   const [registering, setRegistering] = useState(true);
   const [verification, setVerification] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [devCode, setDevCode] = useState<string | null>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", code: "" });
 
   if (authed) return children;
-
-  const sendCode = async () => {
-    const result = await requestClientVerification(form);
-    setDevCode(result?.devCode ?? null);
-  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -36,7 +30,7 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
         setAuthed(true);
         toast.success("Email verified. Your account is ready.");
       } else if (registering) {
-        await sendCode();
+        await requestClientVerification(form);
         setVerification(true);
         toast.success("Verification code sent to your email.");
       } else {
@@ -46,19 +40,6 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not sign in");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resend = async () => {
-    setBusy(true);
-    try {
-      await sendCode();
-      setForm((f) => ({ ...f, code: "" }));
-      toast.success("A new verification code has been sent.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not resend the code");
     } finally {
       setBusy(false);
     }
@@ -82,7 +63,7 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
           </span>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Paw-M Veterinary Clinic
+              Paw Clinic Madinaty
             </p>
             <h1 className="text-2xl font-bold">
               {verification
@@ -100,25 +81,18 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
         </p>
         <div className="mt-6 grid gap-4">
           {verification ? (
-            <>
-              <Label>
-                Verification code
-                <Input
-                  required
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  autoComplete="one-time-code"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, "") })}
-                />
-              </Label>
-              {devCode && (
-                <p className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-center text-sm">
-                  Development code: <strong className="tracking-widest">{devCode}</strong>
-                </p>
-              )}
-            </>
+            <Label>
+              Verification code
+              <Input
+                required
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                autoComplete="one-time-code"
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, "") })}
+              />
+            </Label>
           ) : registering ? (
             <>
               <Label>
@@ -157,7 +131,7 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
               <Input
                 required
                 type="password"
-                minLength={6}
+                minLength={8}
                 autoComplete={registering ? "new-password" : "current-password"}
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -175,21 +149,9 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
             <ArrowRight className="size-4" />
           </Button>
           {verification ? (
-            <>
-              <Button type="button" variant="outline" disabled={busy} onClick={resend}>
-                Resend code
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setVerification(false);
-                  setDevCode(null);
-                }}
-              >
-                Use a different email
-              </Button>
-            </>
+            <Button type="button" variant="ghost" onClick={() => setVerification(false)}>
+              Use a different email
+            </Button>
           ) : (
             <Button type="button" variant="ghost" onClick={() => setRegistering(!registering)}>
               {registering ? "Already have an account? Sign in" : "New client? Create an account"}

@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/accordion";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { AmbientGlobs } from "@/components/reactbits/AmbientGlobs";
-import { GradientText } from "@/components/reactbits/TextAnimations";
+import { BlurText, GradientText } from "@/components/reactbits/TextAnimations";
 import { RotatingText } from "@/components/reactbits/RotatingText";
 import type { AvailabilityDay, Doctor } from "@/lib/clinic-data";
 import { BOOKING_STEPS, FAQS, STATS, upcomingAvailability, WHY_US } from "@/lib/clinic-data";
@@ -72,47 +72,78 @@ export function SectionHeading({
 }) {
   return (
     <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <span
-        className={cn(
-          "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass-strong animate-fade-in",
-          center && "justify-center",
+      <Reveal>
+        <span
+          className={cn(
+            "flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-brass-strong",
+            center && "justify-center",
+          )}
+        >
+          <span className="h-px w-10 bg-gradient-to-r from-transparent via-brass/60 to-brass/60" />
+          {eyebrow}
+          {center && (
+            <span className="h-px w-10 bg-gradient-to-l from-transparent via-brass/60 to-brass/60" />
+          )}
+        </span>
+      </Reveal>
+      <Reveal delay={0.05}>
+        {as === "h1" ? (
+          <h1 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
+            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
+          </h1>
+        ) : (
+          <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem]">
+            <BlurText text={title} as="span" direction="top" stepDuration={0.3} />
+          </h2>
         )}
-      >
-        <span className="h-px w-10 bg-gradient-to-r from-transparent via-brass/60 to-brass/60" />
-        {eyebrow}
-        {center && (
-          <span className="h-px w-10 bg-gradient-to-l from-transparent via-brass/60 to-brass/60" />
-        )}
-      </span>
-      {as === "h1" ? (
-        <h1 className="mt-4 text-3xl font-semibold sm:text-[2.75rem] animate-fade-in delay-100">
-          <span className="text-brass-strong">{title}</span>
-        </h1>
-      ) : (
-        <h2 className="mt-4 text-3xl font-semibold sm:text-[2.75rem] animate-fade-in delay-100">
-          <span className="text-brass-strong">{title}</span>
-        </h2>
-      )}
+      </Reveal>
       {description && (
-        <p className="mt-5 text-base leading-relaxed text-muted-foreground animate-fade-in delay-200">{description}</p>
+        <Reveal delay={0.1}>
+          <p className="mt-5 text-base leading-relaxed text-muted-foreground">{description}</p>
+        </Reveal>
       )}
     </div>
   );
 }
 
 export function Hero() {
+  const reduce = useReducedMotion();
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [mounted, setMounted] = useState(false);
+  const frameRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   const { settings, doctors, requests } = useClinicStore();
   const { lang } = useI18n();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const firstDoctor = doctors[0];
   const nextDay = useMemo(
     () =>
-      firstDoctor
+      // Availability depends on today's date, which differs between the server
+      // render and the browser. Only compute it after mount so the hydration
+      // pass renders the same fallback on both sides.
+      mounted && firstDoctor
         ? upcomingAvailability(firstDoctor, 1, new Date(), requests, lang === "ar" ? "ar" : "en-US")
         : [],
-    [firstDoctor, requests, lang],
+    [mounted, firstDoctor, requests, lang],
   );
+
+  useEffect(() => {
+    if (reduce) return;
+    const onMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 16;
+      const y = (e.clientY / window.innerHeight - 0.5) * 12;
+      setOffset({ x, y });
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [reduce]);
+
+  const ease = [0.16, 1, 0.3, 1] as const;
+  const rotatingTexts = Array.from({ length: 5 }, (_, i) => t(`hero.rotating.${i}`));
 
   return (
     <section className="relative overflow-hidden pb-12 pt-20 sm:pt-24">
@@ -121,20 +152,14 @@ export function Hero() {
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_1fr]">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }) : false}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease }}
         >
           <h1 className="text-4xl font-bold leading-[1.06] sm:text-5xl lg:text-[3.75rem]">
             {t("hero.title.a")}{" "}
             <RotatingText
-              texts={[
-                t("hero.rotating.0"),
-                t("hero.rotating.1"),
-                t("hero.rotating.2"),
-                t("hero.rotating.3"),
-                t("hero.rotating.4"),
-              ]}
+              texts={rotatingTexts}
               className="align-baseline"
               splitBy="words"
               staggerDuration={0.05}
@@ -175,7 +200,7 @@ export function Hero() {
 
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
             {STATS.map((stat, i) => (
-              <Reveal key={stat.label} delay={i * 60}>
+              <Reveal key={stat.label} delay={i * 0.06}>
                 <dt className="text-2xl font-bold tracking-tight text-foreground">
                   <CountUp
                     value={i === 1 ? doctors.length : stat.value}
@@ -191,10 +216,12 @@ export function Hero() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          ref={frameRef}
+          initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }) : false}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          transition={{ duration: 0.8, ease, delay: 0.1 }}
           className="relative"
+          style={{ transform: reduce ? "none" : `translate3d(${offset.x}px, ${offset.y}px, 0)` }}
         >
           <div className="overflow-hidden rounded-3xl border border-border shadow-lg">
             <img
@@ -207,15 +234,25 @@ export function Hero() {
             />
           </div>
 
-          <div className="glass absolute -bottom-10 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8 animate-slide-up">
+          <motion.div
+            initial={mounted ? { opacity: 0, y: 14 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease, delay: 0.45 }}
+            className="glass absolute -bottom-10 -left-4 w-56 rounded-2xl p-4 shadow-lg sm:-left-8 rtl:left-auto rtl:-right-4 rtl:sm:-right-8"
+          >
             <p className="text-xs font-medium text-muted-foreground">{t("hero.triage")}</p>
             <p className="mt-1 text-2xl font-bold text-foreground">4m 12s</p>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
               <div className="h-full w-3/4 rounded-full bg-success" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="glass absolute -right-10 -top-12 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-10 rtl:sm:-left-8 animate-slide-up delay-100">
+          <motion.div
+            initial={mounted ? { opacity: 0, y: 14 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease, delay: 0.6 }}
+            className="glass absolute -right-10 -top-12 w-52 rounded-2xl p-4 shadow-lg sm:-right-8 rtl:right-auto rtl:-left-10 rtl:sm:-left-8"
+          >
             <p className="text-xs font-medium text-muted-foreground">{t("hero.nextAvailable")}</p>
             {nextDay[0] ? (
               <>
@@ -227,7 +264,7 @@ export function Hero() {
             ) : (
               <p className="mt-1 text-sm font-semibold text-foreground">—</p>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -239,21 +276,23 @@ export function ServicesGrid({ limit }: { limit?: number }) {
   const { tOr } = useI18n();
   const items = limit ? services.slice(0, limit) : services;
   return (
-    <div className="pawm-stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((service, i) => {
         const Icon = SERVICE_ICONS[service.icon] ?? Stethoscope;
         return (
-          <article key={service.slug} className="pawm-stagger-item group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
-            <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              <Icon className="size-5" />
-            </span>
-            <h3 className="mt-5 text-base font-semibold">
-              {tOr(`svc.${service.slug}.title`, service.title)}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {tOr(`svc.${service.slug}.desc`, service.description)}
-            </p>
-          </article>
+          <Reveal key={service.slug} delay={(i % 3) * 0.06}>
+            <article className="group h-full rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised">
+              <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <Icon className="size-5" />
+              </span>
+              <h3 className="mt-5 text-base font-semibold">
+                {tOr(`svc.${service.slug}.title`, service.title)}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {tOr(`svc.${service.slug}.desc`, service.description)}
+              </p>
+            </article>
+          </Reveal>
         );
       })}
     </div>
@@ -284,10 +323,10 @@ export function WhyUs() {
             title={t("why.title")}
             description={t("why.desc")}
           />
-          <ul className="pawm-stagger mt-8 space-y-5">
+          <ul className="mt-8 space-y-5">
             {WHY_US.map((item, i) => (
               <li key={item.title}>
-                <div className="pawm-stagger-item">
+                <Reveal delay={i * 0.05}>
                   <div className="flex gap-4">
                     <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-success/15 text-success">
                       <Check className="size-3.5" strokeWidth={3} />
@@ -301,7 +340,7 @@ export function WhyUs() {
                       </p>
                     </div>
                   </div>
-                </div>
+                </Reveal>
               </li>
             ))}
           </ul>
@@ -379,7 +418,7 @@ export function DoctorCard({
 }) {
   const { t } = useI18n();
   return (
-    <Reveal delay={(index % 3) * 60}>
+    <Reveal delay={(index % 3) * 0.06}>
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:-translate-y-1 hover:shadow-raised">
         <div className="flex h-32 items-end justify-between bg-primary/8 p-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground">
@@ -448,8 +487,8 @@ export function DoctorCard({
           </div>
         </div>
       </article>
-  </Reveal>
-);
+    </Reveal>
+  );
 }
 
 export function BookingTimeline() {
@@ -466,7 +505,7 @@ export function BookingTimeline() {
         <ol className="mt-14 grid gap-8 md:grid-cols-5">
           {BOOKING_STEPS.map((step, i) => (
             <li key={step.title} className="relative">
-              <Reveal delay={i * 80}>
+              <Reveal delay={i * 0.08}>
                 <div className="flex items-center gap-3 md:block">
                   <span className="grid size-10 place-items-center rounded-full border-2 border-primary bg-background text-sm font-bold text-primary">
                     {i + 1}
@@ -543,7 +582,7 @@ export function Testimonials() {
           </figcaption>
         </figure>
       </Reveal>
-      <Reveal delay={200}>
+      <div className="mt-8 flex justify-center gap-1">
         {testimonials.map((review, i) => (
           <button
             key={review.id}
@@ -561,7 +600,7 @@ export function Testimonials() {
             />
           </button>
         ))}
-      </Reveal>
+      </div>
     </section>
   );
 }
@@ -570,25 +609,21 @@ export function Faq() {
   const { t } = useI18n();
   return (
     <section className="border-t border-border bg-surface py-20">
-      <Reveal>
-        <div className="mx-auto max-w-3xl px-5 sm:px-8">
-          <SectionHeading center eyebrow={t("faq.eyebrow")} title={t("faq.title")} />
-          <Accordion type="single" collapsible className="mt-10 w-full">
-            {FAQS.map((faq, i) => (
-              <Reveal key={faq.q} delay={i * 80}>
-                <AccordionItem value={`item-${i}`}>
-                  <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
-                    {t(`faq.${i}.q`)}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-                    {t(`faq.${i}.a`)}
-                  </AccordionContent>
-                </AccordionItem>
-              </Reveal>
-            ))}
-          </Accordion>
-        </div>
-      </Reveal>
+      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <SectionHeading center eyebrow={t("faq.eyebrow")} title={t("faq.title")} />
+        <Accordion type="single" collapsible className="mt-10 w-full">
+          {FAQS.map((faq, i) => (
+            <AccordionItem key={faq.q} value={`item-${i}`}>
+              <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+                {t(`faq.${i}.q`)}
+              </AccordionTrigger>
+              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                {t(`faq.${i}.a`)}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
     </section>
   );
 }

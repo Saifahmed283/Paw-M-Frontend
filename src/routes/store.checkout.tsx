@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ClientAuthGate } from "@/components/ClientAuthGate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +22,6 @@ import { currentClient } from "@/lib/client-auth";
 import { createOrder, useClinicStore, type PaymentMethod } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { storageGet, storageSet } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/store/checkout")({
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/store/checkout")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: CheckoutForm,
+  component: CheckoutPage,
 });
 
 const PAYMENT_METHODS: {
@@ -60,26 +60,6 @@ const PAYMENT_METHODS: {
     desc: "checkout.method.instapay.desc",
   },
 ];
-
-const CHECKOUT_RESULT_KEY = "paw-m:checkout-result";
-
-type CheckoutResult = {
-  id: string;
-  paymentMethod: PaymentMethod;
-  paymentRef: string;
-};
-
-// Keep the confirmation visible if the customer refreshes right after placing
-// an order (the cart is already cleared at that point).
-function readCheckoutResult(): CheckoutResult | null {
-  const raw = storageGet("session", CHECKOUT_RESULT_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as CheckoutResult;
-  } catch {
-    return null;
-  }
-}
 
 function readImageFile(file: File | undefined): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -159,6 +139,14 @@ function SuccessScreen({
   );
 }
 
+function CheckoutPage() {
+  return (
+    <ClientAuthGate>
+      <CheckoutForm />
+    </ClientAuthGate>
+  );
+}
+
 function CheckoutForm() {
   const { t } = useI18n();
   const cart = useCart();
@@ -174,7 +162,11 @@ function CheckoutForm() {
   const [ref, setRef] = useState("");
   const [proofImage, setProofImage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<CheckoutResult | null>(readCheckoutResult);
+  const [result, setResult] = useState<{
+    id: string;
+    paymentMethod: PaymentMethod;
+    paymentRef: string;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const total = cart.reduce((n, i) => n + i.qty * i.price, 0);
@@ -208,13 +200,7 @@ function CheckoutForm() {
         proofImage: method === "instapay" ? proofImage : undefined,
       });
       clearCart();
-      const placed: CheckoutResult = {
-        id: order.id,
-        paymentMethod: order.paymentMethod,
-        paymentRef: order.paymentRef,
-      };
-      storageSet("session", CHECKOUT_RESULT_KEY, JSON.stringify(placed));
-      setResult(placed);
+      setResult({ id: order.id, paymentMethod: order.paymentMethod, paymentRef: order.paymentRef });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("only")) {

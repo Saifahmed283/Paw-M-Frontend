@@ -497,11 +497,8 @@ export const EN: Dict = {
   "booking.pet.otherType": "Other type",
   "booking.owner.summary": "Not signed in",
   "booking.owner.account": "Account holder",
-  "booking.owner.guest": "Guest booking",
   "booking.owner.hint":
     "Your booking is automatically linked to your account. Reception verifies these details before the visit.",
-  "booking.owner.hintGuest":
-    "We'll use these details to confirm your appointment. Reception verifies them before the visit.",
   "booking.pet.addNew": "New pet",
   "booking.pet.loading": "Loading your pets…",
   "booking.pet.chooseSaved": "Choose a saved pet",
@@ -785,26 +782,6 @@ export const EN: Dict = {
   "hour.4": "Tuesday",
   "hour.5": "Wednesday",
   "hour.6": "Thursday",
-
-  // Contact form
-  "contact.form.eyebrow": "Send us a message",
-  "contact.form.title": "We'd love to hear from you",
-  "contact.form.desc":
-    "Fill out the form and we'll get back to you within 24 hours during business days.",
-  "contact.form.name": "Full name",
-  "contact.form.namePlaceholder": "John Doe",
-  "contact.form.email": "Email address",
-  "contact.form.emailPlaceholder": "john@example.com",
-  "contact.form.phone": "Phone (optional)",
-  "contact.form.phonePlaceholder": "+20 1xx xxx xxxx",
-  "contact.form.subject": "Subject",
-  "contact.form.subjectPlaceholder": "Appointment inquiry, feedback, etc.",
-  "contact.form.message": "Message",
-  "contact.form.messagePlaceholder": "How can we help you?",
-  "contact.form.send": "Send message",
-  "contact.form.sending": "Sending…",
-  "contact.form.success": "Message sent! We'll get back to you soon.",
-  "contact.form.error": "Failed to send. Please try again.",
 
   // Misc
   "dash.statusCol": "Status",
@@ -1769,11 +1746,8 @@ const AR: Dict = {
   "booking.pet.otherType": "نوع آخر",
   "booking.owner.summary": "غير مسجل",
   "booking.owner.account": "صاحب الحساب",
-  "booking.owner.guest": "حجز كضيف",
   "booking.owner.hint":
     "يتم ربط الحجز تلقائيًا بحسابك. يتحقق الاستقبال من هذه البيانات قبل الزيارة.",
-  "booking.owner.hintGuest":
-    "سنستخدم هذه البيانات لتأكيد موعدك. يتحقق الاستقبال منها قبل الزيارة.",
   "booking.pet.addNew": "حيوان جديد",
   "booking.pet.loading": "جارٍ تحميل حيواناتك…",
   "booking.pet.chooseSaved": "اختر حيوانًا مسجلًا",
@@ -2042,25 +2016,6 @@ const AR: Dict = {
   "hour.4": "الثلاثاء",
   "hour.5": "الأربعاء",
   "hour.6": "الخميس",
-
-  // نموذج الاتصال
-  "contact.form.eyebrow": "أرسل لنا رسالة",
-  "contact.form.title": "يسعدنا التواصل معك",
-  "contact.form.desc": "املأ النموذج وسنرد عليك خلال 24 ساعة خلال أيام العمل.",
-  "contact.form.name": "الاسم الكامل",
-  "contact.form.namePlaceholder": "محمد أحمد",
-  "contact.form.email": "البريد الإلكتروني",
-  "contact.form.emailPlaceholder": "mohamed@example.com",
-  "contact.form.phone": "الهاتف (اختياري)",
-  "contact.form.phonePlaceholder": "+20 1xx xxx xxxx",
-  "contact.form.subject": "الموضوع",
-  "contact.form.subjectPlaceholder": "استفسار عن موعد، ملاحظات، إلخ.",
-  "contact.form.message": "الرسالة",
-  "contact.form.messagePlaceholder": "كيف يمكننا مساعدتك؟",
-  "contact.form.send": "إرسال الرسالة",
-  "contact.form.sending": "جاري الإرسال…",
-  "contact.form.success": "تم الإرسال! سنتواصل معك قريباً.",
-  "contact.form.error": "فشل الإرسال. يرجى المحاولة مرة أخرى.",
 
   // متفرقات
   "dash.statusCol": "الحالة",

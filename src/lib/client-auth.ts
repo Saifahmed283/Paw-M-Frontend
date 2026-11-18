@@ -46,11 +46,8 @@ export async function requestClientVerification(input: {
   email: string;
   phone: string;
   password: string;
-}): Promise<{ devCode?: string }> {
-  // In local development, when SMTP is unconfigured the API returns the code
-  // so the verification flow can be tested without a mailbox. Production never
-  // includes this field.
-  return api.post<{ devCode?: string }>("/client-auth/register", input);
+}) {
+  await api.post("/client-auth/register", input);
 }
 
 export async function verifyClientEmail(email: string, code: string) {
