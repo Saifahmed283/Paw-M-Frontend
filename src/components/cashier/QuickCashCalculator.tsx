@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Banknote, Coins, Wallet } from "lucide-react";
+import { Banknote, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,6 @@ type Props = {
   currency: string;
   onCashReceivedChange: (amount: number) => void;
 };
-
-const BANKNOTES = [1000, 500, 200, 100, 50, 20, 10, 5];
-const COINS = [2, 1, 0.5, 0.25];
 
 export function QuickCashCalculator({ total, currency, onCashReceivedChange }: Props) {
   const { t } = useI18n();
@@ -72,44 +69,6 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           <Banknote className="size-4" />
           {t("cashier.exact")}
         </Button>
-      </div>
-
-      <div className="space-y-1.5">
-        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          <Banknote className="size-3" />
-          {t("cashier.banknotes")}
-        </p>
-        <div className="grid grid-cols-4 gap-1.5">
-          {BANKNOTES.map((b) => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => setAmt(received + b)}
-              className="rounded-lg border border-border py-1.5 text-sm font-semibold transition hover:border-primary hover:bg-primary/5"
-            >
-              {b}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          <Coins className="size-3" />
-          {t("cashier.coins")}
-        </p>
-        <div className="grid grid-cols-4 gap-1.5">
-          {COINS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setAmt(received + c)}
-              className="rounded-lg border border-border py-1.5 text-sm font-semibold transition hover:border-primary hover:bg-primary/5"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
       </div>
 
       <Separator />

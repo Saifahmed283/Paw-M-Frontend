@@ -13,7 +13,6 @@ import {
   LogIn,
   LogOut,
   Minus,
-  ShieldAlert,
   Stethoscope,
   Moon,
   PackagePlus,
@@ -52,7 +51,7 @@ import {
   settlePayment,
   type WorkSession,
 } from "@/lib/clinic-store";
-import { hasMinRole, isAuthed, logout } from "@/lib/auth";
+import { isAuthed } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/lib/i18n-components";
@@ -123,67 +122,29 @@ const PAYMENT_METHODS: {
   },
 ];
 
-/** A sale may only be rung up while the signed-in admin's shift is open today. */
+/** A sale may only be rung up while the signed-in staff member's shift is open today. */
 function isCheckedInToday(session: WorkSession | null): boolean {
   if (!session || session.endedAt || session.date !== localTodayISO()) return false;
   const started = new Date(session.startedAt);
   return !Number.isNaN(started.getTime());
 }
 
-function AdminOnlyGate({ onSignOut }: { onSignOut: () => void }) {
-  const { t } = useI18n();
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-card">
-        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
-          <ShieldAlert className="size-6" />
-        </span>
-        <h1 className="mt-5 text-xl font-bold">{t("cashier.adminOnly")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("cashier.adminOnlyDesc")}</p>
-        <Button
-          variant="outline"
-          className="mt-6 w-full"
-          onClick={async () => {
-            await logout();
-            onSignOut();
-          }}
-        >
-          {t("auth.signOut")}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function CashierPage() {
   const { t } = useI18n();
   const { dark, toggle } = useTheme();
   const [authed, setAuthed] = useState(false);
-  const [denied, setDenied] = useState(false);
   const { workSession } = useClinicStore();
 
   useEffect(() => {
-    if (!isAuthed()) return;
-    // The till is strictly an admin surface. A signed-in payroll/staff user
-    // must not be able to open it by navigating directly to /cashier.
-    if (hasMinRole("admin")) setAuthed(true);
-    else setDenied(true);
+    if (isAuthed()) setAuthed(true);
   }, []);
 
-  const onUnlocked = () => {
-    if (hasMinRole("admin")) {
-      setDenied(false);
-      setAuthed(true);
-    } else {
-      setDenied(true);
-    }
-  };
+  const onUnlocked = () => setAuthed(true);
 
-  // Nobody can open the till without signing in as an admin first.
-  if (!authed && !denied) {
+  // Any signed-in staff account may open the till; it stays behind sign-in.
+  if (!authed) {
     return <StaffAuthGate onUnlocked={onUnlocked} showBack={false} />;
   }
-  if (denied) return <AdminOnlyGate onSignOut={() => setDenied(false)} />;
 
   const checkedIn = isCheckedInToday(workSession);
 
@@ -751,7 +712,7 @@ function CashierApp() {
   };
 
   // Everything rung up here lands in today's workday folder, so the till is
-  // unavailable until the signed-in admin has checked in for today.
+  // unavailable until the signed-in staff member has checked in for today.
   if (workSessionLoading) {
     return (
       <div className="grid min-h-[50vh] place-items-center text-sm text-muted-foreground">

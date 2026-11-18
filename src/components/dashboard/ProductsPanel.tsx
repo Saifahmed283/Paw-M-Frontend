@@ -444,7 +444,7 @@ export function ProductsPanel() {
   );
   const categoryCounts = useMemo(() => countByCategory(products), [products]);
   const sorted = sortedSlice(filtered, sort, comparators);
-  const grid = useGrid(sorted, query, ["name", "category", "id"]);
+  const grid = useGrid(sorted, query, ["name", "price", "barcode", "category", "id"]);
 
   const confirmDelete = async () => {
     if (!pendingDelete || deleting) return;
