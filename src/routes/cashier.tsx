@@ -756,95 +756,6 @@ function CashierApp() {
         <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{t("cashier.addProducts")}</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              onClick={() => setShortcutsOpen(true)}
-            >
-              <Keyboard className="size-4 mr-1.5" />
-              {t("cashier.keyboardShortcuts")}
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="scan" className="gap-1.5">
-                  <Barcode className="size-4" />
-                  {t("cashier.scanBarcode")}
-                </TabsTrigger>
-                <TabsTrigger value="quick" className="gap-1.5">
-                  <Grid2X2 className="size-4" />
-                  {t("cashier.quickAdd")}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="scan" className="space-y-4 pt-4">
-                <div className="flex items-center gap-2">
-                  <Input
-                    ref={barcodeInputRef}
-                    type="text"
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const val = barcodeInputRef.current?.value ?? "";
-                        if (val) processBarcode(val);
-                        setBarcodeInput("");
-                      }
-                    }}
-                    placeholder={t("cashier.scanPlaceholder")}
-                    className="flex-1"
-                    autoComplete="off"
-                    autoFocus={activeTab === "scan"}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      const val = barcodeInputRef.current?.value ?? "";
-                      if (val) processBarcode(val);
-                      setBarcodeInput("");
-                    }}
-                    aria-label={t("cashier.scanPlaceholder")}
-                  >
-                    <Search className="size-4" />
-                  </Button>
-                </div>
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-muted-foreground"
-                    >
-                      <ScanLine className="size-4" />
-                      {t("cashier.phoneScanner")}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <PhoneScannerMode onScan={processBarcode} />
-                  </CollapsibleContent>
-                </Collapsible>
-                <ScannerStatus />
-              </TabsContent>
-              <TabsContent value="quick" className="pt-4">
-                <QuickAddGrid
-                  products={products}
-                  cart={cart}
-                  currency={settings.currency}
-                  onAdd={(p) => addProduct(p)}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">
               {t("cashier.cart", { count: String(itemCount) })}
             </CardTitle>
@@ -960,6 +871,95 @@ function CashierApp() {
                 })}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">{t("cashier.addProducts")}</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => setShortcutsOpen(true)}
+            >
+              <Keyboard className="size-4 mr-1.5" />
+              {t("cashier.keyboardShortcuts")}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="scan" className="gap-1.5">
+                  <Barcode className="size-4" />
+                  {t("cashier.scanBarcode")}
+                </TabsTrigger>
+                <TabsTrigger value="quick" className="gap-1.5">
+                  <Grid2X2 className="size-4" />
+                  {t("cashier.quickAdd")}
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="scan" className="space-y-4 pt-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={barcodeInputRef}
+                    type="text"
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = barcodeInputRef.current?.value ?? "";
+                        if (val) processBarcode(val);
+                        setBarcodeInput("");
+                      }
+                    }}
+                    placeholder={t("cashier.scanPlaceholder")}
+                    className="flex-1"
+                    autoComplete="off"
+                    autoFocus={activeTab === "scan"}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      const val = barcodeInputRef.current?.value ?? "";
+                      if (val) processBarcode(val);
+                      setBarcodeInput("");
+                    }}
+                    aria-label={t("cashier.scanPlaceholder")}
+                  >
+                    <Search className="size-4" />
+                  </Button>
+                </div>
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-muted-foreground"
+                    >
+                      <ScanLine className="size-4" />
+                      {t("cashier.phoneScanner")}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    <PhoneScannerMode onScan={processBarcode} />
+                  </CollapsibleContent>
+                </Collapsible>
+                <ScannerStatus />
+              </TabsContent>
+              <TabsContent value="quick" className="pt-4">
+                <QuickAddGrid
+                  products={products}
+                  cart={cart}
+                  currency={settings.currency}
+                  onAdd={(p) => addProduct(p)}
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
