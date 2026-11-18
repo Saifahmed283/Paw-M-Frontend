@@ -47,7 +47,7 @@ import {
   PaymentMethodBadge,
   PaymentStatusBadge,
 } from "./dashboard-helpers";
-import { formatMoney, formatDate } from "./dashboard-format";
+import { formatMoney, formatDate, localTodayISO } from "./dashboard-format";
 import { PaymentSettleDialog } from "./PaymentSettleDialog";
 import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
@@ -59,7 +59,7 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
   const [status, setStatus] = useState<"unpaid" | "paid">(
     payment?.status === "paid" ? "paid" : "unpaid",
   );
-  const [date, setDate] = useState(payment?.date ?? new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(payment?.date ?? localTodayISO());
   const [notes, setNotes] = useState(payment?.notes ?? "");
   const [orderId, setOrderId] = useState(payment?.orderId ?? "");
   const [saving, setSaving] = useState(false);
