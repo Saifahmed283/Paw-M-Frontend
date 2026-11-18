@@ -387,7 +387,6 @@ function CashierApp() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
-  const [cashOpen, setCashOpen] = useState(true);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [result, setResult] = useState<{
     id: string;
@@ -773,6 +772,15 @@ function CashierApp() {
             </span>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Cash calculator stays pinned at the top of the till. */}
+            {method === "cash" && split.length <= 1 && (
+              <QuickCashCalculator
+                total={totals.total}
+                currency={settings.currency}
+                onCashReceivedChange={setCashReceived}
+              />
+            )}
+
             <CustomerInfoPanel customer={customer} onChange={setCustomer} />
 
             <div className="grid grid-cols-3 gap-2">
@@ -855,38 +863,6 @@ function CashierApp() {
                 />
               </CollapsibleContent>
             </Collapsible>
-
-            {method === "cash" && split.length <= 1 && (
-              <Collapsible open={cashOpen} onOpenChange={setCashOpen}>
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-xl border p-3 text-sm font-semibold transition hover:border-primary/40",
-                      cashOpen ? "border-primary/40" : "border-border",
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Wallet className="size-4 text-muted-foreground" />
-                      {t("cashier.cashReceived")}
-                    </span>
-                    <ChevronDown
-                      className={cn(
-                        "size-4 text-muted-foreground transition-transform",
-                        cashOpen && "rotate-180",
-                      )}
-                    />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3">
-                  <QuickCashCalculator
-                    total={totals.total}
-                    currency={settings.currency}
-                    onCashReceivedChange={setCashReceived}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            )}
 
             <Separator />
             <div className="space-y-1.5">

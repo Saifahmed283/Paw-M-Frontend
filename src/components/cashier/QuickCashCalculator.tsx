@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { Banknote, Plus, Wallet } from "lucide-react";
+import { Banknote, Check, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -16,12 +14,12 @@ type Props = {
 
 export function QuickCashCalculator({ total, currency, onCashReceivedChange }: Props) {
   const { t } = useI18n();
-  const [received, setReceived] = useState<number>(0);
+  const [received, setReceived] = useState(0);
   const [extra, setExtra] = useState("");
 
   const change = Math.max(0, received - total);
   const shortfall = Math.max(0, total - received);
-  const settled = received >= total;
+  const settled = total > 0 && received >= total;
 
   const setAmt = (n: number) => {
     const v = Math.round(n * 100) / 100;
@@ -37,96 +35,87 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Wallet className="size-4 text-muted-foreground" />
-        {t("cashier.cashReceived")}
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-muted/40 p-2">
+      <div className="flex min-w-[190px] flex-1 items-center gap-2 rounded-xl bg-background px-3 shadow-sm">
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          {t("cashier.cashReceived")}
+        </span>
+        <Input
+          type="number"
+          min={0}
+          inputMode="decimal"
+          value={received === 0 ? "" : String(received)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "") {
+              setReceived(0);
+              onCashReceivedChange(0);
+              return;
+            }
+            const n = Number(raw);
+            if (Number.isFinite(n)) setAmt(n);
+          }}
+          placeholder="0.00"
+          aria-label={t("cashier.cashReceived")}
+          className="h-9 min-w-0 flex-1 border-0 p-0 text-end text-base font-bold shadow-none focus-visible:ring-0"
+        />
+        <span className="shrink-0 text-xs text-muted-foreground">{currency}</span>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-            {currency}
-          </span>
-          <Input
-            type="number"
-            min={0}
-            inputMode="decimal"
-            value={received === 0 ? "" : String(received)}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (raw === "") {
-                setReceived(0);
-                onCashReceivedChange(0);
-                return;
-              }
-              const n = Number(raw);
-              if (Number.isFinite(n)) setAmt(n);
-            }}
-            placeholder="0.00"
-            className="pl-10 text-lg font-semibold"
-            autoFocus={false}
-          />
-        </div>
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        onClick={() => setAmt(total)}
+        className="h-9 gap-1.5 rounded-xl px-3"
+      >
+        <Banknote className="size-3.5" />
+        {t("cashier.exact")}
+      </Button>
+
+      <div className="flex h-9 items-center gap-1 rounded-xl bg-background px-2 shadow-sm">
+        <span className="text-sm text-muted-foreground">+</span>
+        <Input
+          type="number"
+          min={0}
+          step="0.01"
+          inputMode="decimal"
+          value={extra}
+          onChange={(e) => setExtra(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addExtra();
+            }
+          }}
+          placeholder="0.00"
+          aria-label={t("cashier.extraAmount")}
+          className="h-8 w-16 border-0 p-0 text-center text-sm font-semibold shadow-none focus-visible:ring-0"
+        />
         <Button
           type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => setAmt(total)}
-          className="gap-1.5 whitespace-nowrap"
+          variant="ghost"
+          size="icon"
+          onClick={addExtra}
+          aria-label={t("cashier.addAmount")}
+          className="size-6 rounded-lg"
         >
-          <Banknote className="size-4" />
-          {t("cashier.exact")}
+          <Plus className="size-3.5" />
         </Button>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="cashier-extra-amount" className="text-xs text-muted-foreground">
-          {t("cashier.extraAmount")}
-        </Label>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              {currency}
-            </span>
-            <Input
-              id="cashier-extra-amount"
-              type="number"
-              min={0}
-              step="0.01"
-              inputMode="decimal"
-              value={extra}
-              onChange={(e) => setExtra(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addExtra();
-                }
-              }}
-              placeholder="0.00"
-              className="pl-10"
-            />
-          </div>
-          <Button type="button" variant="outline" onClick={addExtra} className="gap-1.5">
-            <Plus className="size-4" />
-            {t("cashier.addAmount")}
-          </Button>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div
+      <span
         className={cn(
-          "flex items-center justify-between rounded-xl p-3 text-sm",
-          settled ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
+          "flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold",
+          settled ? "bg-success/15 text-success" : "bg-amber-500/15 text-amber-600",
         )}
       >
-        <span>{settled ? t("cashier.changeDue") : t("cashier.remaining")}</span>
-        <span className={cn("text-lg font-bold", settled && "text-success")}>
-          {settled ? change.toFixed(2) : shortfall.toFixed(2)} {currency}
+        {settled && <Check className="size-3.5" />}
+        {settled ? t("cashier.changeDue") : t("cashier.remaining")}
+        <span className="font-mono text-sm">
+          {(settled ? change : shortfall).toFixed(2)} {currency}
         </span>
-      </div>
+      </span>
     </div>
   );
 }
