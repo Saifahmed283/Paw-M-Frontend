@@ -1,6 +1,5 @@
 import { Printer, ReceiptText } from "lucide-react";
 
-import { PawMMark } from "@/components/PawMMark";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -101,7 +100,7 @@ export function ReceiptPreview({
         .foot{margin-top:8px;text-align:center;color:#333}
       </style></head><body>
       <div class="center">
-      <svg viewBox="0 0 64 64" fill="none" style="height:40px;width:40px;margin:0 auto 4px" aria-hidden="true"><path d="M4 42h9l5-11 6 20 5-15 4 6h6" stroke="#333" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><g fill="#333"><ellipse cx="43.5" cy="20" rx="3.1" ry="4.2"/><ellipse cx="52" cy="16.5" rx="3.1" ry="4.4"/><ellipse cx="60" cy="21" rx="2.9" ry="4"/></g><path d="M45 34.5c0-4.6 3.4-8 7.5-8s7.5 3.4 7.5 8c0 4.2-3.1 6.6-7.5 6.6S45 38.7 45 34.5Z" fill="#333"/></svg>
+      <img src="/assets/logos/logo-monochrome.png" alt="Paw-M Clinic" style="height:40px;width:40px;margin:0 auto 4px;display:block;margin-left:auto;margin-right:auto" aria-hidden="true" />
       <h1>${esc(settings.name)}</h1>
       ${settings.phone ? `<div class="muted">${esc(settings.phone)}</div>` : ""}
       ${settings.address ? `<div class="muted">${esc(settings.address)}</div>` : ""}</div>
@@ -137,7 +136,12 @@ export function ReceiptPreview({
 
         <div className="space-y-3 rounded-xl bg-muted/40 p-4 font-mono text-sm">
           <div className="flex flex-col items-center gap-1">
-            <PawMMark className="h-10 w-10 text-primary" />
+            <img
+              src="/assets/logos/logo-monochrome.png"
+              alt="Paw-M Clinic"
+              className="h-10 w-10 shrink-0"
+              decoding="async"
+            />
             <p className="text-base font-bold">{settings.name}</p>
             {settings.phone && <p className="text-xs text-muted-foreground">{settings.phone}</p>}
             {settings.address && (

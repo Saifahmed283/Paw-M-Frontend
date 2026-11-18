@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Banknote, Check, Plus } from "lucide-react";
+import { Banknote, Check, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,12 @@ export function QuickCashCalculator({
     setExtra("");
   };
 
+  const clearAmt = () => {
+    setInternalReceived(0);
+    onReceivedChange?.(0);
+    onCashReceivedChange(0);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-muted/40 p-1.5">
       <span className="hidden ps-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground lg:inline">
@@ -78,19 +84,32 @@ export function QuickCashCalculator({
         </span>
       </div>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => setAmt(total)}
-        className="h-8 gap-1 px-2 text-xs"
-        title={t("cashier.exact")}
-      >
-        <Banknote className="size-3.5" />
-        <span className="hidden 2xl:inline">{t("cashier.exact")}</span>
-      </Button>
-
       <span className="h-5 w-px bg-border" />
+
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={clearAmt}
+          disabled={received === 0}
+          className="h-8 size-8 gap-0 p-0 text-xs text-muted-foreground"
+          aria-label={t("cashier.clear")}
+        >
+          <Minus className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={addExtra}
+          aria-label={t("cashier.addAmount")}
+          title={t("cashier.addAmount")}
+          className="size-8 text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </div>
 
       <Input
         type="number"
@@ -109,17 +128,6 @@ export function QuickCashCalculator({
         aria-label={t("cashier.extraAmount")}
         className="h-8 w-16 border-0 bg-transparent p-0 text-center text-xs font-semibold tabular-nums text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
       />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={addExtra}
-        aria-label={t("cashier.addAmount")}
-        title={t("cashier.addAmount")}
-        className="size-8 text-muted-foreground hover:text-foreground"
-      >
-        <Plus className="size-3.5" />
-      </Button>
 
       <span
         className={cn(
@@ -127,8 +135,17 @@ export function QuickCashCalculator({
           settled ? "bg-success/15 text-success" : "bg-amber-500/15 text-amber-600",
         )}
       >
-        {settled && <Check className="size-3" />}
-        {(settled ? change : shortfall).toFixed(2)} {currency}
+        {settled ? (
+          <>
+            <Check className="size-3" />
+            {t("cashier.change")}: {change.toFixed(2)} {currency}
+          </>
+        ) : (
+          <>
+            <Minus className="size-3" />
+            {t("cashier.due")}: {shortfall.toFixed(2)} {currency}
+          </>
+        )}
       </span>
     </div>
   );

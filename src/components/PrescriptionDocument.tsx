@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import type { Prescription } from "@/lib/client-medical";
-import { PawMMark } from "@/components/PawMMark";
 
 function formatDate(input?: string | Date | null): string {
   if (!input) return "—";
@@ -49,7 +48,12 @@ export function PrescriptionDocument({ rx }: { rx: Prescription }) {
       <div className="border-b-4 border-zinc-900 px-8 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <PawMMark className="h-12 w-12" />
+            <img
+              src="/assets/logos/logo-monochrome.png"
+              alt="Paw-M Clinic"
+              className="h-12 w-12 shrink-0"
+              decoding="async"
+            />
             <div>
               <p className="text-xl font-extrabold tracking-tight text-zinc-900">
                 Paw Clinic Madinaty

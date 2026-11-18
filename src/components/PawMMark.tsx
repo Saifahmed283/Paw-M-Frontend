@@ -46,7 +46,12 @@ export function PawMMark({
 export function PawMLogo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <PawMMark className="h-7 w-7 text-primary" />
+      <img
+        src="/assets/logos/logo-colored.png"
+        alt="Paw-M Clinic logo"
+        className="h-7 w-7 shrink-0"
+        decoding="async"
+      />
       <span className="text-[20px] font-bold tracking-[-0.03em] text-foreground">Paw-M</span>
     </span>
   );
