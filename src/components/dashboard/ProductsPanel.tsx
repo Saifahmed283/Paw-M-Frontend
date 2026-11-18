@@ -41,11 +41,11 @@ import {
   type Product,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { categoryKey, countByCategory, PRODUCT_CATEGORIES } from "@/lib/product-categories";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
 import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
-const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
 const PET_TYPES = ["dog", "cat", "both"] as const;
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -72,7 +72,7 @@ function ProductDialog({
   onClose: () => void;
   products: Product[];
 }) {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const scanInputRef = useRef<HTMLInputElement>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scanText, setScanText] = useState("");
@@ -294,13 +294,13 @@ function ProductDialog({
             </Field>
             <Field label={t("dash.form.product.category")}>
               <select
-                value={form.category}
+                value={categoryKey(form.category)}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
               >
                 {PRODUCT_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {t(`store.cat.${c}`)}
+                    {tOr(`store.cat.${c}`, c)}
                   </option>
                 ))}
               </select>
@@ -418,7 +418,7 @@ function ProductDialog({
 }
 
 export function ProductsPanel() {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const { products, settings, productsFailed } = useClinicStore();
   const [editing, setEditing] = useState<Product | "new" | null>(null);
   const [query, setQuery] = useState("");
@@ -437,11 +437,12 @@ export function ProductsPanel() {
     () =>
       products.filter(
         (p) =>
-          (category === "all" || p.category === category) &&
+          (category === "all" || categoryKey(p.category) === category) &&
           (petType === "all" || (p.petType ?? "both") === petType),
       ),
     [products, category, petType],
   );
+  const categoryCounts = useMemo(() => countByCategory(products), [products]);
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["name", "category", "id"]);
 
@@ -492,9 +493,9 @@ export function ProductsPanel() {
             aria-label={t("dash.form.product.category")}
           >
             <option value="all">{t("dash.filterAll")}</option>
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {t(`store.cat.${c}`)}
+            {categoryCounts.map(({ key, count }) => (
+              <option key={key} value={key}>
+                {tOr(`store.cat.${key}`, key)} ({count})
               </option>
             ))}
           </select>
@@ -565,7 +566,7 @@ export function ProductsPanel() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
-                    {t(`store.cat.${p.category}`)}
+                    {tOr(`store.cat.${categoryKey(p.category)}`, p.category)}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {t(`store.pet.${p.petType ?? "both"}`)}
@@ -590,7 +591,7 @@ export function ProductsPanel() {
                       <Badge className="bg-destructive/15 text-destructive">
                         {t("store.outOfStock")}
                       </Badge>
-                    ) : p.stock <= LOW_STOCK_THRESHOLD ? (
+                    ) : p.stock < LOW_STOCK_THRESHOLD ? (
                       <Badge className="bg-amber-500/15 text-amber-600">
                         {t("dash.lowStock")} · {p.stock}
                       </Badge>

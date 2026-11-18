@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -7,11 +7,13 @@ import {
   Barcode,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   Grid2X2,
   Keyboard,
   Landmark,
+  LogIn,
   Minus,
+  ShieldAlert,
+  Moon,
   PackagePlus,
   Plus,
   ReceiptText,
@@ -19,6 +21,7 @@ import {
   Search,
   ShoppingCart,
   Smartphone,
+  Sun,
   Trash2,
   Wallet,
   X,
@@ -39,10 +42,21 @@ import {
   type PaymentMethod,
   type Product,
 } from "@/lib/clinic-store";
-import { addPaymentItem, refreshClinicData, settlePayment } from "@/lib/clinic-store";
+import {
+  addPaymentItem,
+  checkIn,
+  refreshClinicData,
+  settlePayment,
+  type WorkSession,
+} from "@/lib/clinic-store";
+import { hasMinRole, isAuthed, logout } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { LanguageToggle } from "@/lib/i18n-components";
+import { useTheme } from "@/lib/use-theme-hook";
 import { cn } from "@/lib/utils";
+import { StaffAuthGate } from "@/components/auth/StaffAuthGate";
+import { localTodayISO } from "@/components/dashboard/dashboard-format";
 import { PaymentKindBadge } from "@/components/dashboard/dashboard-helpers";
 import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog";
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
@@ -105,23 +119,107 @@ const PAYMENT_METHODS: {
   },
 ];
 
-function CashierPage() {
+/** A sale may only be rung up while the signed-in admin's shift is open today. */
+function isCheckedInToday(session: WorkSession | null): boolean {
+  if (!session || session.endedAt || session.date !== localTodayISO()) return false;
+  const started = new Date(session.startedAt);
+  return !Number.isNaN(started.getTime());
+}
+
+function AdminOnlyGate({ onSignOut }: { onSignOut: () => void }) {
   const { t } = useI18n();
   return (
-    <div className="hero-gradient min-h-screen px-5 py-8 sm:py-12">
-      <div className="mx-auto max-w-7xl">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground mb-6"
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-card">
+        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <ShieldAlert className="size-6" />
+        </span>
+        <h1 className="mt-5 text-xl font-bold">{t("cashier.adminOnly")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("cashier.adminOnlyDesc")}</p>
+        <Button
+          variant="outline"
+          className="mt-6 w-full"
+          onClick={async () => {
+            await logout();
+            onSignOut();
+          }}
         >
-          <ChevronLeft className="size-4" /> {t("cashier.backToDashboard")}
-        </Link>
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">{t("cashier.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("cashier.subtitle")}</p>
+          {t("auth.signOut")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CashierPage() {
+  const { t } = useI18n();
+  const { dark, toggle } = useTheme();
+  const [authed, setAuthed] = useState(false);
+  const [denied, setDenied] = useState(false);
+  const { workSession } = useClinicStore();
+
+  useEffect(() => {
+    if (!isAuthed()) return;
+    // The till is strictly an admin surface. A signed-in payroll/staff user
+    // must not be able to open it by navigating directly to /cashier.
+    if (hasMinRole("admin")) setAuthed(true);
+    else setDenied(true);
+  }, []);
+
+  const onUnlocked = () => {
+    if (hasMinRole("admin")) {
+      setDenied(false);
+      setAuthed(true);
+    } else {
+      setDenied(true);
+    }
+  };
+
+  // Nobody can open the till without signing in as an admin first.
+  if (!authed && !denied) {
+    return <StaffAuthGate onUnlocked={onUnlocked} showBack={false} />;
+  }
+  if (denied) return <AdminOnlyGate onSignOut={() => setDenied(false)} />;
+
+  const checkedIn = isCheckedInToday(workSession);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Compact POS toolbar — the marketing header/footer are hidden for this
+          route in __root.tsx so the counter stays focused and uncluttered. */}
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="truncate text-base font-semibold">{t("cashier.title")}</h1>
+            {/* No site navigation here — once on the till, staff stay on the till. */}
+            <span
+              className={cn(
+                "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium sm:inline-flex",
+                checkedIn
+                  ? "border-success/30 bg-success/10 text-success"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-600",
+              )}
+            >
+              <span
+                className={cn("size-1.5 rounded-full", checkedIn ? "bg-success" : "bg-amber-500")}
+              />
+              {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <LanguageToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              aria-label={dark ? t("header.lightMode") : t("header.darkMode")}
+            >
+              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
           </div>
         </div>
+      </header>
+      <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6">
         <CashierApp />
       </div>
     </div>
@@ -266,9 +364,43 @@ function reduceCartForSubmission(
   }));
 }
 
+function ShiftRequiredGate() {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+
+  const startShift = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await checkIn();
+      await refreshClinicData();
+      toast.success(t("cashier.shiftStarted"));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="w-full max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/5 p-8 text-center">
+        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-500/15 text-amber-600">
+          <LogIn className="size-6" />
+        </span>
+        <h2 className="mt-4 text-lg font-bold">{t("cashier.checkInRequired")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("cashier.checkInRequiredDesc")}</p>
+        <Button onClick={startShift} disabled={busy} className="mt-6 w-full shadow-glow">
+          {busy ? t("dash.saving") : t("cashier.checkInNow")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CashierApp() {
   const { t } = useI18n();
-  const { products, settings } = useClinicStore();
+  const { products, settings, workSession, workSessionLoading } = useClinicStore();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, ItemDiscount>>({});
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscount>({ type: "none", value: 0 });
@@ -574,6 +706,17 @@ function CashierApp() {
     }
   };
 
+  // Everything rung up here lands in today's workday folder, so the till is
+  // unavailable until the signed-in admin has checked in for today.
+  if (workSessionLoading) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center text-sm text-muted-foreground">
+        {t("dash.loading")}
+      </div>
+    );
+  }
+  if (!isCheckedInToday(workSession)) return <ShiftRequiredGate />;
+
   if (result) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
@@ -601,7 +744,7 @@ function CashierApp() {
   const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
       <div className="space-y-4 min-w-0">
         <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
         <Card>

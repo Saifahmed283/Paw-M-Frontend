@@ -95,6 +95,11 @@ export function PrescriptionBuilderDialog({
   const [busy, setBusy] = useState(false);
   const [confirmVoid, setConfirmVoid] = useState(false);
 
+  // Doctors load through React Query, so default once they arrive.
+  useEffect(() => {
+    if (!doctorId && doctors.length > 0 && doctors[0]) setDoctorId(doctors[0].id);
+  }, [doctors, doctorId]);
+
   const selectedPet = pets.find((p) => p.id === petId);
   const isWalkIn = !petId;
   const petSpecies = selectedPet?.species ?? editing?.pet?.species ?? "";

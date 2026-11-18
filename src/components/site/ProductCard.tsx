@@ -8,6 +8,7 @@ import { addToCart, removeFromCart, setCartQty, useCart } from "@/lib/cart-store
 import { useClinicStore, type Product } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { categoryKey } from "@/lib/product-categories";
 import { useIsWished, toggleWishlist } from "@/lib/wishlist-store";
 import { cn } from "@/lib/utils";
 
@@ -143,9 +144,9 @@ export function ProductPrice({ product }: { product: Product }) {
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const out = product.stock <= 0;
-  const lowStock = !out && product.stock <= 5;
+  const lowStock = !out && product.stock < 5;
   const PetIcon = PET_ICON[product.petType ?? "both"] ?? Dog;
 
   return (
@@ -215,7 +216,7 @@ export function ProductCard({ product }: { product: Product }) {
             {t(`store.pet.${product.petType ?? "both"}`)}
           </span>
           <span className="text-muted-foreground/40">·</span>
-          <span>{t(`store.cat.${product.category}`)}</span>
+          <span>{tOr(`store.cat.${categoryKey(product.category)}`, product.category)}</span>
         </div>
 
         <h3 className="mt-2.5 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400">

@@ -37,8 +37,10 @@ export function IntroAnimation() {
 
   useEffect(() => {
     if (!ENABLE_INTRO_ANIMATION) return;
+    // Marking the intro as seen here made React Strict Mode's second effect
+    // invocation bail out before installing `finish()`, leaving the full-screen
+    // overlay stuck forever. Mark it only when the animation actually ends.
     if (hasSeenIntro()) return;
-    markIntroSeen();
     setVisible(true);
 
     const start = performance.now();
@@ -76,6 +78,7 @@ export function IntroAnimation() {
     function finish() {
       cancelAnimationFrame(raf);
       window.clearTimeout(skipTimer);
+      markIntroSeen();
       setVisible(false);
       window.removeEventListener("keydown", finish);
       window.removeEventListener("pointerdown", finish);

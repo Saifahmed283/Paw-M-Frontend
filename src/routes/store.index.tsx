@@ -1,6 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowDownWideNarrow, PackageSearch, Search, ShoppingBag } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ArrowDownWideNarrow,
+  ChevronLeft,
+  ChevronRight,
+  PackageSearch,
+  Search,
+  ShoppingBag,
+} from "lucide-react";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard } from "@/components/site/ProductCard";
@@ -10,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import { ogMeta, withSiteUrl } from "@/lib/seo";
 import { useClinicStore, type Product } from "@/lib/clinic-store";
+import { categoryKey, countByCategory } from "@/lib/product-categories";
 import { cn } from "@/lib/utils";
 
 const title = "Pet Supply Store — Paw-M";
@@ -24,7 +32,8 @@ export const Route = createFileRoute("/store/")({
   component: StorePage,
 });
 
-const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
+const PAGE_SIZE = 12;
+
 const PET_TYPES = ["dog", "cat", "both"] as const;
 
 type SortKey = "featured" | "newest" | "price-asc" | "price-desc" | "name";
@@ -59,17 +68,21 @@ function sortProducts(products: Product[], sort: SortKey): Product[] {
 }
 
 function StorePage() {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const { products } = useClinicStore();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [petType, setPetType] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("featured");
+  const [page, setPage] = useState(1);
+
+  // Any change to the filters starts a fresh result set on page one.
+  useEffect(() => setPage(1), [query, category, petType, sort]);
 
   const q = query.trim().toLowerCase();
   const filtered = sortProducts(
     products.filter((p) => {
-      if (category !== "all" && p.category !== category) return false;
+      if (category !== "all" && categoryKey(p.category) !== category) return false;
       if (
         petType !== "all" &&
         (p.petType ?? "both") !== petType &&
@@ -83,8 +96,17 @@ function StorePage() {
     sort,
   );
 
-  const categories = PRODUCT_CATEGORIES.filter((c) => products.some((p) => p.category === c));
+  const categories = countByCategory(products);
   const petTypes = PET_TYPES.filter((p) => products.some((x) => (x.petType ?? "both") === p));
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const visiblePages = Array.from(
+    new Set([1, pageCount, currentPage - 1, currentPage, currentPage + 1]),
+  )
+    .filter((p) => p >= 1 && p <= pageCount)
+    .sort((a, b) => a - b);
 
   return (
     <>
@@ -140,26 +162,28 @@ function StorePage() {
           <button
             onClick={() => setCategory("all")}
             className={cn(
-              "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
               category === "all"
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card text-muted-foreground hover:text-foreground",
             )}
           >
             {t("store.all")}
+            <span className="tabular-nums opacity-60">{products.length}</span>
           </button>
-          {categories.map((c) => (
+          {categories.map(({ key, count }) => (
             <button
-              key={c}
-              onClick={() => setCategory(c)}
+              key={key}
+              onClick={() => setCategory(key)}
               className={cn(
-                "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
-                category === c
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
+                category === key
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground",
               )}
             >
-              {t(`store.cat.${c}`)}
+              {tOr(`store.cat.${key}`, key)}
+              <span className="tabular-nums opacity-60">{count}</span>
             </button>
           ))}
         </div>
@@ -207,16 +231,58 @@ function StorePage() {
         ) : (
           <>
             <p className="mb-4 text-xs text-muted-foreground">
-              {t("store.showing", {
-                count: String(filtered.length),
-                total: String(products.length),
+              {t("dash.pager.showing", {
+                from: String(filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1),
+                to: String(Math.min(currentPage * PAGE_SIZE, filtered.length)),
+                total: String(filtered.length),
               })}
             </p>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filtered.map((p) => (
+              {pageItems.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
+            {pageCount > 1 && (
+              <nav
+                className="mt-8 flex flex-wrap items-center justify-center gap-1.5"
+                aria-label={t("dash.pager.next")}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                  aria-label={t("dash.pager.prev")}
+                >
+                  <ChevronLeft className="size-4 rtl:rotate-180" />
+                </button>
+                {visiblePages.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPage(p)}
+                    aria-current={p === currentPage ? "page" : undefined}
+                    className={cn(
+                      "grid size-9 place-items-center rounded-lg border text-sm font-medium transition-colors",
+                      p === currentPage
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  disabled={currentPage >= pageCount}
+                  className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                  aria-label={t("dash.pager.next")}
+                >
+                  <ChevronRight className="size-4 rtl:rotate-180" />
+                </button>
+              </nav>
+            )}
           </>
         )}
       </section>

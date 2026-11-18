@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { categoryKey } from "@/lib/product-categories";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/clinic-store";
 import type { CartItem } from "./types";
@@ -20,14 +21,14 @@ type Props = {
 const MAX_TILES = 24;
 
 export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
 
   const categories = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
-      if (p.category) set.add(p.category);
+      if (p.category) set.add(categoryKey(p.category));
     });
     return Array.from(set).sort();
   }, [products]);
@@ -41,7 +42,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = products.filter((p) => {
-      if (category !== "all" && p.category !== category) return false;
+      if (category !== "all" && categoryKey(p.category) !== category) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -84,7 +85,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
               className="shrink-0 cursor-pointer"
               onClick={() => setCategory(c)}
             >
-              {c}
+              {tOr(`store.cat.${c}`, c)}
             </Badge>
           ))}
         </div>

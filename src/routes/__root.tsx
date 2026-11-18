@@ -249,6 +249,10 @@ function RootComponent() {
   const { queryClient, lang, dark } = Route.useRouteContext();
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
+  // The cashier is a point-of-sale surface, not a marketing page. It gets the
+  // same chrome-free treatment as the dashboard (no intro, header or footer).
+  const isPos = pathname.startsWith("/cashier");
+  const isAppSurface = isDashboard || isPos;
 
   useEffect(() => {
     // Kick off the clinic-data fetch only after the hydration pass has fully
@@ -287,8 +291,8 @@ function RootComponent() {
     <I18nProvider initialLang={lang}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider initialDark={dark}>
-          {!isDashboard && <IntroAnimation />}
-          {!isDashboard && <SiteHeader />}
+          {!isAppSurface && <IntroAnimation />}
+          {!isAppSurface && <SiteHeader />}
           <motion.main
             key={pathname}
             initial={{ opacity: 0, y: 12 }}
@@ -301,7 +305,7 @@ function RootComponent() {
               <Outlet />
             </Suspense>
           </motion.main>
-          {!isDashboard && <SiteFooter />}
+          {!isAppSurface && <SiteFooter />}
           <Toaster position="top-center" richColors />
         </ThemeProvider>
       </QueryClientProvider>

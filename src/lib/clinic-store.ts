@@ -298,6 +298,7 @@ type Store = {
   clients: ClientSummary[];
   settings: ClinicSettings;
   workSession: WorkSession | null;
+  workSessionLoading: boolean;
   auditLogs: AuditLog[];
   workDays: WorkDaySummary[];
   workDay: WorkDayDetail | null;
@@ -356,6 +357,7 @@ function seed(): Store {
     clients: [],
     settings: { ...CLINIC },
     workSession: null,
+    workSessionLoading: false,
     auditLogs: [],
     workDays: [],
     workDay: null,
@@ -476,7 +478,10 @@ export function useClinicStore() {
     enabled: mounted,
   });
 
-  const { data: workSession = null } = useQuery({
+  const {
+    data: workSession = null,
+    isLoading: workSessionLoading,
+  } = useQuery({
     queryKey: QUERY_KEYS.workSession,
     queryFn: () => api.get<WorkSession | null>("/work-session"),
     staleTime: Infinity,
@@ -528,6 +533,9 @@ export function useClinicStore() {
       clients: gated(clients, seedDefaults.clients),
       settings: gated(settings, seedDefaults.settings),
       workSession: gated(workSession, null),
+      // While the hook is still mounting the session query has not started yet;
+      // report loading so consumers never mistake "not fetched" for "no shift".
+      workSessionLoading: !mounted || workSessionLoading,
       auditLogs: gated(auditLogs, seedDefaults.auditLogs),
       workDays: gated(workDays, seedDefaults.workDays),
       workDay: gated(workDay ?? null, null),
@@ -544,6 +552,7 @@ export function useClinicStore() {
     clients,
     settings,
     workSession,
+    workSessionLoading,
     auditLogs,
     workDays,
     workDay,
@@ -1140,6 +1149,7 @@ export function get(): Store {
     clients: qc.getQueryData<ClientSummary[]>(QUERY_KEYS.clients) ?? [],
     settings: qc.getQueryData<ClinicSettings>(QUERY_KEYS.settings) ?? { ...CLINIC },
     workSession: qc.getQueryData<WorkSession | null>(QUERY_KEYS.workSession) ?? null,
+    workSessionLoading: false,
     auditLogs: qc.getQueryData<AuditLog[]>(QUERY_KEYS.auditLogs) ?? [],
     workDays: qc.getQueryData<WorkDaySummary[]>(QUERY_KEYS.workDays) ?? [],
     workDay: qc.getQueryData<WorkDayDetail>(["work-day"]) ?? null,

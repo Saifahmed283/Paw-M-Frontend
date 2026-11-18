@@ -14,6 +14,7 @@ import { addToCart } from "@/lib/cart-store";
 import { createReview, useClinicStore, type Product } from "@/lib/clinic-store";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { categoryKey } from "@/lib/product-categories";
 import { SITE_URL, withSiteUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/store/$productId")({
@@ -233,7 +234,7 @@ function ReviewsSection({ productId }: { productId: string }) {
 
 function ProductPage() {
   const { productId } = Route.useParams();
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const { products, settings } = useClinicStore();
   const [qty, setQty] = useState(1);
 
@@ -262,7 +263,10 @@ function ProductPage() {
   const out = product.stock <= 0;
   const onSale = product.compareAtPrice != null && product.compareAtPrice > product.price;
   const related = products
-    .filter((p) => p.id !== product.id && p.category === product.category)
+    .filter(
+      (p) =>
+        p.id !== product.id && categoryKey(p.category) === categoryKey(product.category),
+    )
     .slice(0, 4);
 
   const productJsonLd = {
@@ -330,7 +334,7 @@ function ProductPage() {
 
             <div className="flex flex-col">
               <div className="flex flex-wrap gap-2">
-                <Badge>{t(`store.cat.${product.category}`)}</Badge>
+                <Badge>{tOr(`store.cat.${categoryKey(product.category)}`, product.category)}</Badge>
                 {product.featured && (
                   <Badge className="bg-primary/90 text-primary-foreground">
                     {t("store.featured")}
