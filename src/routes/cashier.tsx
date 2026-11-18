@@ -14,6 +14,7 @@ import {
   LogOut,
   Minus,
   ShieldAlert,
+  Stethoscope,
   Moon,
   PackagePlus,
   Plus,
@@ -42,6 +43,7 @@ import {
   type Payment,
   type PaymentMethod,
   type Product,
+  type ServiceItem,
 } from "@/lib/clinic-store";
 import {
   addPaymentItem,
@@ -63,6 +65,7 @@ import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog"
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 import { ScannerStatus } from "@/components/cashier/ScannerStatus";
 import { QuickAddGrid } from "@/components/cashier/QuickAddGrid";
+import { ClinicServicePanel } from "@/components/cashier/ClinicServicePanel";
 import { HoldManager } from "@/components/cashier/HoldManager";
 import { DiscountPanel } from "@/components/cashier/DiscountPanel";
 import { PerItemDiscount } from "@/components/cashier/PerItemDiscount";
@@ -407,7 +410,7 @@ function ShiftRequiredGate() {
 
 function CashierApp() {
   const { t } = useI18n();
-  const { products, settings, workSession, workSessionLoading } = useClinicStore();
+  const { products, services, settings, workSession, workSessionLoading } = useClinicStore();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, ItemDiscount>>({});
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscount>({ type: "none", value: 0 });
@@ -480,6 +483,40 @@ function CashierApp() {
       });
       setLastScanned(product.id);
       setTimeout(() => setLastScanned(null), 700);
+    },
+    [t],
+  );
+
+  const addService = useCallback(
+    (service: ServiceItem, note: string) => {
+      const baseName = service.title.trim() || t("cashier.clinicService");
+      const price = Math.max(0, Number(service.price) || 0);
+      const id = `service-${service.slug}`;
+      // Keep any extra details from the note on the sale line so the clinic
+      // team can see them on the receipt and in the saved order.
+      const name = note ? `${baseName} — ${note}` : baseName;
+      setCart((prev) => {
+        const existing = prev.find((i) => i.id === id);
+        if (existing) {
+          return prev.map((i) => (i.id === id ? { ...i, qty: i.qty + 1, name } : i));
+        }
+        return [
+          ...prev,
+          {
+            id,
+            productId: id,
+            name,
+            price,
+            originalPrice: price,
+            qty: 1,
+            stock: Number.MAX_SAFE_INTEGER,
+            image: "",
+          },
+        ];
+      });
+      setLastScanned(id);
+      setTimeout(() => setLastScanned(null), 700);
+      toast.success(t("cashier.added", { name: baseName }));
     },
     [t],
   );
@@ -889,7 +926,7 @@ function CashierApp() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3">
                 <TabsTrigger value="scan" className="gap-1.5">
                   <Barcode className="size-4" />
                   {t("cashier.scanBarcode")}
@@ -897,6 +934,10 @@ function CashierApp() {
                 <TabsTrigger value="quick" className="gap-1.5">
                   <Grid2X2 className="size-4" />
                   {t("cashier.quickAdd")}
+                </TabsTrigger>
+                <TabsTrigger value="service" className="col-span-2 gap-1.5 sm:col-span-1">
+                  <Stethoscope className="size-4" />
+                  {t("cashier.clinicService")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="scan" className="space-y-4 pt-4">
@@ -957,6 +998,13 @@ function CashierApp() {
                   cart={cart}
                   currency={settings.currency}
                   onAdd={(p) => addProduct(p)}
+                />
+              </TabsContent>
+              <TabsContent value="service" className="pt-4">
+                <ClinicServicePanel
+                  services={services}
+                  currency={settings.currency}
+                  onAdd={addService}
                 />
               </TabsContent>
             </Tabs>
