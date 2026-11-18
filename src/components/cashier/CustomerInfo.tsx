@@ -1,5 +1,3 @@
-import { UserRound } from "lucide-react";
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
@@ -14,11 +12,7 @@ export function CustomerInfoPanel({ customer, onChange }: Props) {
   const { t } = useI18n();
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <UserRound className="size-4 text-muted-foreground" />
-        {t("cashier.customerLabel")}
-      </div>
+    <div>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="customer-name" className="text-xs text-muted-foreground">
