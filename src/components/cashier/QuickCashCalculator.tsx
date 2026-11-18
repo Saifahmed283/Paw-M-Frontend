@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Banknote, Wallet } from "lucide-react";
+import { Banknote, Plus, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ type Props = {
 export function QuickCashCalculator({ total, currency, onCashReceivedChange }: Props) {
   const { t } = useI18n();
   const [received, setReceived] = useState<number>(0);
+  const [extra, setExtra] = useState("");
 
   const change = Math.max(0, received - total);
   const shortfall = Math.max(0, total - received);
@@ -25,6 +27,13 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
     const v = Math.round(n * 100) / 100;
     setReceived(v);
     onCashReceivedChange(v);
+  };
+
+  const addExtra = () => {
+    const n = Number(extra);
+    if (extra.trim() === "" || !Number.isFinite(n) || n <= 0) return;
+    setAmt(received + n);
+    setExtra("");
   };
 
   return (
@@ -69,6 +78,40 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           <Banknote className="size-4" />
           {t("cashier.exact")}
         </Button>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="cashier-extra-amount" className="text-xs text-muted-foreground">
+          {t("cashier.extraAmount")}
+        </Label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+              {currency}
+            </span>
+            <Input
+              id="cashier-extra-amount"
+              type="number"
+              min={0}
+              step="0.01"
+              inputMode="decimal"
+              value={extra}
+              onChange={(e) => setExtra(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addExtra();
+                }
+              }}
+              placeholder="0.00"
+              className="pl-10"
+            />
+          </div>
+          <Button type="button" variant="outline" onClick={addExtra} className="gap-1.5">
+            <Plus className="size-4" />
+            {t("cashier.addAmount")}
+          </Button>
+        </div>
       </div>
 
       <Separator />

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ServiceItem } from "@/lib/clinic-store";
@@ -43,22 +44,30 @@ const SERVICE_ICONS: Record<string, LucideIcon> = {
 type Props = {
   services: ServiceItem[];
   currency: string;
-  onAdd: (service: ServiceItem, note: string) => void;
+  onAdd: (service: ServiceItem, price: number, note: string) => void;
 };
 
 export function ClinicServicePanel({ services, currency, onAdd }: Props) {
   const { t } = useI18n();
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [price, setPrice] = useState("");
   const [note, setNote] = useState("");
 
   const selected = useMemo(
     () => services.find((s) => s.slug === selectedSlug) ?? null,
     [services, selectedSlug],
   );
+  const parsedPrice = Number(price);
+  const validPrice = price.trim() !== "" && Number.isFinite(parsedPrice) && parsedPrice >= 0;
+
+  const select = (service: ServiceItem) => {
+    setSelectedSlug(service.slug);
+    setPrice(String(service.price ?? 0));
+  };
 
   const add = () => {
-    if (!selected) return;
-    onAdd(selected, note.trim());
+    if (!selected || !validPrice) return;
+    onAdd(selected, Math.round(parsedPrice * 100) / 100, note.trim());
     setNote("");
   };
 
@@ -79,7 +88,7 @@ export function ClinicServicePanel({ services, currency, onAdd }: Props) {
               <button
                 key={service.slug}
                 type="button"
-                onClick={() => setSelectedSlug(service.slug)}
+                onClick={() => select(service)}
                 aria-pressed={active}
                 className={cn(
                   "flex items-start gap-3 rounded-xl border p-3 text-start transition-colors",
@@ -112,6 +121,29 @@ export function ClinicServicePanel({ services, currency, onAdd }: Props) {
       )}
 
       <div className="space-y-1.5">
+        <Label htmlFor="cashier-service-price" className="text-xs text-muted-foreground">
+          {t("cashier.servicePrice")}
+        </Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            {currency}
+          </span>
+          <Input
+            id="cashier-service-price"
+            type="number"
+            min={0}
+            step="0.01"
+            inputMode="decimal"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="0.00"
+            className="pl-10"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">{t("cashier.servicePriceHint")}</p>
+      </div>
+
+      <div className="space-y-1.5">
         <Label htmlFor="cashier-service-note" className="text-xs text-muted-foreground">
           {t("cashier.serviceNote")} <span className="text-destructive">*</span>
         </Label>
@@ -126,7 +158,7 @@ export function ClinicServicePanel({ services, currency, onAdd }: Props) {
         <p className="text-xs text-muted-foreground">{t("cashier.serviceNoteHint")}</p>
       </div>
 
-      <Button onClick={add} disabled={!selected} className="w-full">
+      <Button onClick={add} disabled={!selected || !validPrice} className="w-full">
         <Plus className="size-4 me-1.5" />
         {t("cashier.addService")}
       </Button>

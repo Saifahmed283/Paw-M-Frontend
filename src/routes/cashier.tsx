@@ -449,9 +449,9 @@ function CashierApp() {
   );
 
   const addService = useCallback(
-    (service: ServiceItem, note: string) => {
+    (service: ServiceItem, amount: number, note: string) => {
       const baseName = service.title.trim() || t("cashier.clinicService");
-      const price = Math.max(0, Number(service.price) || 0);
+      const price = Math.max(0, amount);
       const id = `service-${service.slug}`;
       // Keep any extra details from the note on the sale line so the clinic
       // team can see them on the receipt and in the saved order.

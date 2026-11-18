@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +18,13 @@ type Props = {
   onAdd: (product: Product) => void;
 };
 
-const MAX_TILES = 24;
+const PAGE_SIZE = 10;
 
 export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
   const { t, tOr } = useI18n();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -39,9 +40,9 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
     return map;
   }, [cart]);
 
-  const visible = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = products.filter((p) => {
+    return products.filter((p) => {
       if (category !== "all" && categoryKey(p.category) !== category) return false;
       if (!q) return true;
       return (
@@ -50,8 +51,18 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
         p.category.toLowerCase().includes(q)
       );
     });
-    return list.slice(0, MAX_TILES);
   }, [products, query, category]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visible = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
+  useEffect(() => setPage(1), [query, category]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   return (
     <div className="space-y-3">
@@ -161,13 +172,45 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
         </div>
       )}
 
-      {products.length > MAX_TILES && (
-        <p className="text-xs text-muted-foreground">
-          {t("cashier.quickAddShowing", {
-            count: String(visible.length),
-            total: String(products.length),
-          })}
-        </p>
+      {filtered.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <p className="text-xs text-muted-foreground">
+            {t("cashier.quickAddRange", {
+              start: String((page - 1) * PAGE_SIZE + 1),
+              end: String(Math.min(page * PAGE_SIZE, filtered.length)),
+              total: String(filtered.length),
+            })}
+          </p>
+          {pageCount > 1 && (
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-7"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                aria-label={t("cashier.prevPage")}
+              >
+                <ChevronLeft className="size-4 rtl:rotate-180" />
+              </Button>
+              <span className="text-xs font-medium">
+                {t("cashier.pageOf", { page: String(page), total: String(pageCount) })}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-7"
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                disabled={page === pageCount}
+                aria-label={t("cashier.nextPage")}
+              >
+                <ChevronRight className="size-4 rtl:rotate-180" />
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
