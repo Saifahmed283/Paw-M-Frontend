@@ -1376,6 +1376,7 @@ export const EN: Dict = {
   // Cashier page chrome
   "cashier.backToDashboard": "Back to Dashboard",
   "cashier.title": "Cashier",
+  "cashier.exit": "Exit cashier",
   "cashier.subtitle": "Fast counter sales, holds & discounts",
   "cashier.signInDesc": "Sign in with your admin account to open the till.",
   "cashier.adminOnly": "Admin access required",
@@ -2753,6 +2754,7 @@ const AR: Dict = {
   // Cashier page chrome
   "cashier.backToDashboard": "العودة إلى لوحة التحكم",
   "cashier.title": "الكاشير",
+  "cashier.exit": "الخروج من الكاشير",
   "cashier.subtitle": "مبيعات سريعة، تعليق وخصومات",
   "cashier.signInDesc": "سجّل الدخول بحساب المدير لفتح الكاشير.",
   "cashier.adminOnly": "صلاحيات المدير مطلوبة",

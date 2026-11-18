@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -11,6 +11,7 @@ import {
   Keyboard,
   Landmark,
   LogIn,
+  LogOut,
   Minus,
   ShieldAlert,
   Moon,
@@ -207,6 +208,12 @@ function CashierPage() {
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/dashboard">
+                <LogOut className="size-4 rtl:rotate-180" />
+                <span className="hidden sm:inline">{t("cashier.exit")}</span>
+              </Link>
+            </Button>
             <LanguageToggle />
             <Button
               variant="ghost"
