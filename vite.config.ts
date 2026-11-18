@@ -31,17 +31,55 @@ function dropRedundantDevClientPreload(): Plugin {
   };
 }
 
+// TanStack Start's dev transform strips `.server(...)` bodies from client
+// modules, but the remaining top-level imports still pull in
+// `@tanstack/start-storage-context`, which instantiates `AsyncLocalStorage`
+// from `node:async_hooks` at module load. Production builds tree-shake that
+// import away; dev does not, so the browser throws
+// "AsyncLocalStorage is not a constructor". Provide a no-op browser shim for
+// client modules only — SSR keeps using Node's real implementation.
+function asyncHooksBrowserShim(): Plugin {
+  const virtualId = "\0virtual:pawm-async-hooks";
+  return {
+    name: "pawm:async-hooks-browser-shim",
+    enforce: "pre",
+    resolveId(source, _importer, options) {
+      if (options?.ssr) return null;
+      if (source === "node:async_hooks" || source === "async_hooks") return virtualId;
+    },
+    load(id) {
+      if (id !== virtualId) return null;
+      return [
+        "export class AsyncLocalStorage {",
+        "  run(_context, fn, ...args) { return fn(...args); }",
+        "  getStore() { return undefined; }",
+        "  enterWith(_context) {}",
+        "  disable() {}",
+        "}",
+        "export default { AsyncLocalStorage };",
+      ].join("\n");
+    },
+  };
+}
+
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+  },
+  // Keep this out of esbuild pre-bundling: its prebundled output inlines
+  // `node:async_hooks` as a browser-external stub, which bypasses the shim
+  // below. Serving it as raw ESM in dev lets the shim apply.
+  optimizeDeps: {
+    exclude: ["@tanstack/start-client-core", "@tanstack/start-storage-context"],
   },
   build: {
     sourcemap: false,
   },
   plugins: [
+    asyncHooksBrowserShim(),
     tanstackStart({
       prerender: {
         enabled: true,
