@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig, type Plugin } from "vite";
+import path from "node:path";
 
 // In dev, TanStack Start's generated client manifest hardcodes the dev client in
 // two places: as a route preload and as the route script. The router renders
@@ -32,7 +33,10 @@ function dropRedundantDevClientPreload(): Plugin {
 
 export default defineConfig({
   resolve: {
-    tsconfigPaths: true,
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
   build: {
     sourcemap: false,

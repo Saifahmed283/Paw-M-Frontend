@@ -9,76 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AccountRouteImport } from './routes/account'
-import { Route as BookRouteImport } from './routes/book'
-import { Route as CashierRouteImport } from './routes/cashier'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as DoctorsRouteImport } from './routes/doctors'
-import { Route as ServicesRouteImport } from './routes/services'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as StaffRouteImport } from './routes/staff'
 import { Route as StoreRouteImport } from './routes/store'
-import { Route as BookingSuccessRouteImport } from './routes/booking.success'
-import { Route as RxVerifyRouteImport } from './routes/rx.verify'
+import { Route as StaffRouteImport } from './routes/staff'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ServicesRouteImport } from './routes/services'
+import { Route as DoctorsRouteImport } from './routes/doctors'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CashierRouteImport } from './routes/cashier'
+import { Route as BookRouteImport } from './routes/book'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
-import { Route as StoreProductIdRouteImport } from './routes/store.$productId'
-import { Route as StoreCheckoutRouteImport } from './routes/store.checkout'
-import { Route as StoreTrackRouteImport } from './routes/store.track'
 import { Route as StoreWishlistRouteImport } from './routes/store.wishlist'
-import { Route as AccountPetsPetIdRouteImport } from './routes/account.pets.$petId'
+import { Route as StoreTrackRouteImport } from './routes/store.track'
+import { Route as StoreCheckoutRouteImport } from './routes/store.checkout'
+import { Route as StoreProductIdRouteImport } from './routes/store.$productId'
+import { Route as RxVerifyRouteImport } from './routes/rx.verify'
+import { Route as BookingSuccessRouteImport } from './routes/booking.success'
 import { Route as AccountRxRxIdRouteImport } from './routes/account.rx.$rxId'
+import { Route as AccountPetsPetIdRouteImport } from './routes/account.pets.$petId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountRoute = AccountRouteImport.update({
-  id: '/account',
-  path: '/account',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BookRoute = BookRouteImport.update({
-  id: '/book',
-  path: '/book',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CashierRoute = CashierRouteImport.update({
-  id: '/cashier',
-  path: '/cashier',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DoctorsRoute = DoctorsRouteImport.update({
-  id: '/doctors',
-  path: '/doctors',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServicesRoute = ServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StaffRoute = StaffRouteImport.update({
@@ -86,19 +41,54 @@ const StaffRoute = StaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StoreRoute = StoreRouteImport.update({
-  id: '/store',
-  path: '/store',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BookingSuccessRoute = BookingSuccessRouteImport.update({
-  id: '/booking/success',
-  path: '/booking/success',
+const ServicesRoute = ServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RxVerifyRoute = RxVerifyRouteImport.update({
-  id: '/rx/verify',
-  path: '/rx/verify',
+const DoctorsRoute = DoctorsRouteImport.update({
+  id: '/doctors',
+  path: '/doctors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CashierRoute = CashierRouteImport.update({
+  id: '/cashier',
+  path: '/cashier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoreIndexRoute = StoreIndexRouteImport.update({
@@ -106,14 +96,9 @@ const StoreIndexRoute = StoreIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StoreRoute,
 } as any)
-const StoreProductIdRoute = StoreProductIdRouteImport.update({
-  id: '/$productId',
-  path: '/$productId',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreCheckoutRoute = StoreCheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
+const StoreWishlistRoute = StoreWishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
   getParentRoute: () => StoreRoute,
 } as any)
 const StoreTrackRoute = StoreTrackRouteImport.update({
@@ -121,19 +106,34 @@ const StoreTrackRoute = StoreTrackRouteImport.update({
   path: '/track',
   getParentRoute: () => StoreRoute,
 } as any)
-const StoreWishlistRoute = StoreWishlistRouteImport.update({
-  id: '/wishlist',
-  path: '/wishlist',
+const StoreCheckoutRoute = StoreCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => StoreRoute,
 } as any)
-const AccountPetsPetIdRoute = AccountPetsPetIdRouteImport.update({
-  id: '/pets/$petId',
-  path: '/pets/$petId',
-  getParentRoute: () => AccountRoute,
+const StoreProductIdRoute = StoreProductIdRouteImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => StoreRoute,
+} as any)
+const RxVerifyRoute = RxVerifyRouteImport.update({
+  id: '/rx/verify',
+  path: '/rx/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingSuccessRoute = BookingSuccessRouteImport.update({
+  id: '/booking/success',
+  path: '/booking/success',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRxRxIdRoute = AccountRxRxIdRouteImport.update({
   id: '/rx/$rxId',
   path: '/rx/$rxId',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountPetsPetIdRoute = AccountPetsPetIdRouteImport.update({
+  id: '/pets/$petId',
+  path: '/pets/$petId',
   getParentRoute: () => AccountRoute,
 } as any)
 
@@ -296,74 +296,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account': {
-      id: '/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AccountRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/book': {
-      id: '/book'
-      path: '/book'
-      fullPath: '/book'
-      preLoaderRoute: typeof BookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cashier': {
-      id: '/cashier'
-      path: '/cashier'
-      fullPath: '/cashier'
-      preLoaderRoute: typeof CashierRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/doctors': {
-      id: '/doctors'
-      path: '/doctors'
-      fullPath: '/doctors'
-      preLoaderRoute: typeof DoctorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/services': {
-      id: '/services'
-      path: '/services'
-      fullPath: '/services'
-      preLoaderRoute: typeof ServicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/staff': {
@@ -373,25 +310,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/store': {
-      id: '/store'
-      path: '/store'
-      fullPath: '/store'
-      preLoaderRoute: typeof StoreRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/booking/success': {
-      id: '/booking/success'
-      path: '/booking/success'
-      fullPath: '/booking/success'
-      preLoaderRoute: typeof BookingSuccessRouteImport
+    '/services': {
+      id: '/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rx/verify': {
-      id: '/rx/verify'
-      path: '/rx/verify'
-      fullPath: '/rx/verify'
-      preLoaderRoute: typeof RxVerifyRouteImport
+    '/doctors': {
+      id: '/doctors'
+      path: '/doctors'
+      fullPath: '/doctors'
+      preLoaderRoute: typeof DoctorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cashier': {
+      id: '/cashier'
+      path: '/cashier'
+      fullPath: '/cashier'
+      preLoaderRoute: typeof CashierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/store/': {
@@ -401,18 +387,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreIndexRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/store/$productId': {
-      id: '/store/$productId'
-      path: '/$productId'
-      fullPath: '/store/$productId'
-      preLoaderRoute: typeof StoreProductIdRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/checkout': {
-      id: '/store/checkout'
-      path: '/checkout'
-      fullPath: '/store/checkout'
-      preLoaderRoute: typeof StoreCheckoutRouteImport
+    '/store/wishlist': {
+      id: '/store/wishlist'
+      path: '/wishlist'
+      fullPath: '/store/wishlist'
+      preLoaderRoute: typeof StoreWishlistRouteImport
       parentRoute: typeof StoreRoute
     }
     '/store/track': {
@@ -422,25 +401,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreTrackRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/store/wishlist': {
-      id: '/store/wishlist'
-      path: '/wishlist'
-      fullPath: '/store/wishlist'
-      preLoaderRoute: typeof StoreWishlistRouteImport
+    '/store/checkout': {
+      id: '/store/checkout'
+      path: '/checkout'
+      fullPath: '/store/checkout'
+      preLoaderRoute: typeof StoreCheckoutRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/account/pets/$petId': {
-      id: '/account/pets/$petId'
-      path: '/pets/$petId'
-      fullPath: '/account/pets/$petId'
-      preLoaderRoute: typeof AccountPetsPetIdRouteImport
-      parentRoute: typeof AccountRoute
+    '/store/$productId': {
+      id: '/store/$productId'
+      path: '/$productId'
+      fullPath: '/store/$productId'
+      preLoaderRoute: typeof StoreProductIdRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/rx/verify': {
+      id: '/rx/verify'
+      path: '/rx/verify'
+      fullPath: '/rx/verify'
+      preLoaderRoute: typeof RxVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/success': {
+      id: '/booking/success'
+      path: '/booking/success'
+      fullPath: '/booking/success'
+      preLoaderRoute: typeof BookingSuccessRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/account/rx/$rxId': {
       id: '/account/rx/$rxId'
       path: '/rx/$rxId'
       fullPath: '/account/rx/$rxId'
       preLoaderRoute: typeof AccountRxRxIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/pets/$petId': {
+      id: '/account/pets/$petId'
+      path: '/pets/$petId'
+      fullPath: '/account/pets/$petId'
+      preLoaderRoute: typeof AccountPetsPetIdRouteImport
       parentRoute: typeof AccountRoute
     }
   }

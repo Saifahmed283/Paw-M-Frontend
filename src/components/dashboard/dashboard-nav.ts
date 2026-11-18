@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Stethoscope,
   Users,
+  UserPlus,
   Wallet,
 } from "lucide-react";
 
@@ -73,6 +74,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "nav.group.system",
     items: [{ id: "settings", icon: Settings, roles: ["admin"] }],
+  },
+  {
+    label: "nav.group.recruitment",
+    items: [
+      { id: "recruitment", icon: UserPlus, roles: ["admin"] },
+    ],
   },
 ];
 

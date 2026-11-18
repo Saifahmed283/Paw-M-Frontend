@@ -20,6 +20,7 @@ export const ALL_TAB_IDS = [
   "logs",
   "settings",
   "prescriptions",
+  "recruitment",
 ] as const;
 
 export const SHARED_TAB_IDS: string[] = ["overview", "requests"];
