@@ -149,7 +149,7 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
         if (!open && !saving) onClose();
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{doctor ? t("dash.editDoctor") : t("dash.addDoctor")}</DialogTitle>
           <DialogDescription>{t("dash.doctors.hint")}</DialogDescription>

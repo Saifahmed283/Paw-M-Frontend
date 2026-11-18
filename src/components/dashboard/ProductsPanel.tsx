@@ -216,7 +216,7 @@ function ProductDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{product ? t("dash.editProduct") : t("dash.addProduct")}</DialogTitle>
           <DialogDescription>{t("dash.products.hint")}</DialogDescription>

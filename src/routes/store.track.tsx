@@ -246,7 +246,7 @@ function TrackPage() {
   };
 
   return (
-    <section className="hero-gradient min-h-screen px-5 py-32 sm:py-36">
+    <section className="hero-gradient min-h-dvh px-5 py-32 sm:py-36">
       <div className="mx-auto max-w-2xl">
         <Link
           to="/store"

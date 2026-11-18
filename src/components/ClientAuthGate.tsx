@@ -46,7 +46,7 @@ export function ClientAuthGate({ children }: { children: ReactNode }) {
   };
 
   return (
-    <section className="hero-gradient flex min-h-screen items-center justify-center px-5 py-32">
+    <section className="hero-gradient flex min-h-dvh items-center justify-center px-5 py-32">
       <form
         onSubmit={submit}
         className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card"

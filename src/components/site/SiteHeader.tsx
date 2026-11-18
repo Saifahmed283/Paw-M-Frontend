@@ -60,7 +60,7 @@ export function SiteHeader() {
       )}
       style={scrolled ? { borderBottom: "1px solid var(--border)" } : undefined}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-1 px-3 sm:gap-4 sm:px-8">
         <Link to="/" aria-label={t("header.homeAria")}>
           <PawMLogo />
         </Link>
@@ -79,12 +79,12 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <LanguageToggle />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <LanguageToggle className="hidden sm:grid" />
           <button
             onClick={toggle}
             aria-label={dark ? t("header.lightMode") : t("header.darkMode")}
-            className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="hidden size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:grid"
           >
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
@@ -101,7 +101,7 @@ export function SiteHeader() {
           <Link
             to="/store/wishlist"
             aria-label={t("header.wishlistAria")}
-            className="relative grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative hidden size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:grid"
           >
             <Heart className="size-4" />
             {wished.length > 0 && (
@@ -115,7 +115,7 @@ export function SiteHeader() {
               to="/account"
               aria-label="My Account"
               title="My Account"
-              className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="hidden size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:grid"
             >
               <User className="size-4" />
             </Link>
@@ -173,6 +173,34 @@ export function SiteHeader() {
                   </Link>
                 </motion.div>
               ))}
+              <div className="mt-2 flex items-center gap-2 border-t pt-3">
+                <LanguageToggle className="size-10 bg-muted/50" />
+                <button
+                  onClick={toggle}
+                  aria-label={dark ? t("header.lightMode") : t("header.darkMode")}
+                  className="grid size-10 place-items-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                </button>
+                <Link
+                  to="/store/wishlist"
+                  onClick={() => setOpen(false)}
+                  aria-label={t("header.wishlistAria")}
+                  className="grid size-10 place-items-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Heart className="size-4" />
+                </Link>
+                {showAccount && (
+                  <Link
+                    to="/account"
+                    onClick={() => setOpen(false)}
+                    aria-label="My Account"
+                    className="grid size-10 place-items-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <User className="size-4" />
+                  </Link>
+                )}
+              </div>
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -1,1 +1,0 @@
-import{Bt as e}from"./index-C1FuihQ2.js";import{t}from"./jsx-runtime-DyZJNswf.js";var n=t();function r(){return(0,n.jsx)(e,{})}export{r as component};

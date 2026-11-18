@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +25,7 @@ type Props = {
   onAdd: (product: Product) => void;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
   const { t, tOr } = useI18n();
@@ -37,10 +44,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
     return counts;
   }, [products]);
 
-  const categories = useMemo(
-    () => Array.from(categoryCounts.keys()).sort(),
-    [categoryCounts],
-  );
+  const categories = useMemo(() => Array.from(categoryCounts.keys()).sort(), [categoryCounts]);
 
   const inCart = useMemo(() => {
     const map = new Map<string, number>();
@@ -60,9 +64,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
       );
     });
     return [...list].sort((a, b) =>
-      sort === "price"
-        ? Number(a.price) - Number(b.price)
-        : a.name.localeCompare(b.name),
+      sort === "price" ? Number(a.price) - Number(b.price) : a.name.localeCompare(b.name),
     );
   }, [products, query, category, sort]);
 
@@ -78,7 +80,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
   }, [page, pageCount]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -86,7 +88,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("cashier.quickAddSearch")}
-            className="h-10 pl-9"
+            className="h-9 pl-9"
             autoComplete="off"
           />
         </div>
@@ -94,7 +96,7 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
           type="button"
           variant="outline"
           size="icon"
-          className="size-10 shrink-0"
+          className="size-9 shrink-0"
           onClick={() => setSort((s) => (s === "name" ? "price" : "name"))}
           title={sort === "name" ? t("dash.sort.title") : t("dash.sort.amount")}
           aria-label={sort === "name" ? t("dash.sort.title") : t("dash.sort.amount")}

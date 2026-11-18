@@ -152,11 +152,11 @@ function CashierPage() {
   const checkedIn = isCheckedInToday(workSession);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
       {/* Compact POS toolbar — the marketing header/footer are hidden for this
           route in __root.tsx so the counter stays focused and uncluttered. */}
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6">
+      <header className="z-30 shrink-0 border-b border-border bg-card">
+        <div className="mx-auto flex h-12 max-w-[1600px] items-center justify-between gap-3 px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <h1 className="truncate text-base font-semibold">{t("cashier.title")}</h1>
             {/* No site navigation here — once on the till, staff stay on the till. */}
@@ -193,7 +193,7 @@ function CashierPage() {
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-hidden px-2 pb-2 sm:px-4 sm:pb-3">
         <CashierApp />
       </div>
     </div>
@@ -753,16 +753,16 @@ function CashierApp() {
   const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col gap-3 bg-muted/20 p-3 sm:p-4">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden bg-muted/20 p-2 sm:p-3">
       {/* ── TOP COMMAND BAR ─────────────────────────────────────────────── */}
-      <section className="animate-in fade-in slide-in-from-top-3 rounded-2xl border bg-card p-3.5 shadow-sm duration-500">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <section className="shrink-0 animate-in fade-in slide-in-from-top-3 rounded-2xl border bg-card p-2.5 shadow-sm duration-500 sm:p-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Big total readout */}
-          <div className="min-w-[150px]">
+          <div className="min-w-[110px]">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
               {t("cashier.total")}
             </p>
-            <p className="text-3xl font-black leading-tight tabular-nums tracking-tight text-foreground">
+            <p className="text-2xl font-black leading-tight tabular-nums tracking-tight text-foreground sm:text-3xl">
               {formatPrice(totals.total, settings.currency)}
             </p>
             <p className="text-[11px] text-muted-foreground">
@@ -782,7 +782,7 @@ function CashierApp() {
                 aria-pressed={method === m.value}
                 title={t(m.short)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all",
+                  "flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all sm:px-2.5 sm:py-2",
                   method === m.value
                     ? "bg-background text-primary shadow-sm"
                     : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
@@ -794,13 +794,18 @@ function CashierApp() {
             ))}
           </div>
 
-          {/* Compact cash calculator */}
+          {/* Compact cash calculator — kept on wider screens; on phones the
+              cart footer carries the cash-received field instead. */}
           {method === "cash" && split.length <= 1 && (
-            <QuickCashCalculator
-              total={totals.total}
-              currency={settings.currency}
-              onCashReceivedChange={setCashReceived}
-            />
+            <div className="hidden md:block">
+              <QuickCashCalculator
+                total={totals.total}
+                currency={settings.currency}
+                received={cashReceived}
+                onReceivedChange={setCashReceived}
+                onCashReceivedChange={setCashReceived}
+              />
+            </div>
           )}
 
           {/* Primary actions */}
@@ -812,7 +817,7 @@ function CashierApp() {
               onClick={() => setRefundOpen(true)}
               title={t("cashier.refund")}
               aria-label={t("cashier.refund")}
-              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="hidden text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
             >
               <Undo2 className="size-4" />
             </Button>
@@ -824,7 +829,7 @@ function CashierApp() {
               disabled={cart.length === 0}
               title={t("cashier.receiptPreview")}
               aria-label={t("cashier.receiptPreview")}
-              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="hidden text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
             >
               <ReceiptText className="size-4" />
             </Button>
@@ -833,7 +838,7 @@ function CashierApp() {
               onClick={submit}
               size="lg"
               disabled={busy || cart.length === 0}
-              className="h-11 gap-2 rounded-xl px-5 shadow-glow"
+              className="h-10 gap-2 rounded-xl px-3 shadow-glow sm:h-11 sm:px-5"
             >
               <Wallet className="size-4" />
               {busy ? "…" : t("cashier.completeSale")}
@@ -842,8 +847,8 @@ function CashierApp() {
         </div>
 
         {/* Customer details stay visible for every receipt, plus a slim status line. */}
-        <div className="mt-2.5 flex flex-wrap items-end gap-x-4 gap-y-2 border-t pt-2.5">
-          <div className="flex items-end gap-2">
+        <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2 border-t pt-2">
+          <div className="flex flex-1 items-end gap-2 sm:flex-none">
             <div className="space-y-1">
               <Label htmlFor="cashier-customer-name" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t("cashier.customerName")}
@@ -853,7 +858,7 @@ function CashierApp() {
                 value={customer.name}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder={t("cashier.customerNamePlaceholder")}
-                className="h-8 w-36 text-xs"
+                className="h-8 w-full min-w-0 flex-1 text-xs sm:w-36 sm:flex-none"
                 autoComplete="off"
               />
             </div>
@@ -866,13 +871,13 @@ function CashierApp() {
                 value={customer.phone}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
                 placeholder={t("cashier.customerPhonePlaceholder")}
-                className="h-8 w-40 text-xs"
+                className="h-8 w-full min-w-0 flex-1 text-xs sm:w-40 sm:flex-none"
                 inputMode="tel"
                 autoComplete="off"
               />
             </div>
           </div>
-          <div className="mb-1 flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="mb-1 flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground sm:w-auto sm:flex-1">
             <span className="flex items-center gap-1.5 font-medium">
               <span
                 className={cn(
@@ -882,18 +887,18 @@ function CashierApp() {
               />
               {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
             </span>
-            <span>
+            <span className="hidden sm:inline">
               {t("cashier.subtotal")}: {formatPrice(totals.subtotal, settings.currency)}
             </span>
             {discountAmount > 0 && (
-              <span className="font-semibold text-destructive">
+              <span className="hidden font-semibold text-destructive sm:inline">
                 −{formatPrice(discountAmount, settings.currency)}
               </span>
             )}
             <button
               type="button"
               onClick={() => setShortcutsOpen(true)}
-              className="ms-auto flex items-center gap-1 transition-colors hover:text-foreground"
+              className="ms-auto hidden items-center gap-1 transition-colors hover:text-foreground sm:flex"
             >
               <Keyboard className="size-3.5" />
               {t("cashier.keyboardShortcuts")}
@@ -903,12 +908,12 @@ function CashierApp() {
       </section>
 
       {method === "fawry" && (
-        <p className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs text-primary">
+        <p className="shrink-0 rounded-xl border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs text-primary">
           {t("checkout.fawryHowTitle")}
         </p>
       )}
       {method === "instapay" && (
-        <p className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
+        <p className="shrink-0 rounded-xl border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs">
           <span className="font-semibold text-primary">
             {t("checkout.method.instapay.short")}
           </span>{" "}
@@ -917,11 +922,11 @@ function CashierApp() {
       )}
 
       {/* ── WORKSPACE ───────────────────────────────────────────────────── */}
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-2 md:grid-cols-[minmax(0,1fr)_340px] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* Product catalog */}
-        <Card className="animate-in flex min-h-[540px] flex-col overflow-hidden bg-card duration-500 slide-in-from-left-3">
+        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden bg-card duration-500 slide-in-from-left-3">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
-            <CardHeader className="gap-3 border-b bg-background/50 p-3">
+            <CardHeader className="shrink-0 gap-2 border-b bg-background/50 p-2.5 sm:p-3">
               <div className="flex items-center gap-2.5">
                 <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
                   <Grid2X2 className="size-4" />
@@ -1010,8 +1015,8 @@ function CashierApp() {
         </Card>
 
         {/* Live cart */}
-        <Card className="animate-in flex min-h-[540px] flex-col overflow-hidden bg-card duration-500 slide-in-from-right-3 lg:sticky lg:top-[4.5rem]">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 border-b bg-background/50 p-3">
+        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden bg-card duration-500 slide-in-from-right-3">
+          <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b bg-background/50 p-2.5 sm:p-3">
             <div className="flex items-center gap-2.5">
               <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
                 <ShoppingCart className="size-4" />
@@ -1037,7 +1042,28 @@ function CashierApp() {
             )}
           </CardHeader>
 
-          <CardContent className="min-h-0 flex-1 overflow-y-auto p-2">
+          <CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+            {/* Secondary, occasional panels live inside this scroll area so the
+                till itself never needs a page-level scrollbar. */}
+            {holdSales.length > 0 && (
+              <Card>
+                <CardHeader className="p-2.5">
+                  <CardTitle className="text-sm">{t("cashier.heldSales")}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <HoldManager
+                    heldSales={holdSales}
+                    currency={settings.currency}
+                    onHold={holdCurrentSale}
+                    onResume={resumeSale}
+                    onDiscard={discardHeld}
+                    canHold={cart.length > 0}
+                  />
+                </CardContent>
+              </Card>
+            )}
+            <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
+
             {cart.length === 0 ? (
               <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
                 <div className="grid size-16 place-items-center rounded-2xl bg-muted">
@@ -1117,7 +1143,7 @@ function CashierApp() {
             )}
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-2 border-t bg-background/40 p-3">
+          <CardFooter className="flex shrink-0 flex-col gap-2 border-t bg-background/40 p-2.5 sm:p-3">
             <div className="w-full space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("cashier.subtotal")}</span>
@@ -1165,30 +1191,22 @@ function CashierApp() {
                 allocations={split.length > 1 ? split : []}
                 onAllocationsChange={(a) => setSplit(a)}
               />
+
+              {method === "cash" && split.length <= 1 && (
+                <div className="md:hidden">
+                  <QuickCashCalculator
+                    total={totals.total}
+                    currency={settings.currency}
+                    received={cashReceived}
+                    onReceivedChange={setCashReceived}
+                    onCashReceivedChange={setCashReceived}
+                  />
+                </div>
+              )}
             </div>
           </CardFooter>
         </Card>
       </div>
-
-      {holdSales.length > 0 && (
-        <Card>
-          <CardHeader className="p-3">
-            <CardTitle className="text-sm">{t("cashier.heldSales")}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <HoldManager
-              heldSales={holdSales}
-              currency={settings.currency}
-              onHold={holdCurrentSale}
-              onResume={resumeSale}
-              onDiscard={discardHeld}
-              canHold={cart.length > 0}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
 
       <ReceiptPreview
         open={receiptOpen}

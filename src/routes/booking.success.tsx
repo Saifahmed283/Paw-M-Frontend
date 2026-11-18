@@ -37,7 +37,7 @@ function SuccessPage() {
   const icsHref = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
 
   return (
-    <section className="hero-gradient flex min-h-screen items-center justify-center px-5 py-32">
+    <section className="hero-gradient flex min-h-dvh items-center justify-center px-5 py-32">
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -60,8 +60,8 @@ function SuccessPage() {
             [t("booking.schedule.doctor"), doctor || t("booking.genericDoctor")],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{k}</dt>
-              <dd className="font-medium text-foreground">{v}</dd>
+              <dt className="shrink-0 text-muted-foreground">{k}</dt>
+              <dd className="min-w-0 break-words text-end font-medium text-foreground">{v}</dd>
             </div>
           ))}
         </dl>

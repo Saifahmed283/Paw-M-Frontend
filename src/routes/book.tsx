@@ -221,7 +221,7 @@ function BookingForm() {
   };
 
   return (
-    <section className="hero-gradient min-h-screen pb-24 pt-32 sm:pt-40">
+    <section className="hero-gradient min-h-dvh pb-24 pt-32 sm:pt-40">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <Breadcrumbs
           items={[
@@ -282,14 +282,14 @@ function BookingForm() {
                     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">
                       {(draft.ownerName || "?").charAt(0).toUpperCase()}
                     </span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">
                         {draft.ownerName || t("booking.owner.summary")}
                       </p>
-                      <p className="text-xs text-muted-foreground">{draft.email}</p>
-                      <p className="text-xs text-muted-foreground">{draft.phone}</p>
+                      <p className="text-xs text-muted-foreground break-all">{draft.email}</p>
+                      <p className="text-xs text-muted-foreground break-all">{draft.phone}</p>
                     </div>
-                    <span className="ml-auto rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
+                    <span className="ml-auto shrink-0 rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
                       {t("booking.owner.account")}
                     </span>
                   </div>
@@ -325,15 +325,15 @@ function BookingForm() {
                         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-lg">
                           {emojiFor(pet.species)}
                         </span>
-                        <span>
+                        <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold">{pet.name}</span>
-                          <span className="block text-xs text-muted-foreground">
+                          <span className="block text-xs text-muted-foreground break-words">
                             {[pet.species, pet.breed].filter(Boolean).join(" · ")}
                             {pet.weightKg ? ` · ${pet.weightKg} kg` : ""}
                           </span>
                         </span>
                         {draft.petId === pet.id && (
-                          <Check className="ml-auto size-4 text-primary" strokeWidth={3} />
+                          <Check className="ml-auto size-4 shrink-0 text-primary" strokeWidth={3} />
                         )}
                       </button>
                     ))}
@@ -455,14 +455,16 @@ function BookingForm() {
                     />
                   </Field>
                 </div>
-                <label className="flex items-center justify-between rounded-xl border border-border p-4">
-                  <span>
+                <label className="flex items-center justify-between gap-3 rounded-xl border border-border p-4">
+                  <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium">{t("booking.case.emergency")}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       {t("booking.case.emergencyDesc")}
                     </span>
                   </span>
-                  <Switch checked={draft.emergency} onCheckedChange={(v) => set("emergency", v)} />
+                  <span className="shrink-0">
+                    <Switch checked={draft.emergency} onCheckedChange={(v) => set("emergency", v)} />
+                  </span>
                 </label>
               </div>
             )}

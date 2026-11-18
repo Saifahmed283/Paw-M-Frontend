@@ -352,7 +352,9 @@ function ProductPage() {
                 </Badge>
               </div>
 
-              <h1 className="mt-4 text-3xl font-bold tracking-tight">{product.name}</h1>
+              <h1 className="mt-4 min-w-0 break-words text-2xl font-bold tracking-tight sm:text-3xl">
+                {product.name}
+              </h1>
               <div className="mt-3 flex items-baseline gap-2">
                 <p className="text-lg font-bold text-primary">
                   {formatPrice(product.price, settings.currency)}

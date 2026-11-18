@@ -80,7 +80,7 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-6">
       {/* Mobile menu button */}
       {onMobileMenuToggle && (
         <Button
@@ -94,7 +94,7 @@ export function DashboardHeader({
       )}
 
       {/* Right side controls */}
-      <div className="ms-auto flex items-center gap-1.5">
+      <div className="ms-auto flex items-center gap-1 sm:gap-1.5">
         <Link to="/cashier" title={t("header.cashier")} className="shrink-0">
           <Button
             variant="ghost"
@@ -106,20 +106,22 @@ export function DashboardHeader({
           </Button>
         </Link>
 
-        <NotificationBell />
-        <LanguageToggle className="size-8" />
+        <div className="hidden sm:block">
+          <NotificationBell />
+        </div>
+        <LanguageToggle className="hidden size-8 sm:grid" />
 
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
+          className="hidden size-8 text-muted-foreground hover:text-foreground sm:inline-flex"
           onClick={toggleTheme}
           title={dark ? t("header.lightMode") : t("header.darkMode")}
         >
           {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </Button>
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 hidden h-5 sm:block" />
 
         {/* Account dropdown */}
         <DropdownMenu>
@@ -135,7 +137,9 @@ export function DashboardHeader({
               <span className="hidden text-sm font-medium sm:inline-block">
                 {username || t("auth.staff")}
               </span>
-              <RoleBadge role={role} />
+              <span className="hidden lg:inline-flex">
+                <RoleBadge role={role} />
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">

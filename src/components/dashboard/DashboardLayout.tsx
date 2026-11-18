@@ -29,7 +29,7 @@ export function DashboardLayout({
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen bg-muted/30">
+      <div className="flex min-h-dvh bg-muted/30">
         {/* Desktop sidebar */}
         {!isMobile && (
           <DashboardSidebar

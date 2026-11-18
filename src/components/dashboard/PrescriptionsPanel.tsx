@@ -280,7 +280,7 @@ export function PrescriptionsPanel() {
       )}
       {viewing && (
         <Dialog open onOpenChange={(o) => !o && setViewing(null)}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+          <DialogContent className="max-h-[90dvh] overflow-y-auto p-0 sm:max-w-2xl">
             <DialogHeader className="sr-only">
               <DialogTitle>{viewing.rxNumber}</DialogTitle>
             </DialogHeader>

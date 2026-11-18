@@ -51,7 +51,7 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-e border-border bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-[var(--ease-entrance)]",
+        "sticky top-0 flex h-dvh shrink-0 flex-col border-e border-border bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-[var(--ease-entrance)]",
         collapsed ? "w-[68px]" : "w-60",
       )}
     >

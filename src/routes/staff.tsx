@@ -43,7 +43,7 @@ function StaffPage() {
 
   if (!authed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5 py-32">
+      <div className="flex min-h-dvh items-center justify-center bg-muted/40 px-5 py-32">
         <div className="text-sm text-muted-foreground">{t("loading")}</div>
       </div>
     );
@@ -58,8 +58,8 @@ function StaffPage() {
   const workSession = store.workSession;
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-e border-border bg-card/60 backdrop-blur-sm lg:flex">
+    <div className="flex min-h-dvh bg-muted/40">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-e border-border bg-card/60 backdrop-blur-sm lg:flex">
         <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
           <PawMLogo />
         </div>

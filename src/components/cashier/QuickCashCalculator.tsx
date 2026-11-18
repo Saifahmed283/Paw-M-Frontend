@@ -10,11 +10,22 @@ type Props = {
   total: number;
   currency: string;
   onCashReceivedChange: (amount: number) => void;
+  /** Optional controlled amount so the same calculator can be mounted in
+   *  more than one responsive slot without keeping separate values. */
+  received?: number;
+  onReceivedChange?: (amount: number) => void;
 };
 
-export function QuickCashCalculator({ total, currency, onCashReceivedChange }: Props) {
+export function QuickCashCalculator({
+  total,
+  currency,
+  onCashReceivedChange,
+  received: controlledReceived,
+  onReceivedChange,
+}: Props) {
   const { t } = useI18n();
-  const [received, setReceived] = useState(0);
+  const [internalReceived, setInternalReceived] = useState(0);
+  const received = controlledReceived ?? internalReceived;
   const [extra, setExtra] = useState("");
 
   const change = Math.max(0, received - total);
@@ -23,7 +34,8 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
 
   const setAmt = (n: number) => {
     const v = Math.round(n * 100) / 100;
-    setReceived(v);
+    setInternalReceived(v);
+    onReceivedChange?.(v);
     onCashReceivedChange(v);
   };
 
@@ -35,8 +47,8 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
   };
 
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border bg-muted/40 p-1.5">
-      <span className="ps-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-muted/40 p-1.5">
+      <span className="hidden ps-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground lg:inline">
         {t("cashier.cashReceived")}
       </span>
 
@@ -49,7 +61,8 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           onChange={(e) => {
             const raw = e.target.value;
             if (raw === "") {
-              setReceived(0);
+              setInternalReceived(0);
+              onReceivedChange?.(0);
               onCashReceivedChange(0);
               return;
             }
@@ -58,7 +71,7 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           }}
           placeholder="0.00"
           aria-label={t("cashier.cashReceived")}
-          className="h-8 w-24 border-0 bg-transparent p-0 pe-8 text-center text-sm font-bold tabular-nums text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
+          className="h-8 w-20 border-0 bg-transparent p-0 pe-8 text-center text-sm font-bold tabular-nums text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 sm:w-24"
         />
         <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
           {currency}

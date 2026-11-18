@@ -796,21 +796,21 @@ function RequestPaymentDialog({
           )}
           {items.length > 0 && (
             <div className="grid gap-1.5">
-              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-xs font-semibold text-muted-foreground">
                 <span>{t("reservations.serviceCol")}</span>
-                <span className="w-28 text-end">{t("reservations.amountCol")}</span>
+                <span className="w-20 text-end sm:w-28">{t("reservations.amountCol")}</span>
                 <span className="w-8" />
               </div>
               {items.map((it) => (
-                <div key={it.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
-                  <span className="truncate text-sm">{it.label}</span>
+                <div key={it.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                  <span className="min-w-0 truncate text-sm">{it.label}</span>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     value={String(it.amount)}
                     onChange={(e) => setAmount(it.id, e.target.value)}
-                    className="h-8 w-28 text-end"
+                    className="h-8 w-20 text-end sm:w-28"
                   />
                   <Button
                     size="icon"

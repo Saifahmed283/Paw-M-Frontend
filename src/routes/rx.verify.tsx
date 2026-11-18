@@ -77,7 +77,7 @@ function VerifyPage() {
   }, [code]);
 
   return (
-    <section className="hero-gradient min-h-screen pb-24 pt-32 sm:pt-40">
+    <section className="hero-gradient min-h-dvh pb-24 pt-32 sm:pt-40">
       <div className="mx-auto max-w-lg px-5 sm:px-8">
         <Breadcrumbs
           items={[

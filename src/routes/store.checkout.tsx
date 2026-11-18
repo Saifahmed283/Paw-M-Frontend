@@ -85,8 +85,8 @@ function SuccessScreen({
 }) {
   const { t } = useI18n();
   return (
-    <section className="hero-gradient flex min-h-screen items-center justify-center px-5 py-32">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-card">
+    <section className="hero-gradient flex min-h-dvh items-center justify-center px-5 py-32">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-5 text-center shadow-card sm:p-8">
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-success/15 text-success">
           <CheckCircle2 className="size-7" />
         </span>
@@ -94,7 +94,7 @@ function SuccessScreen({
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           {t("checkout.successDesc")}
         </p>
-        <p className="mt-4 rounded-xl border border-border bg-muted/50 px-4 py-3 font-mono text-sm">
+        <p className="mt-4 rounded-xl border border-border bg-muted/50 px-4 py-3 font-mono text-sm break-all">
           {t("checkout.orderId")}: {orderId}
         </p>
 
@@ -103,7 +103,9 @@ function SuccessScreen({
             <p className="flex items-center gap-2 text-xs font-semibold text-primary">
               <Landmark className="size-4" /> {t("checkout.fawryRefTitle")}
             </p>
-            <p className="mt-1 font-mono text-xl font-bold tracking-widest">{paymentRef}</p>
+            <p className="mt-1 font-mono text-lg font-bold break-all tracking-normal sm:text-xl sm:tracking-widest">
+              {paymentRef}
+            </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               {t("checkout.fawrySteps")}
             </p>
@@ -114,7 +116,7 @@ function SuccessScreen({
             <p className="flex items-center gap-2 text-xs font-semibold text-primary">
               <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
             </p>
-            <p className="mt-1 font-mono text-lg font-bold">{instapay}</p>
+            <p className="mt-1 font-mono text-lg font-bold break-all">{instapay}</p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               {t("checkout.instapaySteps")}
             </p>
@@ -225,7 +227,7 @@ function CheckoutForm() {
   }
 
   return (
-    <section className="hero-gradient min-h-screen px-5 py-32 sm:py-36">
+    <section className="hero-gradient min-h-dvh px-5 py-32 sm:py-36">
       <div className="mx-auto max-w-4xl">
         <Link
           to="/store"

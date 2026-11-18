@@ -37,7 +37,7 @@ function PetHistoryPage() {
 
   return (
     <ClientAuthGate>
-      <section className="hero-gradient min-h-screen pb-24 pt-32 sm:pt-40">
+      <section className="hero-gradient min-h-dvh pb-24 pt-32 sm:pt-40">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">
           <Breadcrumbs
             items={[
@@ -177,10 +177,10 @@ function PetHistoryPage() {
                         key={rx.id}
                         to="/account/rx/$rxId"
                         params={{ rxId: rx.id }}
-                        className="flex items-center justify-between rounded-2xl border border-border p-4 transition-colors hover:border-primary/40"
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-border p-4 transition-colors hover:border-primary/40"
                       >
-                        <div>
-                          <p className="font-mono text-sm font-semibold">{rx.rxNumber}</p>
+                        <div className="min-w-0">
+                          <p className="font-mono text-sm font-semibold break-all">{rx.rxNumber}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatShort(rx.issuedAt ?? rx.createdAt)} ·{" "}
                             {rx.doctor?.name ?? "Clinic"}
@@ -188,7 +188,7 @@ function PetHistoryPage() {
                         </div>
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase",
+                            "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase",
                             rx.status === "issued"
                               ? "bg-emerald-100 text-emerald-700"
                               : rx.status === "void"

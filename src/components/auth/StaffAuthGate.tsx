@@ -56,7 +56,7 @@ export function StaffAuthGate({ onUnlocked, showBack = true }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-5 py-32">
+    <div className="flex min-h-dvh items-center justify-center bg-muted/40 px-5 py-32">
       <form
         onSubmit={submit}
         className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-card"
