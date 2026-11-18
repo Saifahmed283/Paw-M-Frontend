@@ -1,68 +1,69 @@
-let lastCapturedError;
-const TTL_MS = 5e3;
+// src/lib/error-capture.ts
+var lastCapturedError;
+var TTL_MS = 5e3;
 function record(error) {
-  lastCapturedError = { error, at: Date.now() };
+	lastCapturedError = {
+		error,
+		at: Date.now()
+	};
 }
-const CAUSE_DEPTH_LIMIT = 5;
-const DESCRIPTION_LENGTH_LIMIT = 8e3;
+var CAUSE_DEPTH_LIMIT = 5;
+var DESCRIPTION_LENGTH_LIMIT = 8e3;
 function describeError(error) {
-  const parts = [];
-  let current = error;
-  for (let depth = 0; depth < CAUSE_DEPTH_LIMIT && current != null; depth++) {
-    if (!(current instanceof Error)) {
-      parts.push(typeof current === "string" ? current : safeStringify(current));
-      break;
-    }
-    const label = depth === 0 ? "" : "caused by: ";
-    const status = describeStatus(current);
-    parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
-    current = current.cause;
-  }
-  return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
+	const parts = [];
+	let current = error;
+	for (let depth = 0; depth < CAUSE_DEPTH_LIMIT && current != null; depth++) {
+		if (!(current instanceof Error)) {
+			parts.push(typeof current === "string" ? current : safeStringify(current));
+			break;
+		}
+		const label = depth === 0 ? "" : "caused by: ";
+		const status = describeStatus(current);
+		parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
+		current = current.cause;
+	}
+	return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
 }
 function describeStatus(error) {
-  const { status, statusCode } = error;
-  const value = status ?? statusCode;
-  return typeof value === "number" ? ` (status ${value})` : "";
+	const { status, statusCode } = error;
+	const value = status ?? statusCode;
+	return typeof value === "number" ? ` (status ${value})` : "";
 }
 function safeStringify(value) {
-  try {
-    return JSON.stringify(value) ?? String(value);
-  } catch {
-    return String(value);
-  }
+	try {
+		return JSON.stringify(value) ?? String(value);
+	} catch {
+		return String(value);
+	}
 }
 function isErrorLike(value) {
-  return value instanceof Error;
+	return value instanceof Error;
 }
-const originalConsoleError = console.error.bind(console);
+var originalConsoleError = console.error.bind(console);
 console.error = (...args) => {
-  const expanded = args.map((arg) => {
-    if (!isErrorLike(arg)) return arg;
-    record(arg);
-    return describeError(arg);
-  });
-  originalConsoleError(...expanded);
+	originalConsoleError(...args.map((arg) => {
+		if (!isErrorLike(arg)) return arg;
+		record(arg);
+		return describeError(arg);
+	}));
 };
 if (typeof globalThis.addEventListener === "function") {
-  globalThis.addEventListener("error", (event) => record(event.error ?? event));
-  globalThis.addEventListener(
-    "unhandledrejection",
-    (event) => record(event.reason)
-  );
+	globalThis.addEventListener("error", (event) => record(event.error ?? event));
+	globalThis.addEventListener("unhandledrejection", (event) => record(event.reason));
 }
 function consumeLastCapturedError() {
-  if (!lastCapturedError) return void 0;
-  if (Date.now() - lastCapturedError.at > TTL_MS) {
-    lastCapturedError = void 0;
-    return void 0;
-  }
-  const { error } = lastCapturedError;
-  lastCapturedError = void 0;
-  return error;
+	if (!lastCapturedError) return void 0;
+	if (Date.now() - lastCapturedError.at > TTL_MS) {
+		lastCapturedError = void 0;
+		return;
+	}
+	const { error } = lastCapturedError;
+	lastCapturedError = void 0;
+	return error;
 }
+// src/lib/error-page.ts
 function renderErrorPage() {
-  return `<!doctype html>
+	return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -98,105 +99,92 @@ function renderErrorPage() {
   </body>
 </html>`;
 }
-const __vite_import_meta_env__ = { "BASE_URL": "/", "DEV": false, "MODE": "production", "PROD": true, "SSR": true, "TSS_CLIENT_OUTPUT_DIR": "dist/client", "TSS_DEV_SERVER": "false", "TSS_ROUTER_BASEPATH": "", "TSS_SERVER_FN_BASE": "/_serverFn/" };
+// src/server.ts
 function resolveApiOrigin(request) {
-  try {
-    const env = __vite_import_meta_env__;
-    const url = env == null ? void 0 : env["VITE_API_URL"];
-    if (url) return new URL(url).origin;
-  } catch {
-  }
-  try {
-    const url = new URL(request.url);
-    if (url.protocol === "http:" || url.protocol === "https:") {
-      return `${url.protocol}//${url.hostname}:3001`;
-    }
-  } catch {
-  }
-  return "http://localhost:3001";
+	try {
+		const url = {
+			"BASE_URL": "/",
+			"DEV": false,
+			"MODE": "production",
+			"PROD": true,
+			"SSR": true,
+			"TSS_DEV_SERVER": "false",
+			"TSS_DEV_SSR_STYLES_BASEPATH": "/",
+			"TSS_DEV_SSR_STYLES_ENABLED": "true",
+			"TSS_DISABLE_CSRF_MIDDLEWARE_WARNING": "false",
+			"TSS_INLINE_CSS_ENABLED": "false",
+			"TSS_ROUTER_BASEPATH": "",
+			"TSS_SERVER_FN_BASE": "/_serverFn/"
+		}["VITE_API_URL"];
+		if (url) return new URL(url).origin;
+	} catch {}
+	try {
+		const url = new URL(request.url);
+		if (url.protocol === "http:" || url.protocol === "https:") return `${url.protocol}//${url.hostname}:3001`;
+	} catch {}
+	return "http://localhost:3001";
 }
 function buildSecurityHeaders(apiOrigin) {
-  const cspDirectives = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    // Product images are streamed from the API origin (see the /products/:id/image
-    // route), so that origin has to be allowed here and not only in connect-src.
-    `img-src 'self' data: https: ${apiOrigin}`,
-    // Without an explicit worker-src, script-src is used as the fallback and the
-    // blob-URL worker the dev client creates for HMR gets blocked.
-    "worker-src 'self' blob:",
-    `connect-src 'self' ${apiOrigin}${""}`,
-    "frame-src https://www.openstreetmap.org https://www.google.com/maps",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'"
-  ];
-  return {
-    "Content-Security-Policy": cspDirectives.join("; "),
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
-  };
+	const isDev = typeof process !== "undefined" ? false : false;
+	return {
+		"Content-Security-Policy": [
+			"default-src 'self'",
+			"script-src 'self' 'unsafe-inline'",
+			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+			"font-src 'self' https://fonts.gstatic.com data:",
+			`img-src 'self' data: https: ${apiOrigin}`,
+			"worker-src 'self' blob:",
+			`connect-src 'self' ${apiOrigin}${isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
+			"frame-src https://www.openstreetmap.org https://www.google.com/maps",
+			"frame-ancestors 'none'",
+			"object-src 'none'",
+			"base-uri 'self'",
+			"form-action 'self'"
+		].join("; "),
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options": "DENY",
+		"Referrer-Policy": "strict-origin-when-cross-origin",
+		"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
+	};
 }
-let serverEntryPromise;
+var serverEntryPromise;
 async function getServerEntry() {
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("./assets/server-nkD8CjI6.js").then((n) => n.s).then(
-      (m) => m.default ?? m
-    );
-  }
-  return serverEntryPromise;
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-D66PvnsQ.js").then((n) => n.t).then((m) => m.default ?? m);
+	return serverEntryPromise;
 }
 function applySecurityHeaders(response, apiOrigin) {
-  const securityHeaders = buildSecurityHeaders(apiOrigin);
-  for (const [name, value] of Object.entries(securityHeaders)) {
-    response.headers.set(name, value);
-  }
-  return response;
+	const securityHeaders = buildSecurityHeaders(apiOrigin);
+	for (const [name, value] of Object.entries(securityHeaders)) response.headers.set(name, value);
+	return response;
 }
 async function normalizeCatastrophicSsrResponse(response) {
-  if (response.status < 500) return response;
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) return response;
-  const body = await response.clone().text();
-  if (!isH3SwallowedErrorBody(body)) return response;
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return new Response(renderErrorPage(), {
-    status: 500,
-    headers: { "content-type": "text/html; charset=utf-8" }
-  });
+	if (response.status < 500) return response;
+	if (!(response.headers.get("content-type") ?? "").includes("application/json")) return response;
+	const body = await response.clone().text();
+	if (!isH3SwallowedErrorBody(body)) return response;
+	console.error(consumeLastCapturedError() ?? /* @__PURE__ */ new Error(`h3 swallowed SSR error: ${body}`));
+	return new Response(renderErrorPage(), {
+		status: 500,
+		headers: { "content-type": "text/html; charset=utf-8" }
+	});
 }
 function isH3SwallowedErrorBody(body) {
-  try {
-    const payload = JSON.parse(body);
-    return payload.unhandled === true && payload.message === "HTTPError";
-  } catch {
-    return false;
-  }
+	try {
+		const payload = JSON.parse(body);
+		return payload.unhandled === true && payload.message === "HTTPError";
+	} catch {
+		return false;
+	}
 }
-const server = {
-  async fetch(request, env, ctx) {
-    try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      const normalized = await normalizeCatastrophicSsrResponse(response);
-      const apiOrigin = resolveApiOrigin(request);
-      return applySecurityHeaders(normalized, apiOrigin);
-    } catch (error) {
-      console.error(error);
-      const response = new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" }
-      });
-      return applySecurityHeaders(response, resolveApiOrigin(request));
-    }
-  }
-};
-export {
-  server as default,
-  renderErrorPage as r
-};
+var server_default = { async fetch(request, env, ctx) {
+	try {
+		return applySecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)), resolveApiOrigin(request));
+	} catch (error) {
+		console.error(error);
+		return applySecurityHeaders(new Response(renderErrorPage(), {
+			status: 500,
+			headers: { "content-type": "text/html; charset=utf-8" }
+		}), resolveApiOrigin(request));
+	}
+} };
+export { server_default as default, renderErrorPage as t };
