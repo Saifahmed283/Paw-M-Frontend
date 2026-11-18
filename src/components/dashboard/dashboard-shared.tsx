@@ -44,13 +44,11 @@ export function OverviewCard({
   description,
   action,
   children,
-  empty,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
-  empty?: string;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card">

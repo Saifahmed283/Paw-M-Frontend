@@ -38,7 +38,7 @@ export function PaymentSettleDialog({
     setBusy(true);
     try {
       await settlePayment(payment.id, { method, notes: notes.trim() });
-      toast.success(t("payments.settle"));
+      toast.success(t("payments.settled"));
       onClose();
     } catch (err) {
       const message = err instanceof Error && err.message ? err.message : "";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { UserPlus, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 
 interface EmployeeFormData {
   fullName: string;
@@ -57,6 +56,22 @@ const DEFAULT_ACCOUNT: AccountFormData = {
   role: "staff",
 };
 
+/** Returns a validated commission-rate object, or null when the text is invalid. */
+function parseCommissionRates(raw: string): Record<string, number> | null {
+  try {
+    const parsed = JSON.parse(raw.trim() || "{}") as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const result: Record<string, number> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
+      result[key] = value;
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 export function RecruitmentPanel() {
   const { t } = useI18n();
   const [employeeForm, setEmployeeForm] = useState<EmployeeFormData>(DEFAULT_EMPLOYEE);
@@ -72,28 +87,55 @@ export function RecruitmentPanel() {
     setAccountForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const createEmployee = async () => {
-    if (!employeeForm.fullName.trim() || !employeeForm.email.trim()) {
-      toast.error(t("dash.recruitment.error"));
+  const createEmployee = async (event: FormEvent) => {
+    event.preventDefault();
+    if (employeeLoading) return;
+
+    const fullName = employeeForm.fullName.trim();
+    const email = employeeForm.email.trim();
+    if (!fullName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error(t("dash.recruitment.invalidEmail"));
+      return;
+    }
+
+    const hourlyRate = Number.parseFloat(employeeForm.hourlyRate);
+    const monthlySalary = Number.parseFloat(employeeForm.monthlySalary);
+    if (
+      !Number.isFinite(hourlyRate) ||
+      hourlyRate < 0 ||
+      !Number.isFinite(monthlySalary) ||
+      monthlySalary < 0
+    ) {
+      toast.error(t("dash.recruitment.invalidRate"));
+      return;
+    }
+
+    const roleHoursPerDay = Number.parseInt(employeeForm.roleHoursPerDay, 10);
+    if (!Number.isFinite(roleHoursPerDay) || roleHoursPerDay < 1 || roleHoursPerDay > 24) {
+      toast.error(t("dash.recruitment.invalidHours"));
+      return;
+    }
+
+    const commissionRates = parseCommissionRates(employeeForm.commissionRates);
+    if (!commissionRates) {
+      toast.error(t("dash.recruitment.invalidCommission"));
       return;
     }
 
     setEmployeeLoading(true);
     try {
-      const body = {
-        fullName: employeeForm.fullName.trim(),
-        email: employeeForm.email.trim(),
+      await api.post("/api/employees", {
+        fullName,
+        email,
         phone: employeeForm.phone.trim() || null,
         role: employeeForm.role,
         payRateType: employeeForm.payRateType,
-        hourlyRate: Number.parseFloat(employeeForm.hourlyRate) || 0,
-        monthlySalary: Number.parseFloat(employeeForm.monthlySalary) || 0,
-        roleHoursPerDay: Number.parseInt(employeeForm.roleHoursPerDay, 10) || 8,
-        commissionRates: JSON.parse(employeeForm.commissionRates || "{}"),
+        hourlyRate,
+        monthlySalary,
+        roleHoursPerDay,
+        commissionRates,
         isActive: employeeForm.isActive,
-      };
-
-      await api.post("/api/employees", body);
+      });
       toast.success(t("dash.recruitment.employeeCreated"));
       setEmployeeForm(DEFAULT_EMPLOYEE);
     } catch (err) {
@@ -104,12 +146,15 @@ export function RecruitmentPanel() {
     }
   };
 
-  const createAccount = async () => {
-    if (!accountForm.username.trim() || !accountForm.password.trim()) {
-      toast.error(t("dash.recruitment.error"));
+  const createAccount = async (event: FormEvent) => {
+    event.preventDefault();
+    if (accountLoading) return;
+
+    const username = accountForm.username.trim().toLowerCase();
+    if (username.length < 3) {
+      toast.error(t("dash.recruitment.invalidUsername"));
       return;
     }
-
     if (accountForm.password.length < 6) {
       toast.error(t("auth.passTooShort"));
       return;
@@ -118,7 +163,7 @@ export function RecruitmentPanel() {
     setAccountLoading(true);
     try {
       await api.post("/api/auth/accounts", {
-        username: accountForm.username.trim().toLowerCase(),
+        username,
         password: accountForm.password,
         role: accountForm.role,
       });
@@ -129,17 +174,6 @@ export function RecruitmentPanel() {
       toast.error(t("dash.recruitment.error"));
     } finally {
       setAccountLoading(false);
-    }
-  };
-
-  const roleLabel = (role: string) => {
-    switch (role) {
-      case "admin":
-        return t("auth.role.admin");
-      case "payroll":
-        return t("auth.role.payroll");
-      default:
-        return t("auth.role.staff");
     }
   };
 
@@ -155,225 +189,232 @@ export function RecruitmentPanel() {
       <CardContent>
         <Tabs defaultValue="employee" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="employee">
-              {t("dash.recruitment.employee")}
-            </TabsTrigger>
-            <TabsTrigger value="account">
-              {t("dash.recruitment.account")}
-            </TabsTrigger>
+            <TabsTrigger value="employee">{t("dash.recruitment.employee")}</TabsTrigger>
+            <TabsTrigger value="account">{t("dash.recruitment.account")}</TabsTrigger>
           </TabsList>
 
           {/* Employee Form Tab */}
-          <TabsContent value="employee" className="space-y-6">
-            <p className="text-sm text-muted-foreground">{t("dash.recruitment.employeeDesc")}</p>
+          <form onSubmit={createEmployee}>
+            <TabsContent value="employee" className="space-y-6">
+              <p className="text-sm text-muted-foreground">{t("dash.recruitment.employeeDesc")}</p>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="fullName">{t("dash.recruitment.fullName")}</Label>
-                <Input
-                  id="fullName"
-                  value={employeeForm.fullName}
-                  onChange={(e) => handleEmployeeChange("fullName", e.target.value)}
-                  placeholder="e.g., Dr. Ahmed Hassan"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-fullName">{t("dash.recruitment.fullName")}</Label>
+                  <Input
+                    id="employee-fullName"
+                    value={employeeForm.fullName}
+                    onChange={(e) => handleEmployeeChange("fullName", e.target.value)}
+                    placeholder={t("dash.recruitment.fullNamePlaceholder")}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-email">{t("dash.recruitment.email")}</Label>
+                  <Input
+                    id="employee-email"
+                    type="email"
+                    value={employeeForm.email}
+                    onChange={(e) => handleEmployeeChange("email", e.target.value)}
+                    placeholder="ahmed@pawm.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-phone">{t("dash.recruitment.phone")}</Label>
+                  <Input
+                    id="employee-phone"
+                    type="tel"
+                    value={employeeForm.phone}
+                    onChange={(e) => handleEmployeeChange("phone", e.target.value)}
+                    placeholder={t("dash.recruitment.phonePlaceholder")}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-role">{t("dash.recruitment.role")}</Label>
+                  <Select
+                    value={employeeForm.role}
+                    onValueChange={(v) =>
+                      handleEmployeeChange("role", v as EmployeeFormData["role"])
+                    }
+                  >
+                    <SelectTrigger id="employee-role">
+                      <SelectValue placeholder={t("dash.recruitment.role")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">{t("auth.role.staff")}</SelectItem>
+                      <SelectItem value="payroll">{t("auth.role.payroll")}</SelectItem>
+                      <SelectItem value="admin">{t("auth.role.admin")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">{t("dash.recruitment.email")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={employeeForm.email}
-                  onChange={(e) => handleEmployeeChange("email", e.target.value)}
-                  placeholder="ahmed@pawm.com"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">{t("dash.recruitment.phone")}</Label>
-                <Input
-                  id="phone"
-                  value={employeeForm.phone}
-                  onChange={(e) => handleEmployeeChange("phone", e.target.value)}
-                  placeholder="+20 10 1234 5678"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">{t("dash.recruitment.role")}</Label>
-                <Select
-                  value={employeeForm.role}
-                  onValueChange={(v) => handleEmployeeChange("role", v as "admin" | "payroll" | "staff")}
-                >
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder={t("dash.recruitment.role")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="staff">{t("auth.role.staff")}</SelectItem>
-                    <SelectItem value="payroll">{t("auth.role.payroll")}</SelectItem>
-                    <SelectItem value="admin">{t("auth.role.admin")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <p className="text-sm font-medium text-muted-foreground">
-              {t("dash.recruitment.payRateType")}
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="payRateType">{t("dash.recruitment.payRateType")}</Label>
-                <Select
-                  value={employeeForm.payRateType}
-                  onValueChange={(v) => handleEmployeeChange("payRateType", v as "hourly" | "monthly")}
-                >
-                  <SelectTrigger id="payRateType">
-                    <SelectValue placeholder={t("dash.recruitment.payRateType")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hourly">{t("dash.recruitment.hourly")}</SelectItem>
-                    <SelectItem value="monthly">{t("dash.recruitment.monthly")}</SelectItem>
-                  </SelectContent>
-                </Select>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t("dash.recruitment.payRateType")}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-payRateType">{t("dash.recruitment.payRateType")}</Label>
+                  <Select
+                    value={employeeForm.payRateType}
+                    onValueChange={(v) =>
+                      handleEmployeeChange("payRateType", v as EmployeeFormData["payRateType"])
+                    }
+                  >
+                    <SelectTrigger id="employee-payRateType">
+                      <SelectValue placeholder={t("dash.recruitment.payRateType")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hourly">{t("dash.recruitment.hourly")}</SelectItem>
+                      <SelectItem value="monthly">{t("dash.recruitment.monthly")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {employeeForm.payRateType === "hourly" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="employee-hourlyRate">{t("dash.recruitment.hourlyRate")}</Label>
+                    <Input
+                      id="employee-hourlyRate"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={employeeForm.hourlyRate}
+                      onChange={(e) => handleEmployeeChange("hourlyRate", e.target.value)}
+                      placeholder="50"
+                    />
+                  </div>
+                )}
+                {employeeForm.payRateType === "monthly" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="employee-monthlySalary">
+                      {t("dash.recruitment.monthlySalary")}
+                    </Label>
+                    <Input
+                      id="employee-monthlySalary"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={employeeForm.monthlySalary}
+                      onChange={(e) => handleEmployeeChange("monthlySalary", e.target.value)}
+                      placeholder="5000"
+                    />
+                  </div>
+                )}
+                <div className="grid gap-2">
+                  <Label htmlFor="employee-roleHoursPerDay">
+                    {t("dash.recruitment.roleHoursPerDay")}
+                  </Label>
+                  <Input
+                    id="employee-roleHoursPerDay"
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={employeeForm.roleHoursPerDay}
+                    onChange={(e) => handleEmployeeChange("roleHoursPerDay", e.target.value)}
+                    placeholder="8"
+                  />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="employee-commissionRates">
+                    {t("dash.recruitment.commissionRates")}
+                  </Label>
+                  <Textarea
+                    id="employee-commissionRates"
+                    rows={3}
+                    value={employeeForm.commissionRates}
+                    onChange={(e) => handleEmployeeChange("commissionRates", e.target.value)}
+                    placeholder={t("dash.recruitment.commissionPlaceholder")}
+                    className="font-mono text-sm"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2" style={{ display: employeeForm.payRateType === "hourly" ? "grid" : "none" }}>
-                <Label htmlFor="hourlyRate">{t("dash.recruitment.hourlyRate")}</Label>
-                <Input
-                  id="hourlyRate"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={employeeForm.hourlyRate}
-                  onChange={(e) => handleEmployeeChange("hourlyRate", e.target.value)}
-                  placeholder="50"
-                />
-              </div>
-              <div className="grid gap-2" style={{ display: employeeForm.payRateType === "monthly" ? "grid" : "none" }}>
-                <Label htmlFor="monthlySalary">{t("dash.recruitment.monthlySalary")}</Label>
-                <Input
-                  id="monthlySalary"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={employeeForm.monthlySalary}
-                  onChange={(e) => handleEmployeeChange("monthlySalary", e.target.value)}
-                  placeholder="5000"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="roleHoursPerDay">{t("dash.recruitment.roleHoursPerDay")}</Label>
-                <Input
-                  id="roleHoursPerDay"
-                  type="number"
-                  min="1"
-                  max="24"
-                  value={employeeForm.roleHoursPerDay}
-                  onChange={(e) => handleEmployeeChange("roleHoursPerDay", e.target.value)}
-                  placeholder="8"
-                />
-              </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="commissionRates">{t("dash.recruitment.commissionRates")}</Label>
-                <Textarea
-                  id="commissionRates"
-                  rows={3}
-                  value={employeeForm.commissionRates}
-                  onChange={(e) => handleEmployeeChange("commissionRates", e.target.value)}
-                  placeholder='{"consultation": 10, "surgery": 15}'
-                  className="font-mono text-sm"
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={employeeForm.isActive}
-                onChange={(e) => handleEmployeeChange("isActive", e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <Label htmlFor="isActive" className="cursor-pointer text-sm">
-                {t("dash.recruitment.isActive")}
-              </Label>
-            </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="employee-isActive"
+                  checked={employeeForm.isActive}
+                  onChange={(e) => handleEmployeeChange("isActive", e.target.checked)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <Label htmlFor="employee-isActive" className="cursor-pointer text-sm">
+                  {t("dash.recruitment.isActive")}
+                </Label>
+              </div>
 
-            <Button
-              onClick={createEmployee}
-              disabled={employeeLoading}
-              className="w-full sm:w-auto"
-            >
-              {employeeLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("dash.saving")}
-                </>
-              ) : (
-                t("dash.recruitment.createEmployee")
-              )}
-            </Button>
-          </TabsContent>
+              <Button type="submit" disabled={employeeLoading} className="w-full sm:w-auto">
+                {employeeLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {t("dash.saving")}
+                  </>
+                ) : (
+                  t("dash.recruitment.createEmployee")
+                )}
+              </Button>
+            </TabsContent>
+          </form>
 
           {/* Account Form Tab */}
-          <TabsContent value="account" className="space-y-6">
-            <p className="text-sm text-muted-foreground">{t("dash.recruitment.accountDesc")}</p>
+          <form onSubmit={createAccount}>
+            <TabsContent value="account" className="space-y-6">
+              <p className="text-sm text-muted-foreground">{t("dash.recruitment.accountDesc")}</p>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="username">{t("dash.recruitment.username")}</Label>
-                <Input
-                  id="username"
-                  value={accountForm.username}
-                  onChange={(e) => handleAccountChange("username", e.target.value)}
-                  placeholder="e.g., dr.ahmed"
-                  minLength={3}
-                  autoComplete="username"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="account-username">{t("dash.recruitment.username")}</Label>
+                  <Input
+                    id="account-username"
+                    value={accountForm.username}
+                    onChange={(e) => handleAccountChange("username", e.target.value)}
+                    placeholder={t("dash.recruitment.usernamePlaceholder")}
+                    minLength={3}
+                    autoComplete="username"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="account-role">{t("dash.recruitment.role")}</Label>
+                  <Select
+                    value={accountForm.role}
+                    onValueChange={(v) => handleAccountChange("role", v)}
+                  >
+                    <SelectTrigger id="account-role">
+                      <SelectValue placeholder={t("dash.recruitment.role")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">{t("auth.role.staff")}</SelectItem>
+                      <SelectItem value="payroll">{t("auth.role.payroll")}</SelectItem>
+                      <SelectItem value="admin">{t("auth.role.admin")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="account-password">{t("dash.recruitment.password")}</Label>
+                  <Input
+                    id="account-password"
+                    type="password"
+                    value={accountForm.password}
+                    onChange={(e) => handleAccountChange("password", e.target.value)}
+                    placeholder="••••••••"
+                    minLength={6}
+                    autoComplete="new-password"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">{t("dash.recruitment.role")}</Label>
-                <Select
-                  value={accountForm.role}
-                  onValueChange={(v) => handleAccountChange("role", v)}
-                >
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder={t("dash.recruitment.role")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="staff">{t("auth.role.staff")}</SelectItem>
-                    <SelectItem value="payroll">{t("auth.role.payroll")}</SelectItem>
-                    <SelectItem value="admin">{t("auth.role.admin")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="password">{t("dash.recruitment.password")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={accountForm.password}
-                  onChange={(e) => handleAccountChange("password", e.target.value)}
-                  placeholder="••••••••"
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
 
-            <Button
-              onClick={createAccount}
-              disabled={accountLoading}
-              className="w-full sm:w-auto"
-            >
-              {accountLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("dash.saving")}
-                </>
-              ) : (
-                t("dash.recruitment.createAccount")
-              )}
-            </Button>
-          </TabsContent>
+              <Button type="submit" disabled={accountLoading} className="w-full sm:w-auto">
+                {accountLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {t("dash.saving")}
+                  </>
+                ) : (
+                  t("dash.recruitment.createAccount")
+                )}
+              </Button>
+            </TabsContent>
+          </form>
         </Tabs>
       </CardContent>
     </Card>

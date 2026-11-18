@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
-import type { PaymentKind, PaymentMethod, Status } from "@/lib/clinic-store";
+import type { PaymentKind, PaymentMethod, PaymentStatus, Status } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
 
 export function StatusBadge({ status }: { status: Status }) {
@@ -43,11 +43,21 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
   );
 }
 
-export function PaymentStatusBadge({ status }: { status: "unpaid" | "paid" }) {
+export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const { t } = useI18n();
-  return status === "paid" ? (
-    <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>
-  ) : (
+  if (status === "paid") {
+    return (
+      <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>
+    );
+  }
+  if (status === "proof_submitted") {
+    return (
+      <Badge className="border-transparent bg-amber-500/15 text-amber-600">
+        {t("pay.underReview")}
+      </Badge>
+    );
+  }
+  return (
     <Badge className="border-transparent bg-muted text-muted-foreground">{t("pay.unpaid")}</Badge>
   );
 }

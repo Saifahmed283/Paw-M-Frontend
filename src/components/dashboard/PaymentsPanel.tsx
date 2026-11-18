@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Banknote, CalendarClock, ListChecks, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,7 @@ import {
   updateSettings,
   type Payment,
   type PaymentMethod,
+  type PaymentStatus,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -49,19 +50,21 @@ import {
 } from "./dashboard-helpers";
 import { formatMoney, formatDate } from "./dashboard-format";
 import { PaymentSettleDialog } from "./PaymentSettleDialog";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
   const { t } = useI18n();
   const [title, setTitle] = useState(payment?.title ?? "");
   const [amount, setAmount] = useState(payment ? String(payment.amount) : "");
   const [method, setMethod] = useState<PaymentMethod>(payment?.method ?? "cash");
-  const [status, setStatus] = useState<"unpaid" | "paid">(payment?.status ?? "paid");
+  const [status, setStatus] = useState<PaymentStatus>(payment?.status ?? "paid");
   const [date, setDate] = useState(payment?.date ?? new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState(payment?.notes ?? "");
   const [orderId, setOrderId] = useState(payment?.orderId ?? "");
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    if (saving) return;
     const value = Number.parseFloat(amount);
     if (!title.trim() || !Number.isFinite(value) || value <= 0) {
       toast.error(t("payments.invalid"));
@@ -145,11 +148,12 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
             <Field label={t("payments.status")}>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as "unpaid" | "paid")}
+                onChange={(e) => setStatus(e.target.value as PaymentStatus)}
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
               >
                 <option value="paid">{t("pay.paid")}</option>
                 <option value="unpaid">{t("pay.unpaid")}</option>
+                <option value="proof_submitted">{t("pay.underReview")}</option>
               </select>
             </Field>
           </div>
@@ -192,7 +196,13 @@ export function PaymentsPanel() {
   const [instapayDraft, setInstapayDraft] = useState(settings.instapay);
   const [query, setQuery] = useState("");
   const [settling, setSettling] = useState<Payment | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Payment | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [savingProvider, setSavingProvider] = useState(false);
   const settlingPayment = payments.find((p) => p.id === settling?.id) ?? settling;
+
+  // Keep the editable draft in sync when settings are refreshed elsewhere.
+  useEffect(() => setInstapayDraft(settings.instapay), [settings.instapay]);
   const { sort, toggle } = useSortState("date", "desc");
   const comparators: Record<string, (a: Payment, b: Payment) => number> = {
     date: (a, b) => a.date.localeCompare(b.date),
@@ -203,9 +213,11 @@ export function PaymentsPanel() {
   const now = new Date();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const collected = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-  const pending = payments.filter((p) => p.status === "unpaid").reduce((s, p) => s + p.amount, 0);
+  const pending = payments
+    .filter((p) => p.status !== "paid")
+    .reduce((s, p) => s + p.amount, 0);
   const thisMonth = payments
-    .filter((p) => p.status === "paid" && p.date.startsWith(monthPrefix))
+    .filter((p) => p.status === "paid" && (p.date ?? "").startsWith(monthPrefix))
     .reduce((s, p) => s + p.amount, 0);
 
   const summary = [
@@ -243,9 +255,31 @@ export function PaymentsPanel() {
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["title", "notes", "orderId"]);
 
-  const remove = async (id: string) => {
-    await deletePayment(id);
-    toast.success(t("dash.toast.deleted"));
+  const saveProvider = async () => {
+    if (savingProvider) return;
+    setSavingProvider(true);
+    try {
+      await updateSettings({ instapay: instapayDraft.trim() });
+      toast.success(t("dash.toast.saved"));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setSavingProvider(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await deletePayment(pendingDelete.id);
+      toast.success(t("dash.toast.deleted"));
+      setPendingDelete(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -299,13 +333,10 @@ export function PaymentsPanel() {
             </div>
             <Button
               size="sm"
-              disabled={instapayDraft.trim() === settings.instapay.trim()}
-              onClick={async () => {
-                await updateSettings({ instapay: instapayDraft.trim() });
-                toast.success(t("dash.toast.saved"));
-              }}
+              disabled={savingProvider || instapayDraft.trim() === settings.instapay.trim()}
+              onClick={saveProvider}
             >
-              {t("payments.providersSave")}
+              {savingProvider ? t("dash.saving") : t("payments.providersSave")}
             </Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -350,6 +381,7 @@ export function PaymentsPanel() {
                 { value: "instapay", key: "checkout.method.instapay.short" },
               ].map((m) => (
                 <button
+                  type="button"
                   key={m.value}
                   onClick={() => {
                     setMethodFilter(m.value);
@@ -370,8 +402,10 @@ export function PaymentsPanel() {
                 { value: "all", key: "dash.filterAll" },
                 { value: "paid", key: "pay.paid" },
                 { value: "unpaid", key: "pay.unpaid" },
+                { value: "proof_submitted", key: "pay.underReview" },
               ].map((s) => (
                 <button
+                  type="button"
                   key={s.value}
                   onClick={() => {
                     setStatusFilter(s.value);
@@ -472,7 +506,7 @@ export function PaymentsPanel() {
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1.5">
-                            {p.status === "unpaid" && (
+                            {p.status !== "paid" && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -496,7 +530,7 @@ export function PaymentsPanel() {
                               variant="ghost"
                               className="h-7 px-2 text-muted-foreground hover:text-destructive"
                               aria-label={t("dash.delete")}
-                              onClick={() => remove(p.id)}
+                              onClick={() => setPendingDelete(p)}
                             >
                               <Trash2 className="size-3.5" />
                             </Button>
@@ -525,6 +559,14 @@ export function PaymentsPanel() {
       {settlingPayment && (
         <PaymentSettleDialog payment={settlingPayment} onClose={() => setSettling(null)} />
       )}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={t("dash.delete")}
+        description={t("dash.cannotUndo")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   );
 }

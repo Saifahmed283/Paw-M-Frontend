@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
-import { Plus, ScanLine, Star, Trash2, UploadCloud } from "lucide-react";
+import { Plus, ScanLine, Star, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 const PRODUCT_CATEGORIES = ["food", "treats", "toys", "grooming", "health", "accessories"] as const;
 const PET_TYPES = ["dog", "cat", "both"] as const;
@@ -76,6 +77,7 @@ function ProductDialog({
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scanText, setScanText] = useState("");
   const [scanBuffer, setScanBuffer] = useState("");
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(() =>
     product
       ? {
@@ -153,6 +155,7 @@ function ProductDialog({
   }, [scanBuffer, submitScan]);
 
   const save = async () => {
+    if (saving) return;
     const price = Number(form.price);
     const stock = Number(form.stock);
     const compareRaw = form.compareAtPrice.trim();
@@ -161,7 +164,7 @@ function ProductDialog({
       toast.error(t("dash.form.product.requiredName"));
       return;
     }
-    if (!Number.isFinite(price) || price < 0) {
+    if (!form.price.trim() || !Number.isFinite(price) || price < 0) {
       toast.error(t("dash.form.product.requiredPrice"));
       return;
     }
@@ -169,8 +172,14 @@ function ProductDialog({
       toast.error(t("dash.form.product.requiredCompare"));
       return;
     }
-    if (!Number.isInteger(stock) || stock < 0) {
+    if (!form.stock.trim() || !Number.isInteger(stock) || stock < 0) {
       toast.error(t("dash.form.product.requiredStock"));
+      return;
+    }
+    const barcode = form.barcode.trim();
+    const duplicate = products.find((p) => p.barcode === barcode && p.id !== product?.id);
+    if (duplicate) {
+      toast.error(t("dash.form.product.barcodeExists", { name: duplicate.name }));
       return;
     }
     const draft = {
@@ -183,19 +192,21 @@ function ProductDialog({
       category: form.category || "accessories",
       petType: form.petType,
       featured: form.featured,
-      barcode: form.barcode.trim(),
+      barcode,
       barcodeImage: form.barcodeImage,
     };
+    setSaving(true);
     try {
       if (product) await updateProduct(product.id, draft);
       else await createProduct(draft);
+      toast.success(t("dash.toast.saved"));
+      onClose();
     } catch (err) {
       console.error("Failed to save product", err);
       toast.error(t("dash.toast.error"));
-      return;
+    } finally {
+      setSaving(false);
     }
-    toast.success(t("dash.toast.saved"));
-    onClose();
   };
 
   return (
@@ -394,10 +405,12 @@ function ProductDialog({
           </label>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             {t("dash.cancel")}
           </Button>
-          <Button onClick={save}>{t("dash.save")}</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? t("dash.saving") : t("dash.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -411,6 +424,9 @@ export function ProductsPanel() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [petType, setPetType] = useState<string>("all");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Product, b: Product) => number> = {
     name: (a, b) => a.name.localeCompare(b.name),
@@ -428,6 +444,21 @@ export function ProductsPanel() {
   );
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["name", "category", "id"]);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteProduct(pendingDelete.id);
+      toast.success(t("dash.toast.deleted"));
+      setPendingDelete(null);
+    } catch (err) {
+      console.error("Failed to delete product", err);
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Card>
@@ -573,13 +604,18 @@ export function ProductsPanel() {
                       variant="ghost"
                       className="h-7 px-2"
                       aria-label={t("dash.form.product.featured")}
+                      disabled={busyId === p.id}
                       onClick={async () => {
+                        if (busyId) return;
+                        setBusyId(p.id);
                         try {
                           await updateProduct(p.id, { ...p, featured: !p.featured });
                           toast.success(t("dash.toast.saved"));
                         } catch (err) {
                           console.error("Failed to toggle featured", err);
                           toast.error(t("dash.toast.error"));
+                        } finally {
+                          setBusyId(null);
                         }
                       }}
                     >
@@ -606,15 +642,7 @@ export function ProductsPanel() {
                         variant="ghost"
                         className="h-7 px-2 text-muted-foreground hover:text-destructive"
                         aria-label={t("dash.delete")}
-                        onClick={async () => {
-                          try {
-                            await deleteProduct(p.id);
-                            toast.success(t("dash.toast.deleted"));
-                          } catch (err) {
-                            console.error("Failed to delete product", err);
-                            toast.error(t("dash.toast.error"));
-                          }
-                        }}
+                        onClick={() => setPendingDelete(p)}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -644,6 +672,14 @@ export function ProductsPanel() {
           products={products}
         />
       )}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={t("dash.delete")}
+        description={t("dash.cannotUndo")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </Card>
   );
 }

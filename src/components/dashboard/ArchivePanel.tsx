@@ -32,12 +32,18 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { StatusBadge, PaymentMethodBadge, PaymentStatusBadge } from "./dashboard-helpers";
 import { formatDate, formatMoney } from "./dashboard-format";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
+
+type PendingDelete = { id: string; kind: "request" | "order" };
 
 export function ArchivePanel() {
   const { t, lang } = useI18n();
   const { requests, orders, settings } = useClinicStore();
   const [reqQuery, setReqQuery] = useState("");
   const [orderQuery, setOrderQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { sort: reqSort, toggle: toggleReqSort } = useSortState("newest", "desc");
   const { sort: ordSort, toggle: toggleOrdSort } = useSortState("newest", "desc");
 
@@ -59,21 +65,34 @@ export function ArchivePanel() {
   const reqGrid = useGrid(sortedReqs, reqQuery, ["ownerName", "petName", "doctorName", "phone"]);
   const ordGrid = useGrid(sortedOrds, orderQuery, ["customerName", "phone", "email", "id"]);
 
-  const restoreReq = async (id: string) => {
-    await archiveBooking(id, false);
-    toast.success(t("dash.toast.restored"));
+  const runAction = async (id: string, action: () => Promise<void>, successKey: string) => {
+    if (busyId) return;
+    setBusyId(id);
+    try {
+      await action();
+      toast.success(t(successKey));
+    } catch (err) {
+      console.error("Archive action failed", err);
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setBusyId(null);
+    }
   };
-  const deleteReq = async (id: string) => {
-    await deleteRequest(id);
-    toast.success(t("dash.toast.deleted"));
-  };
-  const restoreOrd = async (id: string) => {
-    await archiveOrder(id, false);
-    toast.success(t("dash.toast.restored"));
-  };
-  const deleteOrd = async (id: string) => {
-    await deleteOrder(id);
-    toast.success(t("dash.toast.deleted"));
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      if (pendingDelete.kind === "request") await deleteRequest(pendingDelete.id);
+      else await deleteOrder(pendingDelete.id);
+      toast.success(t("dash.toast.deleted"));
+      setPendingDelete(null);
+    } catch (err) {
+      console.error("Failed to delete archived record", err);
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -155,7 +174,10 @@ export function ArchivePanel() {
                               size="sm"
                               variant="outline"
                               className="h-7"
-                              onClick={() => restoreReq(r.id)}
+                              disabled={busyId === r.id}
+                              onClick={() =>
+                                runAction(r.id, () => archiveBooking(r.id, false), "dash.toast.restored")
+                              }
                             >
                               <ArchiveRestore className="size-3.5" /> {t("archive.restore")}
                             </Button>
@@ -165,7 +187,8 @@ export function ArchivePanel() {
                               className="h-7 px-2 text-muted-foreground hover:text-destructive"
                               aria-label={t("dash.delete")}
                               title={t("archive.deletePermanent")}
-                              onClick={() => deleteReq(r.id)}
+                              disabled={busyId === r.id}
+                              onClick={() => setPendingDelete({ id: r.id, kind: "request" })}
                             >
                               <Trash2 className="size-3.5" />
                             </Button>
@@ -257,9 +280,7 @@ export function ArchivePanel() {
                           <PaymentMethodBadge method={o.paymentMethod} />
                         </TableCell>
                         <TableCell>
-                          <PaymentStatusBadge
-                            status={o.paymentStatus === "paid" ? "paid" : "unpaid"}
-                          />
+                          <PaymentStatusBadge status={o.paymentStatus} />
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={o.status} />
@@ -270,7 +291,10 @@ export function ArchivePanel() {
                               size="sm"
                               variant="outline"
                               className="h-7"
-                              onClick={() => restoreOrd(o.id)}
+                              disabled={busyId === o.id}
+                              onClick={() =>
+                                runAction(o.id, () => archiveOrder(o.id, false), "dash.toast.restored")
+                              }
                             >
                               <ArchiveRestore className="size-3.5" /> {t("archive.restore")}
                             </Button>
@@ -280,7 +304,8 @@ export function ArchivePanel() {
                               className="h-7 px-2 text-muted-foreground hover:text-destructive"
                               aria-label={t("dash.delete")}
                               title={t("archive.deletePermanent")}
-                              onClick={() => deleteOrd(o.id)}
+                              disabled={busyId === o.id}
+                              onClick={() => setPendingDelete({ id: o.id, kind: "order" })}
                             >
                               <Trash2 className="size-3.5" />
                             </Button>
@@ -303,6 +328,15 @@ export function ArchivePanel() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={t("archive.deletePermanent")}
+        description={t("dash.cannotUndo")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   );
 }

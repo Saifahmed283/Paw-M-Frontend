@@ -93,6 +93,10 @@ import {
 import { StatCard, OverviewCard } from "@/components/dashboard/dashboard-shared";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
+import {
+  DASHBOARD_NAVIGATE_EVENT,
+  type DashboardNavigateDetail,
+} from "@/lib/dashboard-navigation";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -1007,6 +1011,18 @@ function DashboardPage() {
       if (next !== tab) setTab(next);
     }
   });
+
+  // Let in-shell components (e.g. the notification bell) request a tab switch.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<DashboardNavigateDetail>).detail;
+      if (!detail?.tabId) return;
+      if (!allowedTabsForRole(store.settings?.rolePermissions, role).includes(detail.tabId)) return;
+      setTab(detail.tabId);
+    };
+    window.addEventListener(DASHBOARD_NAVIGATE_EVENT, handler);
+    return () => window.removeEventListener(DASHBOARD_NAVIGATE_EVENT, handler);
+  }, [role, store.settings?.rolePermissions]);
 
   useNotificationSound({
     enabled: authed,

@@ -74,14 +74,30 @@ export function WorkdaysPanel() {
   const { workDays, workDay, settings } = useClinicStore();
   const [openDay, setOpenDay] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingDay, setLoadingDay] = useState(false);
 
   useEffect(() => {
+    let active = true;
     if (openDay) {
-      loadWorkDay(openDay).catch(() => undefined);
+      // Show a loading state instead of the previously opened day's cached
+      // detail while the new folder is being fetched.
+      setLoadingDay(true);
+      loadWorkDay(openDay)
+        .catch(() => undefined)
+        .finally(() => {
+          if (active) setLoadingDay(false);
+        });
     } else {
       loadWorkDays().catch(() => undefined);
     }
+    return () => {
+      active = false;
+    };
   }, [openDay]);
+
+  const reloadCurrentDay = async () => {
+    await Promise.all([openDay ? loadWorkDay(openDay) : loadWorkDays(), refreshClinicData()]);
+  };
 
   const restoreBooking = async (id: string) => {
     if (busy) return;
@@ -89,7 +105,7 @@ export function WorkdaysPanel() {
     try {
       await archiveBooking(id, false);
       toast.success(t("dash.toast.restored"));
-      await Promise.all([loadWorkDay(openDay!), refreshClinicData()]);
+      await reloadCurrentDay();
     } catch {
       toast.error(t("dash.toast.error"));
     } finally {
@@ -103,7 +119,7 @@ export function WorkdaysPanel() {
     try {
       await archiveOrder(id, false);
       toast.success(t("dash.toast.restored"));
-      await Promise.all([loadWorkDay(openDay!), refreshClinicData()]);
+      await reloadCurrentDay();
     } catch {
       toast.error(t("dash.toast.error"));
     } finally {
@@ -111,7 +127,23 @@ export function WorkdaysPanel() {
     }
   };
 
-  if (openDay && workDay) {
+  if (openDay) {
+    // Guard against rendering a stale cached day while the requested folder
+    // is still loading (or failed to load).
+    if (loadingDay || !workDay || workDay.date !== openDay) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FolderOpen className="size-4" /> {t("dash.workdays")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("dash.loading")}</p>
+          </CardContent>
+        </Card>
+      );
+    }
     const hasAnything =
       workDay.bookings.length > 0 ||
       workDay.orders.length > 0 ||
@@ -260,9 +292,7 @@ export function WorkdaysPanel() {
                       </div>
                       <div className="flex items-center gap-2">
                         <PaymentMethodBadge method={o.paymentMethod} />
-                        <PaymentStatusBadge
-                          status={o.paymentStatus === "paid" ? "paid" : "unpaid"}
-                        />
+                        <PaymentStatusBadge status={o.paymentStatus} />
                         <StatusBadge status={o.status} />
                         {o.archived && (
                           <Button

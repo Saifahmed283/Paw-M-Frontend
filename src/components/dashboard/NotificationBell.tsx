@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
+import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -32,7 +33,13 @@ interface Notification {
   data?: unknown;
 }
 
+type NotificationPage = {
+  data: Notification[];
+  pagination?: { total?: number };
+};
+
 const POLL_INTERVAL = 30_000;
+const FETCH_LIMIT = 200;
 
 const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   payroll: DollarSign,
@@ -44,6 +51,26 @@ const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   booking: CalendarCheck,
 };
 
+function extractList(res: Notification[] | NotificationPage | null | undefined): Notification[] {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.data)) return res.data;
+  return [];
+}
+
+/** Map a notification to the dashboard tab that shows the underlying record. */
+function targetTabFor(notification: Notification): string | null {
+  const data =
+    notification.data && typeof notification.data === "object"
+      ? (notification.data as Record<string, unknown>)
+      : {};
+  if (data["orderId"] != null) return "orders";
+  if (data["bookingId"] != null) return "requests";
+  if (notification.type === "order") return "orders";
+  if (notification.type === "booking") return "requests";
+  if (notification.type === "payroll") return "payroll";
+  return null;
+}
+
 export function NotificationBell() {
   const { t, lang } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -51,10 +78,12 @@ export function NotificationBell() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await api.get<Notification[] | { data: Notification[] }>("/notifications/me");
-      setNotifications(Array.isArray(res) ? res : (res?.data ?? []));
+      const res = await api.get<Notification[] | NotificationPage>(
+        `/notifications/me?limit=${FETCH_LIMIT}`,
+      );
+      setNotifications(extractList(res));
     } catch {
-      /* ignore transient failures */
+      /* ignore transient failures — keep the last good list visible */
     }
   }, []);
 
@@ -82,8 +111,11 @@ export function NotificationBell() {
       }
     };
 
-    fetchNotifications();
-    start();
+    // Respect an already-hidden tab on first mount.
+    if (!document.hidden) {
+      fetchNotifications();
+      start();
+    }
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       stop();
@@ -93,23 +125,35 @@ export function NotificationBell() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const markAsRead = async (id: Notification["id"]) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  const markAsRead = async (notification: Notification) => {
+    const previous = notifications;
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
+    );
+
+    const tabId = targetTabFor(notification);
+    if (tabId) {
+      setOpen(false);
+      navigateToDashboardTab(tabId, extractRecordId(notification));
+    }
+
     try {
-      await api.patch(`/notifications/${id}/read`);
-      fetchNotifications();
+      await api.patch(`/notifications/${notification.id}/read`);
     } catch {
-      /* ignore */
+      // Roll back the optimistic change so the badge stays truthful.
+      setNotifications(previous);
     }
   };
 
   const markAllAsRead = async () => {
+    const unread = notifications.filter((n) => !n.isRead);
+    if (unread.length === 0) return;
+    const previous = notifications;
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
-      await Promise.all(notifications.map((n) => api.patch(`/notifications/${n.id}/read`)));
-      fetchNotifications();
+      await Promise.all(unread.map((n) => api.patch(`/notifications/${n.id}/read`)));
     } catch {
-      /* ignore */
+      setNotifications(previous);
     }
   };
 
@@ -157,7 +201,7 @@ export function NotificationBell() {
                   <li key={notification.id}>
                     <button
                       type="button"
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => markAsRead(notification)}
                       className={cn(
                         "flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-start transition-colors hover:bg-muted",
                         unread && "bg-primary/5",
@@ -199,4 +243,13 @@ export function NotificationBell() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+function extractRecordId(notification: Notification): string | number | undefined {
+  const data =
+    notification.data && typeof notification.data === "object"
+      ? (notification.data as Record<string, unknown>)
+      : {};
+  const value = data["orderId"] ?? data["bookingId"];
+  return typeof value === "string" || typeof value === "number" ? value : undefined;
 }

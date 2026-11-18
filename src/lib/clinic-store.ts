@@ -128,7 +128,7 @@ export type Payment = {
   title: string;
   amount: number;
   method: PaymentMethod;
-  status: "unpaid" | "paid";
+  status: PaymentStatus;
   date: string;
   notes: string;
   orderId?: string | null;
