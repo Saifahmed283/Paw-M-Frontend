@@ -35,11 +35,12 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-muted/40 p-2">
-      <div className="flex min-w-[190px] flex-1 items-center gap-2 rounded-xl bg-background px-3 shadow-sm">
-        <span className="shrink-0 text-xs font-medium text-muted-foreground">
-          {t("cashier.cashReceived")}
-        </span>
+    <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 p-1.5">
+      <span className="ps-1 text-[10px] font-bold uppercase tracking-wider text-white/50">
+        {t("cashier.cashReceived")}
+      </span>
+
+      <div className="relative">
         <Input
           type="number"
           min={0}
@@ -57,64 +58,64 @@ export function QuickCashCalculator({ total, currency, onCashReceivedChange }: P
           }}
           placeholder="0.00"
           aria-label={t("cashier.cashReceived")}
-          className="h-9 min-w-0 flex-1 border-0 p-0 text-end text-base font-bold shadow-none focus-visible:ring-0"
+          className="h-8 w-24 border-0 bg-transparent p-0 pe-8 text-center text-sm font-bold tabular-nums text-white shadow-none placeholder:text-white/30 focus-visible:ring-0"
         />
-        <span className="shrink-0 text-xs text-muted-foreground">{currency}</span>
+        <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[10px] text-white/40">
+          {currency}
+        </span>
       </div>
 
       <Button
         type="button"
-        size="sm"
         variant="secondary"
+        size="sm"
         onClick={() => setAmt(total)}
-        className="h-9 gap-1.5 rounded-xl px-3"
+        className="h-8 gap-1 border-0 bg-white/15 px-2 text-xs text-white hover:bg-white/25"
+        title={t("cashier.exact")}
       >
         <Banknote className="size-3.5" />
-        {t("cashier.exact")}
+        <span className="hidden 2xl:inline">{t("cashier.exact")}</span>
       </Button>
 
-      <div className="flex h-9 items-center gap-1 rounded-xl bg-background px-2 shadow-sm">
-        <span className="text-sm text-muted-foreground">+</span>
-        <Input
-          type="number"
-          min={0}
-          step="0.01"
-          inputMode="decimal"
-          value={extra}
-          onChange={(e) => setExtra(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addExtra();
-            }
-          }}
-          placeholder="0.00"
-          aria-label={t("cashier.extraAmount")}
-          className="h-8 w-16 border-0 p-0 text-center text-sm font-semibold shadow-none focus-visible:ring-0"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={addExtra}
-          aria-label={t("cashier.addAmount")}
-          className="size-6 rounded-lg"
-        >
-          <Plus className="size-3.5" />
-        </Button>
-      </div>
+      <span className="h-5 w-px bg-white/15" />
+
+      <Input
+        type="number"
+        min={0}
+        step="0.01"
+        inputMode="decimal"
+        value={extra}
+        onChange={(e) => setExtra(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            addExtra();
+          }
+        }}
+        placeholder="+ 0.00"
+        aria-label={t("cashier.extraAmount")}
+        className="h-8 w-16 border-0 bg-transparent p-0 text-center text-xs font-semibold tabular-nums text-white shadow-none placeholder:text-white/30 focus-visible:ring-0"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={addExtra}
+        aria-label={t("cashier.addAmount")}
+        title={t("cashier.addAmount")}
+        className="size-8 text-white/70 hover:bg-white/10 hover:text-white"
+      >
+        <Plus className="size-3.5" />
+      </Button>
 
       <span
         className={cn(
-          "flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold",
-          settled ? "bg-success/15 text-success" : "bg-amber-500/15 text-amber-600",
+          "flex min-w-[92px] items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tabular-nums",
+          settled ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-200",
         )}
       >
-        {settled && <Check className="size-3.5" />}
-        {settled ? t("cashier.changeDue") : t("cashier.remaining")}
-        <span className="font-mono text-sm">
-          {(settled ? change : shortfall).toFixed(2)} {currency}
-        </span>
+        {settled && <Check className="size-3" />}
+        {(settled ? change : shortfall).toFixed(2)} {currency}
       </span>
     </div>
   );

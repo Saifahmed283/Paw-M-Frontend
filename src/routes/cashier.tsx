@@ -15,6 +15,7 @@ import {
   Minus,
   Stethoscope,
   Moon,
+  Package,
   PackagePlus,
   Plus,
   ReceiptText,
@@ -25,13 +26,14 @@ import {
   Sun,
   Trash2,
   Undo2,
+  UserRound,
   Wallet,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -387,6 +389,7 @@ function CashierApp() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [result, setResult] = useState<{
     id: string;
@@ -752,213 +755,157 @@ function CashierApp() {
   const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
 
   return (
-    <div className="space-y-4">
-      {/* Financial strip on top: customer, method, totals and sale actions. */}
-      <div className="animate-in fade-in slide-in-from-top-3 duration-500">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Wallet className="size-4 text-primary" />
-              {t("cashier.payment")}
-            </CardTitle>
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col gap-3 bg-muted/20 p-3 sm:p-4">
+      {/* ── TOP COMMAND BAR ─────────────────────────────────────────────── */}
+      <section className="animate-in fade-in slide-in-from-top-3 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-3.5 text-white shadow-lg shadow-slate-900/10 ring-1 ring-white/10 duration-500">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          {/* Big total readout */}
+          <div className="min-w-[150px]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
+              {t("cashier.total")}
+            </p>
+            <p className="text-3xl font-black leading-tight tabular-nums tracking-tight text-white">
+              {formatPrice(totals.total, settings.currency)}
+            </p>
+            <p className="text-[11px] text-white/50">
+              {itemCount} {t("cashier.items").toLowerCase()}
+            </p>
+          </div>
+
+          <div className="hidden h-12 w-px bg-white/15 sm:block" />
+
+          {/* Payment method selector */}
+          <div className="flex items-center gap-1 rounded-xl bg-white/10 p-1">
+            {PAYMENT_METHODS.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setMethod(m.value)}
+                aria-pressed={method === m.value}
+                title={t(m.short)}
                 className={cn(
-                  "size-1.5 rounded-full",
-                  checkedIn ? "animate-pulse bg-success" : "bg-amber-500",
+                  "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all",
+                  method === m.value
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-white/60 hover:bg-white/10 hover:text-white",
                 )}
-              />
-              {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
-            </span>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Cash calculator stays pinned at the top of the till. */}
-            {method === "cash" && split.length <= 1 && (
-              <QuickCashCalculator
-                total={totals.total}
-                currency={settings.currency}
-                onCashReceivedChange={setCashReceived}
-              />
-            )}
+              >
+                <m.icon className="size-4" />
+                <span className="hidden xl:inline">{t(m.short)}</span>
+              </button>
+            ))}
+          </div>
 
-            <CustomerInfoPanel customer={customer} onChange={setCustomer} />
-
-            <div className="grid grid-cols-3 gap-2">
-              {PAYMENT_METHODS.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setMethod(m.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors",
-                    method === m.value
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/40",
-                  )}
-                  aria-pressed={method === m.value}
-                >
-                  <span
-                    className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-lg",
-                      method === m.value
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <m.icon className="size-4.5" />
-                  </span>
-                  <span className="text-xs font-semibold">{t(m.short)}</span>
-                </button>
-              ))}
-            </div>
-
-            {method === "fawry" && (
-              <p className="rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-xs text-primary">
-                {t("checkout.fawryHowTitle")}
-              </p>
-            )}
-            {method === "instapay" && (
-              <p className="rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
-                <span className="font-semibold text-primary">
-                  {t("checkout.method.instapay.short")}
-                </span>{" "}
-                <span className="font-mono font-bold">{settings.instapay}</span>
-              </p>
-            )}
-
-            <SplitPayment
+          {/* Compact cash calculator */}
+          {method === "cash" && split.length <= 1 && (
+            <QuickCashCalculator
               total={totals.total}
               currency={settings.currency}
-              allocations={split.length > 1 ? split : []}
-              onAllocationsChange={(a) => setSplit(a)}
+              onCashReceivedChange={setCashReceived}
             />
+          )}
 
-            <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-xl border p-3 text-sm font-semibold transition hover:border-primary/40",
-                    discountOpen ? "border-primary/40" : "border-border",
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <BadgePercent className="size-4 text-muted-foreground" />
-                    {t("cashier.discount")}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      "size-4 text-muted-foreground transition-transform",
-                      discountOpen && "rotate-180",
-                    )}
-                  />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <DiscountPanel
-                  orderDiscount={orderDiscount}
-                  subtotal={totals.subtotalAfterItems}
-                  currency={settings.currency}
-                  onApplyOrderDiscount={setOrderDiscount}
-                />
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("cashier.subtotal")}</span>
-                <span>{formatPrice(totals.subtotal, settings.currency)}</span>
-              </div>
-              {totals.itemDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("cashier.itemDiscounts")}</span>
-                  <span className="text-destructive">
-                    -{formatPrice(totals.itemDiscount, settings.currency)}
-                  </span>
-                </div>
-              )}
-              {totals.orderDiscountAmt > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("cashier.discountApplied")}</span>
-                  <span className="text-destructive">
-                    -{formatPrice(totals.orderDiscountAmt, settings.currency)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("cashier.items")}</span>
-                <span>{itemCount}</span>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex justify-between text-lg font-bold">
-              <span>{t("cashier.total")}</span>
-              <span>{formatPrice(totals.total, settings.currency)}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRefundOpen(true)}
-                className="gap-1.5"
-              >
-                <Undo2 className="size-4" />
-                {t("cashier.refund")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setReceiptOpen(true)}
-                disabled={cart.length === 0}
-                className="gap-1.5"
-              >
-                <ReceiptText className="size-4" />
-                {t("cashier.receiptPreview")}
-              </Button>
-              <Button
-                type="button"
-                onClick={submit}
-                size="lg"
-                disabled={busy || cart.length === 0}
-                className="flex-1 gap-1.5 shadow-glow"
-              >
-                <Wallet className="size-4" />
-                {busy ? "…" : t("cashier.completeSale")}
-              </Button>
-            </div>
-            {discountAmount > 0 && (
-              <p className="text-center text-xs text-muted-foreground">
-                {t("cashier.totalWithDiscount", {
-                  amount: formatPrice(discountAmount, settings.currency),
-                })}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pending payment requests stay close to the money panel. */}
-        <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="space-y-4 min-w-0">
-          {/* Add products on the left. */}
-        <Card className="animate-in fade-in slide-in-from-left-3 duration-500 transition-shadow hover:shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{t("cashier.addProducts")}</CardTitle>
+          {/* Primary actions */}
+          <div className="ms-auto flex items-center gap-1.5">
             <Button
+              type="button"
               variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              onClick={() => setShortcutsOpen(true)}
+              size="icon"
+              onClick={() => setRefundOpen(true)}
+              title={t("cashier.refund")}
+              aria-label={t("cashier.refund")}
+              className="text-white/70 hover:bg-white/10 hover:text-white"
             >
-              <Keyboard className="size-4 mr-1.5" />
-              {t("cashier.keyboardShortcuts")}
+              <Undo2 className="size-4" />
             </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setReceiptOpen(true)}
+              disabled={cart.length === 0}
+              title={t("cashier.receiptPreview")}
+              aria-label={t("cashier.receiptPreview")}
+              className="text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <ReceiptText className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              onClick={submit}
+              size="lg"
+              disabled={busy || cart.length === 0}
+              className="h-11 gap-2 rounded-xl px-5 shadow-glow"
+            >
+              <Wallet className="size-4" />
+              {busy ? "…" : t("cashier.completeSale")}
+            </Button>
+          </div>
+        </div>
+
+        {/* Slim status / summary row */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 pt-2 text-[11px] text-white/60">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                checkedIn ? "animate-pulse bg-success" : "bg-amber-500",
+              )}
+            />
+            {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
+          </span>
+          <span>
+            {t("cashier.subtotal")}: {formatPrice(totals.subtotal, settings.currency)}
+          </span>
+          {discountAmount > 0 && (
+            <span className="font-semibold text-rose-300">
+              −{formatPrice(discountAmount, settings.currency)}
+            </span>
+          )}
+          {customer.name && <span className="max-w-[160px] truncate text-white">{customer.name}</span>}
+          <button
+            type="button"
+            onClick={() => setShortcutsOpen(true)}
+            className="ms-auto flex items-center gap-1 transition-colors hover:text-white"
+          >
+            <Keyboard className="size-3.5" />
+            {t("cashier.keyboardShortcuts")}
+          </button>
+        </div>
+      </section>
+
+      {method === "fawry" && (
+        <p className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs text-primary">
+          {t("checkout.fawryHowTitle")}
+        </p>
+      )}
+      {method === "instapay" && (
+        <p className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
+          <span className="font-semibold text-primary">
+            {t("checkout.method.instapay.short")}
+          </span>{" "}
+          <span className="font-mono font-bold">{settings.instapay}</span>
+        </p>
+      )}
+
+      {/* ── WORKSPACE ───────────────────────────────────────────────────── */}
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* Product catalog */}
+        <Card className="animate-in flex min-h-[540px] flex-col overflow-hidden bg-card duration-500 slide-in-from-left-3">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+            <CardHeader className="gap-3 border-b bg-background/50 p-3">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Grid2X2 className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <CardTitle className="text-sm">{t("cashier.addProducts")}</CardTitle>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {t("cashier.scanPlaceholder")}
+                  </p>
+                </div>
+              </div>
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="scan" className="gap-1.5">
                   <Barcode className="size-4" />
                   {t("cashier.scanBarcode")}
@@ -967,12 +914,14 @@ function CashierApp() {
                   <Grid2X2 className="size-4" />
                   {t("cashier.quickAdd")}
                 </TabsTrigger>
-                <TabsTrigger value="service" className="col-span-2 gap-1.5 sm:col-span-1">
+                <TabsTrigger value="service" className="gap-1.5">
                   <Stethoscope className="size-4" />
                   {t("cashier.clinicService")}
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="scan" className="space-y-4 pt-4">
+            </CardHeader>
+            <CardContent className="min-h-0 flex-1 overflow-y-auto p-3">
+              <TabsContent value="scan" className="mt-0 space-y-3">
                 <div className="flex items-center gap-2">
                   <Input
                     ref={barcodeInputRef}
@@ -988,32 +937,21 @@ function CashierApp() {
                       }
                     }}
                     placeholder={t("cashier.scanPlaceholder")}
-                    className="flex-1"
+                    className="h-11 flex-1 text-base"
                     autoComplete="off"
                     autoFocus={activeTab === "scan"}
                   />
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      const val = barcodeInputRef.current?.value ?? "";
-                      if (val) processBarcode(val);
-                      setBarcodeInput("");
-                    }}
-                    aria-label={t("cashier.scanPlaceholder")}
-                  >
+                  <Button type="button" size="icon" className="size-11 shrink-0" onClick={() => {
+                    const val = barcodeInputRef.current?.value ?? "";
+                    if (val) processBarcode(val);
+                    setBarcodeInput("");
+                  }} aria-label={t("cashier.scanPlaceholder")}>
                     <Search className="size-4" />
                   </Button>
                 </div>
                 <Collapsible>
                   <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-muted-foreground"
-                    >
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
                       <ScanLine className="size-4" />
                       {t("cashier.phoneScanner")}
                     </Button>
@@ -1024,7 +962,7 @@ function CashierApp() {
                 </Collapsible>
                 <ScannerStatus />
               </TabsContent>
-              <TabsContent value="quick" className="pt-4">
+              <TabsContent value="quick" className="mt-0">
                 <QuickAddGrid
                   products={products}
                   cart={cart}
@@ -1032,67 +970,55 @@ function CashierApp() {
                   onAdd={(p) => addProduct(p)}
                 />
               </TabsContent>
-              <TabsContent value="service" className="pt-4">
+              <TabsContent value="service" className="mt-0">
                 <ClinicServicePanel
                   services={services}
                   currency={settings.currency}
                   onAdd={addService}
                 />
               </TabsContent>
-            </Tabs>
-          </CardContent>
+            </CardContent>
+          </Tabs>
         </Card>
 
-        {holdSales.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("cashier.heldSales")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HoldManager
-                heldSales={holdSales}
-                currency={settings.currency}
-                onHold={holdCurrentSale}
-                onResume={resumeSale}
-                onDiscard={discardHeld}
-                canHold={cart.length > 0}
-              />
-            </CardContent>
-          </Card>
-        )}
-        </div>
-
-        <div className="space-y-4">
-          {/* Live cart on the right. */}
-        <Card className="animate-in fade-in slide-in-from-right-3 duration-500 transition-shadow hover:shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">
-              {t("cashier.cart", { count: String(itemCount) })}
-            </CardTitle>
+        {/* Live cart */}
+        <Card className="animate-in flex min-h-[540px] flex-col overflow-hidden bg-card duration-500 slide-in-from-right-3 lg:sticky lg:top-[4.5rem]">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 border-b bg-background/50 p-3">
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingCart className="size-4" />
+              </span>
+              <div>
+                <CardTitle className="text-sm">
+                  {t("cashier.cart", { count: String(itemCount) })}
+                </CardTitle>
+                <p className="text-[11px] text-muted-foreground">
+                  {cart.length === 0 ? t("cashier.emptyCart") : `${cart.length} ${t("cashier.items").toLowerCase()}`}
+                </p>
+              </div>
+            </div>
             {cart.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={holdCurrentSale}
-                  disabled={cart.length === 0}
-                >
-                  <PackagePlus className="size-4 mr-1" /> {t("cashier.holdSale")}
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={holdCurrentSale} title={t("cashier.holdSale")} aria-label={t("cashier.holdSale")}>
+                  <PackagePlus className="size-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
-                  <Trash2 className="size-4 mr-1" /> {t("cashier.clearCart")}
+                <Button variant="ghost" size="icon" onClick={clearCart} className="text-destructive" title={t("cashier.clearCart")} aria-label={t("cashier.clearCart")}>
+                  <Trash2 className="size-4" />
                 </Button>
               </div>
             )}
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="min-h-0 flex-1 overflow-y-auto p-2">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <ShoppingCart className="size-12 mb-3 opacity-50" />
-                <p>{t("cashier.emptyCart")}</p>
+              <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
+                <div className="grid size-16 place-items-center rounded-2xl bg-muted">
+                  <ShoppingCart className="size-7 opacity-50" />
+                </div>
+                <p className="text-sm font-medium">{t("cashier.emptyCart")}</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+              <div className="space-y-2">
                 {cart.map((item) => {
                   const disc = itemDiscounts[item.id];
                   const eff = itemEffectivePrice(item.originalPrice, disc);
@@ -1101,91 +1027,155 @@ function CashierApp() {
                     <div
                       key={item.id}
                       className={cn(
-                        "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                        "group rounded-xl border p-2.5 transition-all",
                         lastScanned === item.id
                           ? "border-primary bg-primary/5 shadow-glow"
-                          : "border-border",
+                          : "bg-background hover:border-primary/40",
                       )}
                     >
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="size-14 shrink-0 rounded-lg border border-border bg-muted object-contain p-1"
+                      <div className="flex gap-2.5">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="size-12 shrink-0 rounded-lg border bg-muted object-contain p-0.5" />
+                        ) : (
+                          <div className="grid size-12 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                            <Package className="size-5 opacity-50" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="truncate text-sm font-semibold">{item.name}</p>
+                            <p className="shrink-0 text-sm font-bold tabular-nums">
+                              {formatPrice(eff * item.qty, settings.currency)}
+                            </p>
+                          </div>
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                            {formatPrice(eff, settings.currency)} × {item.qty}
+                            {hasDisc && (
+                              <>
+                                <span className="line-through">{formatPrice(item.originalPrice, settings.currency)}</span>
+                                <Badge variant="outline" className="px-1 py-0 text-[9px]">
+                                  {disc?.type === "percent" ? `${disc.value}%` : `-${disc?.value}`}
+                                </Badge>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-1">
+                        <PerItemDiscount
+                          price={item.originalPrice}
+                          qty={item.qty}
+                          stock={item.stock}
+                          discount={itemDiscounts[item.id]}
+                          onChange={(d) => setItemDiscounts((prev) => ({ ...prev, [item.id]: d }))}
                         />
-                      ) : (
-                        <div className="size-14 shrink-0 rounded-lg border border-border bg-muted" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatPrice(eff, settings.currency)}
-                          {hasDisc && (
-                            <span className="ml-1.5 text-destructive line-through">
-                              {formatPrice(item.originalPrice, settings.currency)}
-                            </span>
-                          )}
-                          {hasDisc && (
-                            <Badge variant="outline" className="ml-1.5 text-[10px]">
-                              {disc?.type === "percent" ? `${disc.value}%` : `-${disc?.value}`}
-                            </Badge>
-                          )}
-                          {" × "}
-                          {item.qty}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(item.id, -1)} disabled={item.qty <= 1} aria-label={t("cashier.decrease")}>
+                            <Minus className="size-3.5" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-bold tabular-nums">{item.qty}</span>
+                          <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(item.id, 1)} disabled={item.qty >= item.stock} aria-label={t("cashier.increase")}>
+                            <Plus className="size-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => removeItem(item.id)} aria-label={t("cashier.remove")}>
+                            <X className="size-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <PerItemDiscount
-                        price={item.originalPrice}
-                        qty={item.qty}
-                        stock={item.stock}
-                        discount={itemDiscounts[item.id]}
-                        onChange={(d) => setItemDiscounts((prev) => ({ ...prev, [item.id]: d }))}
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateQty(item.id, -1)}
-                          disabled={item.qty <= 1}
-                          aria-label={t("cashier.decrease")}
-                        >
-                          <Minus className="size-3.5" />
-                        </Button>
-                        <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateQty(item.id, 1)}
-                          disabled={item.qty >= item.stock}
-                          aria-label={t("cashier.increase")}
-                        >
-                          <Plus className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive"
-                          onClick={() => removeItem(item.id)}
-                          aria-label={t("cashier.remove")}
-                        >
-                          <X className="size-3.5" />
-                        </Button>
-                      </div>
-                      <span className="text-sm font-semibold w-24 text-right">
-                        {formatPrice(eff * item.qty, settings.currency)}
-                      </span>
                     </div>
                   );
                 })}
               </div>
             )}
           </CardContent>
-        </Card>
 
-        </div>
+          <CardFooter className="flex flex-col gap-2 border-t bg-background/40 p-3">
+            <div className="w-full space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("cashier.subtotal")}</span>
+                <span className="tabular-nums">{formatPrice(totals.subtotal, settings.currency)}</span>
+              </div>
+              {totals.itemDiscount > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>{t("cashier.itemDiscounts")}</span>
+                  <span className="tabular-nums">−{formatPrice(totals.itemDiscount, settings.currency)}</span>
+                </div>
+              )}
+              {totals.orderDiscountAmt > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>{t("cashier.discountApplied")}</span>
+                  <span className="tabular-nums">−{formatPrice(totals.orderDiscountAmt, settings.currency)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="w-full space-y-1.5">
+              <Collapsible open={customerOpen} onOpenChange={setCustomerOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between font-medium">
+                    <span className="flex items-center gap-2">
+                      <UserRound className="size-4 text-muted-foreground" />
+                      {customer.name || t("cashier.walkInCustomer")}
+                    </span>
+                    <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", customerOpen && "rotate-180")} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <CustomerInfoPanel customer={customer} onChange={setCustomer} />
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between font-medium">
+                    <span className="flex items-center gap-2">
+                      <BadgePercent className="size-4 text-muted-foreground" />
+                      {t("cashier.discount")}
+                      {discountAmount > 0 && <span className="text-primary">−{formatPrice(discountAmount, settings.currency)}</span>}
+                    </span>
+                    <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", discountOpen && "rotate-180")} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <DiscountPanel
+                    orderDiscount={orderDiscount}
+                    subtotal={totals.subtotalAfterItems}
+                    currency={settings.currency}
+                    onApplyOrderDiscount={setOrderDiscount}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+
+              <SplitPayment
+                total={totals.total}
+                currency={settings.currency}
+                allocations={split.length > 1 ? split : []}
+                onAllocationsChange={(a) => setSplit(a)}
+              />
+            </div>
+          </CardFooter>
+        </Card>
       </div>
+
+      {holdSales.length > 0 && (
+        <Card>
+          <CardHeader className="p-3">
+            <CardTitle className="text-sm">{t("cashier.heldSales")}</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <HoldManager
+              heldSales={holdSales}
+              currency={settings.currency}
+              onHold={holdCurrentSale}
+              onResume={resumeSale}
+              onDiscard={discardHeld}
+              canHold={cart.length > 0}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
 
       <ReceiptPreview
         open={receiptOpen}
