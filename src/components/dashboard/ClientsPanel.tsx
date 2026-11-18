@@ -138,7 +138,9 @@ function ClientDetailView({ id, onBack }: { id: string; onBack: () => void }) {
 
   if (loading && !detail) {
     return (
-      <div className="grid min-h-[300px] place-items-center text-sm text-muted-foreground">…</div>
+      <div className="grid min-h-[300px] place-items-center text-sm text-muted-foreground">
+        {t("dash.loading")}
+      </div>
     );
   }
   if (!detail) {
@@ -297,9 +299,9 @@ function ClientDetailView({ id, onBack }: { id: string; onBack: () => void }) {
                       <TableCell>
                         <PaymentStatusBadge status={p.status} />
                       </TableCell>
-                      <TableCell>{(p.items?.length ?? 0) > 0 ? p.items!.length : "—"}</TableCell>
+                      <TableCell>{(p.items?.length ?? 0) > 0 ? p.items?.length : "—"}</TableCell>
                       <TableCell className="text-end">
-                        {p.status === "unpaid" && (
+                        {p.status !== "paid" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -342,7 +344,8 @@ function ClientDetailView({ id, onBack }: { id: string; onBack: () => void }) {
                     <p className="mt-1 text-xs text-muted-foreground">{b.doctorName}</p>
                     {b.diagnosis && (
                       <p className="mt-2 rounded bg-muted/60 p-2 text-xs">
-                        <span className="font-semibold">Diagnosis:</span> {b.diagnosis}
+                        <span className="font-semibold">{t("dash.diagnosis")}:</span>{" "}
+                        {b.diagnosis}
                       </p>
                     )}
                   </div>
@@ -416,7 +419,7 @@ function ClientDetailView({ id, onBack }: { id: string; onBack: () => void }) {
                           {rx.issuedAt ? formatTime(rx.issuedAt, lang) : rx.followUpDate}
                         </p>
                       </div>
-                      <Badge variant="outline">{rx.status}</Badge>
+                      <Badge variant="outline">{t(`rx.status.${rx.status}`)}</Badge>
                     </div>
                   ))}
                 </div>
@@ -565,6 +568,8 @@ function ClientActions({ client, onView }: { client: ClientSummary; onView: () =
             className="h-7 px-2"
             aria-label={t("clients.actions")}
             title={t("clients.actions")}
+            // The row itself opens the client detail — keep the menu click local.
+            onClick={(event) => event.stopPropagation()}
           >
             <MoreHorizontal className="size-4" />
           </Button>
@@ -629,7 +634,7 @@ function ClientActions({ client, onView }: { client: ClientSummary; onView: () =
                     : undefined
                 }
               >
-                {busy ? "…" : t("clients.confirm")}
+                {busy ? t("dash.saving") : t("clients.confirm")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

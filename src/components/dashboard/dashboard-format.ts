@@ -9,10 +9,14 @@ export const STATUS_OPTIONS: { value: Status | "all"; key: string }[] = [
   { value: "cancelled", key: "dash.filterCancelled" },
 ];
 
+/** Format a date as YYYY-MM-DD in the user's local timezone (never UTC). */
+export function localISODate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 /** Current calendar date in the user's local timezone (YYYY-MM-DD). */
 export function localTodayISO(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return localISODate(new Date());
 }
 
 export function formatDate(dateISO: string, lang: Lang) {

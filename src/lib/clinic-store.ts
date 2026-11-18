@@ -402,7 +402,7 @@ export function useClinicStore() {
 
   const { data: doctors = seedDefaults.doctors } = useQuery({
     queryKey: QUERY_KEYS.doctors,
-    queryFn: () => api.get<Doctor[]>("/doctors"),
+    queryFn: () => api.get<Doctor[]>("/doctors?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.doctors,
     enabled: mounted,
@@ -410,7 +410,7 @@ export function useClinicStore() {
 
   const { data: services = seedDefaults.services } = useQuery({
     queryKey: QUERY_KEYS.services,
-    queryFn: () => api.get<ServiceItem[]>("/services"),
+    queryFn: () => api.get<ServiceItem[]>("/services?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.services,
     enabled: mounted,
@@ -430,7 +430,7 @@ export function useClinicStore() {
 
   const { data: requests = seedDefaults.requests } = useQuery({
     queryKey: QUERY_KEYS.bookings,
-    queryFn: () => api.get<BookingRequest[]>("/bookings"),
+    queryFn: () => api.get<BookingRequest[]>("/bookings?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.requests,
     enabled: mounted && isAuthed(),
@@ -438,7 +438,7 @@ export function useClinicStore() {
 
   const { data: orders = seedDefaults.orders } = useQuery({
     queryKey: QUERY_KEYS.orders,
-    queryFn: () => api.get<Order[]>("/orders"),
+    queryFn: () => api.get<Order[]>("/orders?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.orders,
     enabled: mounted && isAuthed(),
@@ -446,7 +446,7 @@ export function useClinicStore() {
 
   const { data: reviews = seedDefaults.reviews } = useQuery({
     queryKey: QUERY_KEYS.reviews,
-    queryFn: () => api.get<Review[]>("/reviews"),
+    queryFn: () => api.get<Review[]>("/reviews?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.reviews,
     enabled: mounted,
@@ -454,7 +454,7 @@ export function useClinicStore() {
 
   const { data: payments = seedDefaults.payments } = useQuery({
     queryKey: QUERY_KEYS.payments,
-    queryFn: () => api.get<Payment[]>("/payments"),
+    queryFn: () => api.get<Payment[]>("/payments?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.payments,
     enabled: mounted && isAuthed(),
@@ -486,7 +486,7 @@ export function useClinicStore() {
 
   const { data: auditLogs = seedDefaults.auditLogs } = useQuery({
     queryKey: QUERY_KEYS.auditLogs,
-    queryFn: () => api.get<AuditLog[]>("/audit-logs"),
+    queryFn: () => api.get<AuditLog[]>("/audit-logs?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.auditLogs,
     enabled: mounted && isAuthed(),
@@ -494,15 +494,17 @@ export function useClinicStore() {
 
   const { data: workDays = seedDefaults.workDays } = useQuery({
     queryKey: QUERY_KEYS.workDays,
-    queryFn: () => api.get<WorkDaySummary[]>("/work-days"),
+    queryFn: () => api.get<WorkDaySummary[]>("/work-days?limit=200"),
     staleTime: Infinity,
     placeholderData: (prev) => prev ?? seedDefaults.workDays,
     enabled: mounted && isAuthed(),
   });
 
+  // This cache entry is populated explicitly by loadWorkDay(date) — the
+  // backend only serves /work-days/:date (there is no /work-days/today route).
   const { data: workDay } = useQuery<WorkDayDetail | null>({
     queryKey: ["work-day"],
-    queryFn: () => api.get<WorkDayDetail>("/work-days/today"),
+    queryFn: () => null,
     staleTime: Infinity,
     enabled: false,
   });
@@ -877,7 +879,7 @@ export async function createPayment(input: {
   title: string;
   amount: number;
   method: PaymentMethod;
-  status: "unpaid" | "paid";
+  status?: "unpaid" | "paid";
   date: string;
   notes?: string | undefined;
   orderId?: string | undefined;

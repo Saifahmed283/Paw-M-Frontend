@@ -38,7 +38,6 @@ import {
   updateSettings,
   type Payment,
   type PaymentMethod,
-  type PaymentStatus,
 } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -57,7 +56,9 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
   const [title, setTitle] = useState(payment?.title ?? "");
   const [amount, setAmount] = useState(payment ? String(payment.amount) : "");
   const [method, setMethod] = useState<PaymentMethod>(payment?.method ?? "cash");
-  const [status, setStatus] = useState<PaymentStatus>(payment?.status ?? "paid");
+  const [status, setStatus] = useState<"unpaid" | "paid">(
+    payment?.status === "paid" ? "paid" : "unpaid",
+  );
   const [date, setDate] = useState(payment?.date ?? new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState(payment?.notes ?? "");
   const [orderId, setOrderId] = useState(payment?.orderId ?? "");
@@ -70,29 +71,22 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
       toast.error(t("payments.invalid"));
       return;
     }
+    // Editing an under-review payment must not silently downgrade it to unpaid
+    // just because the status dropdown has no "proof submitted" option.
+    const keepReviewStatus = payment?.status === "proof_submitted" && status === "unpaid";
+    const payload = {
+      title: title.trim(),
+      amount: value,
+      method,
+      ...(keepReviewStatus ? {} : { status }),
+      date,
+      notes: notes.trim(),
+      orderId: orderId.trim(),
+    };
     setSaving(true);
     try {
-      if (payment) {
-        await updatePayment(payment.id, {
-          title: title.trim(),
-          amount: value,
-          method,
-          status,
-          date,
-          notes: notes.trim(),
-          orderId: orderId.trim(),
-        });
-      } else {
-        await createPayment({
-          title: title.trim(),
-          amount: value,
-          method,
-          status,
-          date,
-          notes: notes.trim(),
-          orderId: orderId.trim(),
-        });
-      }
+      if (payment) await updatePayment(payment.id, payload);
+      else await createPayment(payload);
       toast.success(t("dash.toast.saved"));
       onClose();
     } catch {
@@ -146,15 +140,20 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
               </select>
             </Field>
             <Field label={t("payments.status")}>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as PaymentStatus)}
-                className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
-              >
-                <option value="paid">{t("pay.paid")}</option>
-                <option value="unpaid">{t("pay.unpaid")}</option>
-                <option value="proof_submitted">{t("pay.underReview")}</option>
-              </select>
+              {payment?.status === "proof_submitted" ? (
+                <div className="flex h-9 items-center rounded-lg border border-border bg-muted/40 px-3">
+                  <PaymentStatusBadge status="proof_submitted" />
+                </div>
+              ) : (
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as "unpaid" | "paid")}
+                  className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="paid">{t("pay.paid")}</option>
+                  <option value="unpaid">{t("pay.unpaid")}</option>
+                </select>
+              )}
             </Field>
           </div>
           <Field label={t("payments.orderId")}>

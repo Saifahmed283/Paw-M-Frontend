@@ -26,6 +26,7 @@ import { useClinicStore, saveService, deleteService, type ServiceItem } from "@/
 import { useI18n } from "@/lib/i18n";
 import { Field } from "./dashboard-helpers";
 import { formatMoney } from "./dashboard-format";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onClose: () => void }) {
   const { t } = useI18n();
@@ -34,28 +35,37 @@ function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onCl
     description: service?.description ?? "",
     price: service?.price != null ? String(service.price) : "0",
   });
+  const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    const value = Number.parseFloat(form.price);
-    const price = Number.isFinite(value) && value >= 0 ? value : 0;
-    await saveService({
-      slug: service?.slug ?? `svc-${Date.now().toString(36)}`,
-      icon: service?.icon ?? "Stethoscope",
-      title: form.title.trim() || t("dash.untitled"),
-      description: form.description.trim(),
-      price,
-    });
-    toast.success(t("dash.toast.saved"));
-    onClose();
+    if (saving) return;
+    const raw = form.price.trim();
+    const value = Number.parseFloat(raw);
+    if (!form.title.trim()) return;
+    if (!raw || !Number.isFinite(value) || value < 0) {
+      toast.error(t("dash.form.product.requiredPrice"));
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveService({
+        slug: service?.slug ?? `svc-${Date.now().toString(36)}`,
+        icon: service?.icon ?? "Stethoscope",
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: value,
+      });
+      toast.success(t("dash.toast.saved"));
+      onClose();
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{service ? t("dash.editService") : t("dash.addService")}</DialogTitle>
@@ -86,11 +96,11 @@ function ServiceDialog({ service, onClose }: { service: ServiceItem | null; onCl
           </Field>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             {t("dash.close")}
           </Button>
-          <Button onClick={save} disabled={!form.title.trim()}>
-            {t("dash.save")}
+          <Button onClick={save} disabled={saving || !form.title.trim()}>
+            {saving ? t("dash.saving") : t("dash.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -103,7 +113,23 @@ export function ServicesPanel() {
   const { services, settings } = useClinicStore();
   const [editing, setEditing] = useState<ServiceItem | "new" | null>(null);
   const [query, setQuery] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const grid = useGrid(services, query, ["title", "description"]);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteService(pendingDelete.slug);
+      toast.success(t("dash.toast.deleted"));
+      setPendingDelete(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Card>
@@ -141,17 +167,12 @@ export function ServicesPanel() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-end font-semibold">
                     {(s.price ?? 0) > 0
-                      ? formatMoney(s.price!, settings.currency)
+                      ? formatMoney(s.price, settings.currency)
                       : t("dash.services.free")}
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        onClick={() => setEditing(s)}
-                      >
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => setEditing(s)}>
                         {t("dash.edit")}
                       </Button>
                       <Button
@@ -159,10 +180,7 @@ export function ServicesPanel() {
                         variant="ghost"
                         className="h-7 px-2 text-muted-foreground hover:text-destructive"
                         aria-label={t("dash.delete")}
-                        onClick={async () => {
-                          await deleteService(s.slug);
-                          toast.success(t("dash.toast.deleted"));
-                        }}
+                        onClick={() => setPendingDelete(s)}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -186,11 +204,16 @@ export function ServicesPanel() {
         </div>
       </CardContent>
       {editing && (
-        <ServiceDialog
-          service={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-        />
+        <ServiceDialog service={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
       )}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={t("dash.delete")}
+        description={t("dash.cannotUndo")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </Card>
   );
 }

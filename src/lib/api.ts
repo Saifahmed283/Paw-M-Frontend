@@ -50,14 +50,35 @@ export class ApiError extends Error {
   }
 }
 
-// Send the session that matches the request: the staff JWT takes precedence, so
-// dashboard calls are authenticated even when the API runs on another origin and
-// cross-site cookies are blocked. Falls back to the store customer's token.
-function authHeaders(): Record<string, string> {
-  const staffToken = getSessionToken();
-  if (staffToken) return { Authorization: `Bearer ${staffToken}` };
-  const clientToken = getClientToken();
-  return clientToken ? { Authorization: `Bearer ${clientToken}` } : {};
+// Client-only endpoints authenticate with an opaque store-customer token and
+// reject staff JWTs. Keep them explicit so a leftover staff session in the same
+// browser cannot break the storefront (and vice versa).
+const CLIENT_ONLY_PREFIXES = ["/me", "/pets", "/client-auth", "/contact"];
+
+function normalizePath(path: string): string {
+  return path.startsWith("/api/") ? path.slice(4) : path;
+}
+
+function isClientOnlyPath(path: string): boolean {
+  const normalized = normalizePath(path);
+  return CLIENT_ONLY_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+  );
+}
+
+function bearer(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}` };
+}
+
+/**
+ * Pick the session that matches the request. Dashboard calls prefer the staff
+ * JWT so they work cross-origin where cookies are blocked; client-only calls
+ * must use the store-customer token even if a staff session also exists.
+ */
+function authHeaders(path: string, staffToken: string | null, clientToken: string | null) {
+  if (isClientOnlyPath(path)) return clientToken ? bearer(clientToken) : {};
+  if (staffToken) return bearer(staffToken);
+  return clientToken ? bearer(clientToken) : {};
 }
 
 const CSRF_COOKIE = "paw-m-csrf-token";
@@ -77,11 +98,13 @@ async function apiFetch(
   init?: RequestInit,
   unwrapPagination = true,
 ): Promise<unknown> {
-  const normalizedPath = path.startsWith("/api/") ? path.slice(4) : path;
+  const normalizedPath = normalizePath(path);
+  const staffToken = getSessionToken();
+  const clientToken = getClientToken();
 
   const headers = new Headers({
     "Content-Type": "application/json",
-    ...authHeaders(),
+    ...authHeaders(normalizedPath, staffToken, clientToken),
     ...csrfHeaders(),
     ...(init?.headers ?? {}),
   });
@@ -97,6 +120,8 @@ async function apiFetch(
     // dashboard falls back to the login gate (and stores a fresh token).
     if (
       res.status === 401 &&
+      staffToken &&
+      !isClientOnlyPath(normalizedPath) &&
       /Unauthorized — no session|Session expired|Invalid session|User not found/.test(text)
     ) {
       storageRemove("session", ADMIN_SESSION_KEY);

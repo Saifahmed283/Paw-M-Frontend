@@ -32,6 +32,7 @@ import {
 import { useClinicStore, saveDoctor, deleteDoctor, type Doctor } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
 import { Field } from "./dashboard-helpers";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 const EMPTY_DOCTOR = {
   name: "",
@@ -66,10 +67,12 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
         }
       : EMPTY_DOCTOR,
   );
+  const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof typeof form>(k: K, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = async () => {
+    if (saving) return;
     const initials =
       form.name
         .trim()
@@ -78,39 +81,72 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
         .join("")
         .toUpperCase()
         .slice(0, 2) || "DR";
-    await saveDoctor({
-      id: doctor?.id ?? `dr-${Date.now().toString(36)}`,
-      name: form.name.trim() || t("dash.unnamed"),
-      title: form.title.trim(),
-      licenseNumber: form.licenseNumber.trim(),
-      signatureImage: form.signatureImage,
-      specialization: form.specialization.trim(),
-      experience: form.experience.trim(),
-      rating: Math.min(5, Math.max(1, Number(form.rating) || 4.8)),
-      bio: form.bio.trim(),
-      initials,
-      days: form.days
-        .split(",")
-        .map((d) => d.trim())
-        .filter(Boolean),
-      tags: form.tags
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean),
-      pets: form.pets
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean),
-    });
-    toast.success(t("dash.toast.saved"));
-    onClose();
+    setSaving(true);
+    try {
+      await saveDoctor({
+        id: doctor?.id ?? `dr-${Date.now().toString(36)}`,
+        name: form.name.trim() || t("dash.unnamed"),
+        title: form.title.trim(),
+        licenseNumber: form.licenseNumber.trim(),
+        signatureImage: form.signatureImage,
+        specialization: form.specialization.trim(),
+        experience: form.experience.trim(),
+        rating: Math.min(5, Math.max(1, Number(form.rating) || 4.8)),
+        bio: form.bio.trim(),
+        initials,
+        days: form.days
+          .split(",")
+          .map((d) => d.trim())
+          .filter(Boolean),
+        tags: form.tags
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        pets: form.pets
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+      });
+      toast.success(t("dash.toast.saved"));
+      onClose();
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onPickSignature = (file: File) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    const release = () => URL.revokeObjectURL(objectUrl);
+    img.onload = () => {
+      release();
+      const canvas = document.createElement("canvas");
+      const max = 400;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        toast.error(t("dash.signatureInvalid"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      set("signatureImage", canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      release();
+      toast.error(t("dash.signatureInvalid"));
+    };
+    img.src = objectUrl;
   };
 
   return (
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open && !saving) onClose();
       }}
     >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -123,14 +159,14 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Title">
+            <Field label={t("dash.form.title")}>
               <Input
                 value={form.title}
                 onChange={(e) => set("title", e.target.value)}
-                placeholder="Veterinary Surgeon"
+                placeholder={t("dash.form.titlePlaceholder")}
               />
             </Field>
-            <Field label="License number">
+            <Field label={t("dash.form.license")}>
               <Input
                 value={form.licenseNumber}
                 onChange={(e) => set("licenseNumber", e.target.value)}
@@ -138,39 +174,34 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
               />
             </Field>
           </div>
-          <Field label="Signature">
+          <Field label={t("dash.form.signature")}>
             {form.signatureImage ? (
               <div className="flex items-center gap-3">
                 <img
                   src={form.signatureImage}
-                  alt="Signature"
+                  alt={t("dash.form.signature")}
                   className="h-14 rounded-lg border border-border bg-muted object-contain px-2"
                 />
-                <Button size="sm" variant="outline" onClick={() => set("signatureImage", "")}>
-                  Remove
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => set("signatureImage", "")}
+                >
+                  {t("dash.form.signatureRemove")}
                 </Button>
               </div>
             ) : (
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
-                Upload signature image (used on printed prescriptions)
+                {t("dash.form.signatureUpload")}
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    const img = new Image();
-                    img.onload = () => {
-                      const canvas = document.createElement("canvas");
-                      const max = 400;
-                      const scale = Math.min(1, max / Math.max(img.width, img.height));
-                      canvas.width = Math.round(img.width * scale);
-                      canvas.height = Math.round(img.height * scale);
-                      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-                      set("signatureImage", canvas.toDataURL("image/png"));
-                    };
-                    img.src = URL.createObjectURL(file);
+                    if (file) onPickSignature(file);
+                    e.target.value = "";
                   }}
                 />
               </label>
@@ -211,11 +242,11 @@ function DoctorDialog({ doctor, onClose }: { doctor: Doctor | null; onClose: () 
           </Field>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             {t("dash.close")}
           </Button>
-          <Button onClick={save} disabled={!form.name.trim()}>
-            {t("dash.save")}
+          <Button onClick={save} disabled={saving || !form.name.trim()}>
+            {saving ? t("dash.saving") : t("dash.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -228,6 +259,8 @@ export function DoctorsPanel() {
   const { doctors } = useClinicStore();
   const [editing, setEditing] = useState<Doctor | "new" | null>(null);
   const [query, setQuery] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Doctor | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { sort, toggle } = useSortState("name");
   const comparators: Record<string, (a: Doctor, b: Doctor) => number> = {
     name: (a, b) => a.name.localeCompare(b.name),
@@ -236,6 +269,20 @@ export function DoctorsPanel() {
   };
   const sorted = sortedSlice(doctors, sort, comparators);
   const grid = useGrid(sorted, query, ["name", "specialization", "experience"]);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteDoctor(pendingDelete.id);
+      toast.success(t("dash.toast.deleted"));
+      setPendingDelete(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Card>
@@ -296,15 +343,14 @@ export function DoctorsPanel() {
                   <TableCell className="whitespace-nowrap text-sm">
                     {tOr(`doc.${d.id}.exp`, d.experience)}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm">
-                    ★ {d.rating.toFixed(1)}
-                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">★ {d.rating.toFixed(1)}</TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {d.days.map((day) => tOr(`day.${day}`, day)).join(", ")}
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1.5">
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         className="h-7"
@@ -313,14 +359,12 @@ export function DoctorsPanel() {
                         {t("dash.edit")}
                       </Button>
                       <Button
+                        type="button"
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-muted-foreground hover:text-destructive"
                         aria-label={t("dash.delete")}
-                        onClick={async () => {
-                          await deleteDoctor(d.id);
-                          toast.success(t("dash.toast.deleted"));
-                        }}
+                        onClick={() => setPendingDelete(d)}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -344,11 +388,16 @@ export function DoctorsPanel() {
         </div>
       </CardContent>
       {editing && (
-        <DoctorDialog
-          doctor={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-        />
+        <DoctorDialog doctor={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
       )}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={t("dash.delete")}
+        description={t("dash.cannotUndo")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </Card>
   );
 }

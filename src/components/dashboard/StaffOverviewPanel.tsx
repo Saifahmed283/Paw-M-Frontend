@@ -13,6 +13,7 @@ import {
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { localISODate } from "./dashboard-format";
 
 interface Employee {
   id: number | string;
@@ -53,24 +54,22 @@ const EMPTY_KPI: Omit<EmployeeKPI, "commission"> & { commission: number } = {
 };
 
 function periodRange(period: PeriodFilter): { start: string; end: string } {
+  // Use local calendar days throughout — toISOString() shifts the date by a day
+  // for users west of UTC and would query the wrong range.
   const end = new Date();
-  const endStr = end.toISOString().split("T")[0] ?? "";
   const start = new Date(end);
-  if (period === "today") {
-    // start = end
-  } else if (period === "week") {
-    start.setDate(start.getDate() - 7);
-  } else {
-    start.setMonth(start.getMonth() - 1);
-  }
-  return { start: start.toISOString().split("T")[0] ?? endStr, end: endStr };
+  if (period === "week") start.setDate(start.getDate() - 6);
+  if (period === "month") start.setDate(start.getDate() - 29);
+  return { start: localISODate(start), end: localISODate(end) };
 }
 
 const PERIODS: { value: PeriodFilter; label: string }[] = [
   { value: "today", label: "dash.today" },
-  { value: "week", label: "dash.thisWeek" },
-  { value: "month", label: "dash.thisMonth" },
+  { value: "week", label: "dash.last7Days" },
+  { value: "month", label: "dash.last30Days" },
 ];
+
+const SEARCH_FIELDS: (keyof EmployeeWithKPI)[] = ["fullName", "email"];
 
 const ROLES: { value: RoleFilter; label: string }[] = [
   { value: "all", label: "dash.allRoles" },
@@ -88,12 +87,12 @@ export function StaffOverviewPanel() {
   const [period, setPeriod] = useState<PeriodFilter>("week");
   const [query, setQuery] = useState("");
   const { sort, toggle } = useSortState("name", "asc");
+  const range = useMemo(() => periodRange(period), [period]);
 
   const fetchStaffOverview = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const range = periodRange(period);
       const [employeesRes, kpisRes] = await Promise.all([
         api.get<Employee[] | { data: Employee[] }>("/api/employees"),
         api.get<EmployeeKPI[] | { data: EmployeeKPI[] }>(
@@ -115,7 +114,7 @@ export function StaffOverviewPanel() {
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [range]);
 
   useEffect(() => {
     fetchStaffOverview();
@@ -135,7 +134,7 @@ export function StaffOverviewPanel() {
   };
 
   const sorted = sortedSlice(filtered, sort, comparators);
-  const grid = useGrid(sorted, query, ["fullName", "email"] as (keyof EmployeeWithKPI)[]);
+  const grid = useGrid(sorted, query, SEARCH_FIELDS);
 
   const rateLabel = (emp: Employee) =>
     emp.payRateType === "monthly"
@@ -197,17 +196,14 @@ export function StaffOverviewPanel() {
             {t("dash.staffOverview")}
           </CardTitle>
           <CardDescription>
-            {period === "today"
-              ? t("dash.today")
-              : period === "week"
-                ? t("dash.thisWeek")
-                : t("dash.thisMonth")}
+            {t("dash.periodRange", { start: range.start, end: range.end })}
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
             {PERIODS.map((p) => (
               <button
+                type="button"
                 key={p.value}
                 className={filterBtn(period === p.value)}
                 onClick={() => {
@@ -222,6 +218,7 @@ export function StaffOverviewPanel() {
           <div className="flex flex-wrap gap-2">
             {ROLES.map((r) => (
               <button
+                type="button"
                 key={r.value}
                 className={filterBtn(role === r.value)}
                 onClick={() => {
@@ -267,7 +264,9 @@ export function StaffOverviewPanel() {
         </div>
 
         {grid.slice.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">{t("dash.noStaff")}</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {staff.length === 0 ? t("dash.noStaff") : t("dash.noResults")}
+          </p>
         ) : (
           <>
             <div className="space-y-3">

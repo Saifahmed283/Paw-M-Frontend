@@ -37,6 +37,8 @@ import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Field } from "./dashboard-helpers";
+import { localISODate } from "./dashboard-format";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 
 type PayrollStatus = "calculated" | "pending_approval" | "approved" | "paid" | "rejected";
 
@@ -81,9 +83,12 @@ interface BonusDeductionRequest {
 
 function currentRange(): { start: string; end: string } {
   const now = new Date();
-  const end = now.toISOString().slice(0, 10) ?? "";
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10) ?? end;
-  return { start, end };
+  // toISOString() would shift these local dates across a day boundary for users
+  // outside UTC, producing an off-by-one period (typically the previous month).
+  return {
+    start: localISODate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end: localISODate(now),
+  };
 }
 
 const STATUS_STYLES: Record<PayrollStatus, string> = {
@@ -114,8 +119,10 @@ function AdjustAmountDialog({
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    const value = Number(basePay);
-    if (!Number.isFinite(value) || value < 0) {
+    if (saving) return;
+    const raw = basePay.trim();
+    const value = Number.parseFloat(raw);
+    if (!raw || !Number.isFinite(value) || value < 0) {
       toast.error(t("dash.errorLoad"));
       return;
     }
@@ -213,7 +220,8 @@ function BonusDeductionDialog({
   }, [fetchRequests]);
 
   const submit = async () => {
-    const value = Number(amount);
+    if (saving) return;
+    const value = Number.parseFloat(amount);
     if (!Number.isFinite(value) || value <= 0 || !reason.trim()) {
       toast.error(t("dash.errorLoad"));
       return;
@@ -239,6 +247,7 @@ function BonusDeductionDialog({
   };
 
   const review = async (requestId: string, status: "approved" | "rejected") => {
+    if (saving) return;
     setSaving(true);
     try {
       await api.patch(`/api/payroll/requests/${requestId}`, { status });
@@ -304,14 +313,14 @@ function BonusDeductionDialog({
                 />
               </Field>
             </div>
-            <Button className="mt-3" size="sm" onClick={submit} disabled={saving}>
+            <Button type="button" className="mt-3" size="sm" onClick={submit} disabled={saving}>
               <ListChecks className="mr-1.5 size-3.5" />
-              {t("dash.toast.requestSent")}
+              {saving ? t("dash.saving") : t("dash.submitRequest")}
             </Button>
           </div>
 
           <div className="space-y-2">
-            {loading && <p className="py-4 text-sm text-muted-foreground">{t("dash.errorLoad")}</p>}
+            {loading && <p className="py-4 text-sm text-muted-foreground">{t("dash.loading")}</p>}
             {!loading && requests.length === 0 && (
               <p className="py-4 text-sm text-muted-foreground">{t("dash.requestsEmpty")}</p>
             )}
@@ -400,13 +409,25 @@ export function PayrollPanel() {
   const [range, setRange] = useState(initialRange);
   const [adjusting, setAdjusting] = useState<PayrollRecord | null>(null);
   const [bonusDialog, setBonusDialog] = useState<PayrollRecord | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<{
+    record: PayrollRecord;
+    status: PayrollStatus;
+  } | null>(null);
+  const [notifying, setNotifying] = useState(false);
+  const [confirmNotify, setConfirmNotify] = useState(false);
   const { sort, toggle } = useSortState("createdAt", "desc");
 
-  const fetchPayrollRecords = useCallback(async () => {
-    setLoading(true);
+  const fetchPayrollRecords = useCallback(async (silent = false) => {
+    // Silent refreshes after a mutation keep the panel mounted instead of
+    // replacing it with the full-screen loading spinner.
+    if (!silent) setLoading(true);
     setError(false);
     try {
-      const params = new URLSearchParams({ periodStart: range.start, periodEnd: range.end });
+      const params = new URLSearchParams({
+        periodStart: range.start,
+        periodEnd: range.end,
+        limit: "200",
+      });
       const response = await api.get<PayrollRecord[] | { data: PayrollRecord[] }>(
         `/api/payroll/records?${params}`,
       );
@@ -424,6 +445,7 @@ export function PayrollPanel() {
   }, [fetchPayrollRecords]);
 
   const handleCalculate = useCallback(async () => {
+    if (calculating) return;
     setCalculating(true);
     try {
       const res = await api.post<CalculateResponse>("/api/work-sessions/calculate", {
@@ -440,27 +462,30 @@ export function PayrollPanel() {
     } finally {
       setCalculating(false);
     }
-  }, [range, fetchPayrollRecords, t]);
+  }, [range, fetchPayrollRecords, t, calculating]);
 
   const handleStatusChange = useCallback(
     async (record: PayrollRecord, status: PayrollStatus) => {
+      if (actingId) return;
       setActingId(record.id);
       try {
         await api.patch(`/api/payroll/records/${record.id}/status`, { status });
         toast.success(t("dash.toast.statusUpdated"));
+        setPendingStatus(null);
+        await fetchPayrollRecords(true);
       } catch (err) {
         console.error("Error updating payroll record status:", err);
         toast.error(t("dash.errorLoad"));
       } finally {
         setActingId(null);
-        await fetchPayrollRecords();
       }
     },
-    [fetchPayrollRecords, t],
+    [actingId, fetchPayrollRecords, t],
   );
 
   const handleNotify = useCallback(async () => {
-    if (records.length === 0) return;
+    if (records.length === 0 || notifying) return;
+    setNotifying(true);
     try {
       await api.post("/api/notifications/broadcast", {
         type: "payroll",
@@ -475,11 +500,14 @@ export function PayrollPanel() {
         },
       });
       toast.success(t("dash.toast.notified"));
+      setConfirmNotify(false);
     } catch (err) {
       console.error("Error broadcasting payroll:", err);
-      toast.error(t("dash.toast.notified") + " — " + t("dash.errorLoad"));
+      toast.error(t("dash.toast.notifyFailed"));
+    } finally {
+      setNotifying(false);
     }
-  }, [records.length, range, t]);
+  }, [records.length, range, t, notifying]);
 
   const filtered = useMemo(
     () => (statusFilter === "all" ? records : records.filter((r) => r.status === statusFilter)),
@@ -496,8 +524,9 @@ export function PayrollPanel() {
   );
 
   const comparators: Record<string, (a: PayrollRecord, b: PayrollRecord) => number> = {
+    // Comparators are ascending; sortedSlice reverses them for "desc".
     createdAt: (a, b) =>
-      new Date(b.periodStart ?? 0).getTime() - new Date(a.periodStart ?? 0).getTime(),
+      new Date(a.periodStart ?? 0).getTime() - new Date(b.periodStart ?? 0).getTime(),
     total: (a, b) => (a.netPay ?? 0) - (b.netPay ?? 0),
     commission: (a, b) => (a.commissionPay ?? 0) - (b.commissionPay ?? 0),
   };
@@ -536,7 +565,7 @@ export function PayrollPanel() {
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-16">
           <p className="text-sm text-muted-foreground">{t("dash.errorLoad")}</p>
-          <Button variant="outline" onClick={fetchPayrollRecords}>
+          <Button variant="outline" onClick={() => fetchPayrollRecords()}>
             {t("dash.retry")}
           </Button>
         </CardContent>
@@ -572,7 +601,11 @@ export function PayrollPanel() {
             <ListChecks className="mr-2 size-4" />
             {calculating ? t("dash.calculating") : t("dash.calculate")}
           </Button>
-          <Button variant="outline" onClick={handleNotify} disabled={records.length === 0}>
+          <Button
+            variant="outline"
+            onClick={() => setConfirmNotify(true)}
+            disabled={records.length === 0}
+          >
             <Edit className="mr-2 size-4" />
             {t("dash.notifyStaff")}
           </Button>
@@ -584,6 +617,7 @@ export function PayrollPanel() {
           <SearchBox value={query} onChange={setQuery} placeholder={t("dash.search")} />
           <div className="flex flex-wrap gap-2">
             <button
+              type="button"
               className={chip(statusFilter === "all")}
               onClick={() => {
                 setStatusFilter("all");
@@ -594,6 +628,7 @@ export function PayrollPanel() {
             </button>
             {(Object.keys(STATUS_STYLES) as PayrollStatus[]).map((s) => (
               <button
+                type="button"
                 key={s}
                 className={chip(statusFilter === s)}
                 onClick={() => {
@@ -710,7 +745,7 @@ export function PayrollPanel() {
                         variant="outline"
                         className="h-7"
                         disabled={actingId === record.id}
-                        onClick={() => handleStatusChange(record, "paid")}
+                        onClick={() => setPendingStatus({ record, status: "paid" })}
                       >
                         <CircleDollarSign className="mr-1.5 size-3.5 text-success" />
                         {t("dash.markAsPaid")}
@@ -765,9 +800,27 @@ export function PayrollPanel() {
           record={bonusDialog}
           isAdmin={isAdmin}
           onClose={() => setBonusDialog(null)}
-          onChanged={fetchPayrollRecords}
+          onChanged={() => fetchPayrollRecords(true)}
         />
       )}
+      <ConfirmActionDialog
+        open={pendingStatus !== null}
+        title={t("dash.markAsPaid")}
+        description={t("dash.confirmMarkPaid")}
+        busy={actingId !== null}
+        onConfirm={() =>
+          pendingStatus ? handleStatusChange(pendingStatus.record, pendingStatus.status) : undefined
+        }
+        onClose={() => !actingId && setPendingStatus(null)}
+      />
+      <ConfirmActionDialog
+        open={confirmNotify}
+        title={t("dash.notifyStaff")}
+        description={t("dash.confirmNotify")}
+        busy={notifying}
+        onConfirm={handleNotify}
+        onClose={() => !notifying && setConfirmNotify(false)}
+      />
     </Card>
   );
 }
