@@ -63,7 +63,7 @@ function RouteLoadingSkeleton() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const { t } = useI18n();
   const router = useRouter();

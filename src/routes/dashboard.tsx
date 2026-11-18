@@ -88,6 +88,7 @@ import {
   formatDate,
   formatMoney,
   formatTime,
+  localTodayISO,
 } from "@/components/dashboard/dashboard-format";
 import { StatCard, OverviewCard } from "@/components/dashboard/dashboard-shared";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -334,7 +335,7 @@ function AuthGate({ onUnlocked }: { onUnlocked: (role: string) => void }) {
 function OverviewTab() {
   const { t, lang, tOr } = useI18n();
   const store = useClinicStore();
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = localTodayISO();
 
   const pendingCount = store.requests.filter((r) => !r.archived && r.status === "pending").length;
   const confirmedCount = store.requests.filter(
@@ -554,7 +555,7 @@ function ReservationsTab() {
   const [rxFor, setRxFor] = useState<BookingRequest | null>(null);
   const [reqPayFor, setReqPayFor] = useState<BookingRequest | null>(null);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = localTodayISO();
   const upcomingBase = useMemo(
     () =>
       store.requests
@@ -607,13 +608,13 @@ function ReservationsTab() {
                   <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
                     {r.diagnosis && (
                       <p className="rounded-lg bg-muted/60 p-2">
-                        <span className="font-semibold text-foreground">Diagnosis:</span>{" "}
+                        <span className="font-semibold text-foreground">{t("dash.diagnosis")}:</span>{" "}
                         {r.diagnosis}
                       </p>
                     )}
                     {r.treatmentNotes && (
                       <p className="rounded-lg bg-muted/60 p-2">
-                        <span className="font-semibold text-foreground">Treatment:</span>{" "}
+                        <span className="font-semibold text-foreground">{t("dash.treatment")}:</span>{" "}
                         {r.treatmentNotes}
                       </p>
                     )}
@@ -631,10 +632,10 @@ function ReservationsTab() {
                     {t("dash.complete")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setRecordFor(r)}>
-                    <ScrollText className="size-4" /> Record visit
+                    <ScrollText className="size-4" /> {t("dash.recordVisit")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setRxFor(r)}>
-                    <Stethoscope className="size-4" /> Write prescription
+                    <Stethoscope className="size-4" /> {t("dash.writePrescription")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setReqPayFor(r)}>
                     <Banknote className="size-4" /> {t("reservations.reqPayment")}
@@ -696,12 +697,14 @@ function ClinicalRecordDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [diagnosis, setDiagnosis] = useState(booking.diagnosis ?? "");
   const [treatmentNotes, setTreatmentNotes] = useState(booking.treatmentNotes ?? "");
   const [followUpDate, setFollowUpDate] = useState((booking.followUpDate ?? "").slice(0, 10));
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
+    if (busy) return;
     setBusy(true);
     try {
       await saveBookingClinical(booking.id, {
@@ -709,11 +712,11 @@ function ClinicalRecordDialog({
         treatmentNotes: treatmentNotes.trim(),
         followUpDate,
       });
-      toast.success("Visit record saved");
+      toast.success(t("dash.visitSaved"));
       refreshClinicData();
       onSaved();
     } catch {
-      toast.error("Could not save the visit record");
+      toast.error(t("dash.visitSaveError"));
     } finally {
       setBusy(false);
     }
@@ -723,32 +726,34 @@ function ClinicalRecordDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Record visit — {booking.petName}</DialogTitle>
+          <DialogTitle>{t("dash.visitRecord", { name: booking.petName })}</DialogTitle>
           <DialogDescription>
             {booking.ownerName} · {booking.doctorName} · {booking.date} {booking.time}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label className="text-xs font-medium text-muted-foreground">Diagnosis</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{t("dash.diagnosis")}</Label>
             <Textarea
               rows={2}
               value={diagnosis}
               onChange={(e) => setDiagnosis(e.target.value)}
-              placeholder="Final diagnosis for this visit"
+              placeholder={t("dash.diagnosisPlaceholder")}
             />
           </div>
           <div className="grid gap-2">
-            <Label className="text-xs font-medium text-muted-foreground">Treatment notes</Label>
+            <Label className="text-xs font-medium text-muted-foreground">
+              {t("dash.treatmentNotes")}
+            </Label>
             <Textarea
               rows={3}
               value={treatmentNotes}
               onChange={(e) => setTreatmentNotes(e.target.value)}
-              placeholder="Procedures, medication started, care instructions…"
+              placeholder={t("dash.treatmentPlaceholder")}
             />
           </div>
           <div className="grid gap-2">
-            <Label className="text-xs font-medium text-muted-foreground">Follow-up date</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{t("dash.followUp")}</Label>
             <Input
               type="date"
               value={followUpDate}
@@ -758,10 +763,10 @@ function ClinicalRecordDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t("dash.cancel")}
           </Button>
           <Button onClick={save} disabled={busy}>
-            {busy ? "Saving…" : "Save visit record"}
+            {busy ? t("dash.saving") : t("dash.saveVisit")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -833,7 +838,7 @@ function RequestPaymentDialog({
         amount: total,
         method: "cash",
         status: "unpaid",
-        date: new Date().toISOString().slice(0, 10),
+        date: localTodayISO(),
         items: items.map((it) => ({
           label: it.label,
           amount: it.amount,
@@ -1007,12 +1012,9 @@ function DashboardPage() {
     enabled: authed,
     interval: 30_000,
     getCount: () => orderCount + pendingRequestCount,
-    onNewItems: (newCount, prevCount) => {
-      const newOrders = store.orders.filter((o) => !o.archived).length;
-      const newPending = store.requests.filter((r) => !r.archived && r.status === "pending").length;
-      if (newOrders > prevCount || newPending > prevCount) {
-        toast.info(t("dash.notificationNew"));
-      }
+    // The hook only fires when the count actually increased.
+    onNewItems: () => {
+      toast.info(t("dash.notificationNew"));
     },
   });
 

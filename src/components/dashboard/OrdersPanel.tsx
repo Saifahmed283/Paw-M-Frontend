@@ -32,6 +32,13 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./dashboard-helpers";
 import { STATUS_OPTIONS } from "./dashboard-format";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
+
+type PendingAction = {
+  id: string;
+  kind: "cancel" | "archive" | "delete";
+  label: string;
+};
 
 export function OrdersPanel() {
   const { t } = useI18n();
@@ -40,6 +47,9 @@ export function OrdersPanel() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const { sort, toggle } = useSortState("newest", "desc");
   const activeOrders = useMemo(() => orders.filter((o) => !o.archived), [orders]);
   const comparators: Record<string, (a: Order, b: Order) => number> = {
@@ -59,6 +69,44 @@ export function OrdersPanel() {
   const sorted = sortedSlice(filtered, sort, comparators);
   const grid = useGrid(sorted, query, ["customerName", "phone", "email", "id"]);
 
+  const runAction = async (id: string, action: () => Promise<void>, successKey: string) => {
+    if (busyId) return;
+    setBusyId(id);
+    try {
+      await action();
+      toast.success(t(successKey));
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const executePendingAction = async () => {
+    if (!pendingAction || confirming) return;
+    const { id, kind } = pendingAction;
+    setConfirming(true);
+    try {
+      if (kind === "cancel") await setOrderStatus(id, "cancelled");
+      else if (kind === "archive") await archiveOrder(id, true);
+      else await deleteOrder(id);
+      toast.success(
+        t(
+          kind === "delete"
+            ? "dash.toast.deleted"
+            : kind === "archive"
+              ? "dash.toast.archived"
+              : "dash.toast.saved",
+        ),
+      );
+      setPendingAction(null);
+    } catch {
+      toast.error(t("dash.toast.error"));
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -71,6 +119,7 @@ export function OrdersPanel() {
           <div className="flex flex-wrap gap-2">
             {STATUS_OPTIONS.map((s) => (
               <button
+                type="button"
                 key={s.value}
                 onClick={() => {
                   setStatusFilter(s.value);
@@ -95,6 +144,7 @@ export function OrdersPanel() {
               { value: "unpaid", key: "pay.unpaid" },
             ].map((p) => (
               <button
+                type="button"
                 key={p.value}
                 onClick={() => {
                   setPaymentFilter(p.value);
@@ -194,15 +244,15 @@ export function OrdersPanel() {
                     ))}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {o.paymentStatus !== "paid" && o.paymentMethod !== "cash" && (
+                    {o.paymentStatus === "unpaid" && o.paymentMethod !== "cash" && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
-                        onClick={async () => {
-                          await setOrderPaymentStatus(o.id, "paid");
-                          toast.success(t("dash.toast.paid"));
-                        }}
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          runAction(o.id, () => setOrderPaymentStatus(o.id, "paid"), "dash.toast.paid")
+                        }
                       >
                         {t("dash.markPaid")}
                       </Button>
@@ -222,10 +272,10 @@ export function OrdersPanel() {
                         size="sm"
                         variant="outline"
                         className="h-7"
-                        onClick={async () => {
-                          await setOrderStatus(o.id, "confirmed");
-                          toast.success(t("dash.toast.saved"));
-                        }}
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          runAction(o.id, () => setOrderStatus(o.id, "confirmed"), "dash.toast.saved")
+                        }
                       >
                         {t("dash.confirmRow")}
                       </Button>
@@ -235,10 +285,14 @@ export function OrdersPanel() {
                         size="sm"
                         variant="outline"
                         className="h-7"
-                        onClick={async () => {
-                          await setOrderStatus(o.id, "completed");
-                          toast.success(t("dash.toast.completed"));
-                        }}
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          runAction(
+                            o.id,
+                            () => setOrderStatus(o.id, "completed"),
+                            "dash.toast.completed",
+                          )
+                        }
                       >
                         {t("dash.complete")}
                       </Button>
@@ -248,10 +302,10 @@ export function OrdersPanel() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-muted-foreground hover:text-destructive"
-                        onClick={async () => {
-                          await setOrderStatus(o.id, "cancelled");
-                          toast.success(t("dash.toast.saved"));
-                        }}
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          setPendingAction({ id: o.id, kind: "cancel", label: t("dash.cancelRow") })
+                        }
                       >
                         {t("dash.cancelRow")}
                       </Button>
@@ -263,10 +317,10 @@ export function OrdersPanel() {
                         className="h-7 px-2 text-muted-foreground hover:text-foreground"
                         aria-label={t("dash.archive")}
                         title={t("dash.archive")}
-                        onClick={async () => {
-                          await archiveOrder(o.id, true);
-                          toast.success(t("dash.toast.archived"));
-                        }}
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          setPendingAction({ id: o.id, kind: "archive", label: t("dash.archive") })
+                        }
                       >
                         <Archive className="size-3.5" />
                       </Button>
@@ -276,10 +330,10 @@ export function OrdersPanel() {
                       variant="ghost"
                       className="h-7 px-2 text-muted-foreground hover:text-destructive"
                       aria-label={t("dash.delete")}
-                      onClick={async () => {
-                        await deleteOrder(o.id);
-                        toast.success(t("dash.toast.deleted"));
-                      }}
+                      disabled={busyId === o.id}
+                      onClick={() =>
+                        setPendingAction({ id: o.id, kind: "delete", label: t("dash.delete") })
+                      }
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -329,11 +383,13 @@ export function OrdersPanel() {
             </Button>
             {proofOrder && proofOrder.paymentStatus !== "paid" && (
               <Button
-                onClick={async () => {
-                  await setOrderPaymentStatus(proofOrder.id, "paid");
-                  toast.success(t("dash.toast.paid"));
-                  setProofOrder(null);
-                }}
+                disabled={Boolean(busyId)}
+                onClick={() =>
+                  runAction(proofOrder.id, async () => {
+                    await setOrderPaymentStatus(proofOrder.id, "paid");
+                    setProofOrder(null);
+                  }, "dash.toast.paid")
+                }
               >
                 {t("dash.markPaid")}
               </Button>
@@ -341,6 +397,15 @@ export function OrdersPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmActionDialog
+        open={pendingAction !== null}
+        title={pendingAction?.label ?? t("dash.confirm")}
+        description={t("dash.cannotUndo")}
+        busy={confirming}
+        onConfirm={executePendingAction}
+        onClose={() => !confirming && setPendingAction(null)}
+      />
     </Card>
   );
 }

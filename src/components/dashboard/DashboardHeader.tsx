@@ -25,7 +25,6 @@ import { LanguageToggle } from "@/lib/i18n-components";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/use-theme-hook";
 import { currentUsername, currentRole, logout } from "@/lib/auth";
-import { useClinicStore } from "@/lib/clinic-store";
 import { ALL_NAV_ITEMS } from "./dashboard-nav";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
@@ -69,8 +68,6 @@ export function DashboardHeader({
   const { dark, toggle: toggleTheme } = useTheme();
   const username = currentUsername();
   const role = currentRole();
-  const store = useClinicStore();
-  const pendingCount = store.requests.filter((r) => !r.archived && r.status === "pending").length;
 
   const handleSignOut = () => {
     logout();

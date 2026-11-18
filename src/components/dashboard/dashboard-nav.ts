@@ -2,6 +2,7 @@ import {
   Archive,
   Banknote,
   CalendarCheck,
+  Contact,
   FileText,
   FolderOpen,
   HeartPulse,
@@ -13,8 +14,8 @@ import {
   Settings,
   ShoppingBag,
   Stethoscope,
-  Users,
   UserPlus,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -29,6 +30,12 @@ export type NavItem = {
   roles: string[];
 };
 
+/**
+ * Single source of truth for the staff sidebar. Group order is the daily
+ * workflow (what you do first → what you administer last); item order inside
+ * a group follows the same principle. `ALL_NAV_ITEMS` derives the landing tab
+ * from this order, so keep the most common entry points at the top.
+ */
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "nav.group.main",
@@ -36,15 +43,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "overview", icon: LayoutDashboard, roles: ["all"] },
       { id: "requests", icon: ListChecks, roles: ["all"] },
       { id: "reservations", icon: CalendarCheck, roles: ["staff", "payroll", "admin"] },
-    ],
-  },
-  {
-    label: "nav.group.team",
-    items: [
-      { id: "staff-overview", icon: Users, roles: ["admin"] },
-      { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
-      { id: "finance", icon: Wallet, roles: ["payroll", "admin"] },
-      { id: "clients", icon: Users, roles: ["payroll", "admin"] },
     ],
   },
   {
@@ -64,6 +62,21 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "nav.group.team",
+    items: [
+      { id: "staff-overview", icon: Users, roles: ["admin"] },
+      { id: "recruitment", icon: UserPlus, roles: ["admin"] },
+      { id: "clients", icon: Contact, roles: ["payroll", "admin"] },
+    ],
+  },
+  {
+    label: "nav.group.finance",
+    items: [
+      { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
+      { id: "finance", icon: Wallet, roles: ["payroll", "admin"] },
+    ],
+  },
+  {
     label: "nav.group.data",
     items: [
       { id: "workdays", icon: FolderOpen, roles: ["payroll", "admin"] },
@@ -74,12 +87,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "nav.group.system",
     items: [{ id: "settings", icon: Settings, roles: ["admin"] }],
-  },
-  {
-    label: "nav.group.recruitment",
-    items: [
-      { id: "recruitment", icon: UserPlus, roles: ["admin"] },
-    ],
   },
 ];
 

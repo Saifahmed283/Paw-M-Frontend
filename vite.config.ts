@@ -46,6 +46,7 @@ function asyncHooksBrowserShim(): Plugin {
     resolveId(source, _importer, options) {
       if (options?.ssr) return null;
       if (source === "node:async_hooks" || source === "async_hooks") return virtualId;
+      return null;
     },
     load(id) {
       if (id !== virtualId) return null;

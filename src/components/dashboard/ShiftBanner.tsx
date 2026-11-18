@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { checkIn, checkOut, refreshClinicData, useClinicStore } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
+import { localTodayISO } from "./dashboard-format";
 
 function formatDayName(dateISO: string, lang: "en" | "ar") {
   const date = new Date(`${dateISO}T00:00:00`);
@@ -21,7 +22,10 @@ export function ShiftBanner() {
   const { t, lang } = useI18n();
   const { workSession } = useClinicStore();
   const [busy, setBusy] = useState(false);
-  const sessionStarted = workSession ? new Date(workSession.startedAt) : null;
+  // An invalid timestamp must not put the banner into a fake "checked in"
+  // state that renders the literal text "Invalid Date".
+  const startedAt = workSession ? new Date(workSession.startedAt) : null;
+  const sessionStarted = startedAt && !Number.isNaN(startedAt.getTime()) ? startedAt : null;
 
   const doCheckIn = async () => {
     if (busy) return;
@@ -29,19 +33,18 @@ export function ShiftBanner() {
     try {
       const result = await checkIn();
       await refreshClinicData();
-      toast.success(
-        result.archived.bookings > 0 || result.archived.orders > 0
+      const archived = result.archived ?? { bookings: 0, orders: 0 };
+      const shiftMessage =
+        archived.bookings > 0 || archived.orders > 0
           ? t("dash.shiftArchivedOnStart", {
-              requests: String(result.archived.bookings),
-              orders: String(result.archived.orders),
+              requests: String(archived.bookings),
+              orders: String(archived.orders),
             })
-          : t("dash.shiftStarted"),
-      );
-      toast.success(
-        t("dash.dayFolderOpen", {
-          name: formatDayName(new Date().toISOString().slice(0, 10), lang),
-        }),
-      );
+          : t("dash.shiftStarted");
+      const folderMessage = t("dash.dayFolderOpen", {
+        name: formatDayName(localTodayISO(), lang),
+      });
+      toast.success(`${shiftMessage} · ${folderMessage}`);
     } catch {
       toast.error(t("dash.toast.error"));
     } finally {
@@ -55,17 +58,15 @@ export function ShiftBanner() {
     try {
       const result = await checkOut();
       await refreshClinicData();
-      toast.success(
-        t("dash.shiftEnded", {
-          requests: String(result.archived.bookings),
-          orders: String(result.archived.orders),
-        }),
-      );
-      toast.success(
-        t("dash.dayFolderSaved", {
-          name: formatDayName(new Date().toISOString().slice(0, 10), lang),
-        }),
-      );
+      const archived = result.archived ?? { bookings: 0, orders: 0 };
+      const shiftMessage = t("dash.shiftEnded", {
+        requests: String(archived.bookings),
+        orders: String(archived.orders),
+      });
+      const folderMessage = t("dash.dayFolderSaved", {
+        name: formatDayName(localTodayISO(), lang),
+      });
+      toast.success(`${shiftMessage} · ${folderMessage}`);
     } catch {
       toast.error(t("dash.toast.error"));
     } finally {

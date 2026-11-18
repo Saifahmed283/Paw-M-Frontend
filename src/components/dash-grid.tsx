@@ -45,6 +45,7 @@ export function SortChip({
 }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       className={cn(
         "flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
@@ -97,6 +98,7 @@ export function PaginationBar({
       </p>
       <div className="flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
           className={cn(
@@ -109,6 +111,7 @@ export function PaginationBar({
         </button>
         {pages.map((p) => (
           <button
+            type="button"
             key={p}
             onClick={() => onPage(p)}
             className={cn(
@@ -122,6 +125,7 @@ export function PaginationBar({
           </button>
         ))}
         <button
+          type="button"
           onClick={() => onPage(page + 1)}
           disabled={page >= pageCount}
           className={cn(

@@ -9,6 +9,12 @@ export const STATUS_OPTIONS: { value: Status | "all"; key: string }[] = [
   { value: "cancelled", key: "dash.filterCancelled" },
 ];
 
+/** Current calendar date in the user's local timezone (YYYY-MM-DD). */
+export function localTodayISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function formatDate(dateISO: string, lang: Lang) {
   if (!dateISO) return "—";
   const d = new Date(`${dateISO}T00:00:00`);

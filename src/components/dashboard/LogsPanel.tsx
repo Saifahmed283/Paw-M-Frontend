@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { History } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,6 +14,7 @@ import {
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 import { useClinicStore, loadAuditLogs } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { formatTime } from "./dashboard-format";
 
 export function LogsPanel() {
@@ -20,10 +22,23 @@ export function LogsPanel() {
   const { auditLogs } = useClinicStore();
   const [query, setQuery] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadAuditLogs().catch(() => undefined);
   }, []);
+
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await loadAuditLogs();
+    } catch {
+      // Keep the existing rows visible if the refresh fails.
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filtered = useMemo(
     () => auditLogs.filter((l) => actionFilter === "all" || l.action === actionFilter),
@@ -38,11 +53,23 @@ export function LogsPanel() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <History className="size-4" /> {t("logs.title")}
-        </CardTitle>
-        <CardDescription>{t("logs.desc")}</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="size-4" /> {t("logs.title")}
+          </CardTitle>
+          <CardDescription>{t("logs.desc")}</CardDescription>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refresh}
+          disabled={refreshing}
+          className="shrink-0 gap-1.5"
+        >
+          <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
+          {t("dash.refresh")}
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex flex-wrap items-center gap-3">

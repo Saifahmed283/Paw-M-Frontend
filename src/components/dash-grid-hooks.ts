@@ -19,7 +19,9 @@ export function sortedSlice<T>(
   comparators: Record<string, (a: T, b: T) => number>,
 ) {
   const cmp = comparators[sort.key];
-  const sorted = cmp ? [...items].sort(cmp) : items;
+  // Always copy: reversing the caller's array in place would corrupt the
+  // source data when no comparator is registered for the current sort key.
+  const sorted = cmp ? [...items].sort(cmp) : [...items];
   return sort.dir === "desc" ? sorted.reverse() : sorted;
 }
 
@@ -37,6 +39,9 @@ export function useGrid<T>(
   const [pageSize, setPageSize] = useState(initialPageSize);
 
   const q = searchText.trim().toLowerCase();
+  // Callers pass an inline array literal, so its identity changes every render.
+  // Key the memo on its contents instead to keep filtering cached.
+  const fieldsKey = searchFields.join("\u0000");
   const filtered = useMemo(() => {
     if (!q || searchFields.length === 0) return items;
     return items.filter((item) =>
@@ -46,7 +51,8 @@ export function useGrid<T>(
           .includes(q),
       ),
     );
-  }, [items, q, searchFields]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, fieldsKey]);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
