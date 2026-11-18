@@ -3,6 +3,16 @@ import { motion, useInView, useReducedMotion } from "motion/react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+/**
+ * Callers have historically passed `delay` in both seconds (0.06) and
+ * milliseconds (60). Normalise to seconds so a stray millisecond value can
+ * never leave content invisible for minutes, and clamp to a sane maximum.
+ */
+function toSeconds(delay: number): number {
+  const seconds = delay > 1 ? delay / 1000 : delay;
+  return Math.min(Math.max(seconds, 0), 1);
+}
+
 export function Reveal({
   children,
   delay = 0,
@@ -21,7 +31,7 @@ export function Reveal({
       initial={reduce ? { opacity: 0 } : { opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.55, delay, ease: EASE }}
+      transition={{ duration: 0.55, delay: toSeconds(delay), ease: EASE }}
     >
       {children}
     </motion.div>

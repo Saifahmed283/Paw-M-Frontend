@@ -1,0 +1,17 @@
+name: pawm-frontend
+static_sites:
+- name: frontend
+  source_dir: /
+  github:
+    repo: Saifahmed283/Paw-M-Frontend
+    branch: main
+  # Use Bun (detected from bun.lock) - use bun commands
+  build_command: bun install && bun run build
+  # TanStack Start with prerender outputs static assets to dist/client
+  output_dir: dist/client
+  environment_slug: node-js
+  envs:
+  - key: VITE_API_URL
+    value: https://paw-m-backend-4ak5h.ondigitalocean.app/api
+  - key: NODE_ENV
+    value: production

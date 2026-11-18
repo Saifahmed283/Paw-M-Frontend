@@ -61,10 +61,20 @@ To show a live "back in X min" countdown, set the expected return time on the
 
 ## Checking it locally
 
+The pause is done by nginx, so `npm run preview` (Vite's own preview server) still
+shows the **real** site. To check the paused site, run the built output through
+nginx with the maintenance config:
+
 ```bash
 npm run build
-npx serve dist/client   # or: npm run preview
+docker run --rm -p 8080:80 \
+  -v "${PWD}/dist/client:/usr/share/nginx/html:ro" \
+  -v "${PWD}/nginx.maintenance.conf:/etc/nginx/http.d/default.conf:ro" \
+  nginx:alpine
 ```
 
-`npm run dev` still runs the **real** site - the paused page is a production
-concern only.
+Then open <http://localhost:8080> - every route should show the
+under-construction page and `curl -I localhost:8080` should report `503`.
+
+`npm run dev` also still runs the **real** site - the paused page is a
+production concern only.

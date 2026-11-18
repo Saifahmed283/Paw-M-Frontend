@@ -7,9 +7,12 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, Suspense, type ReactNode } from "react";
 import { motion } from "motion/react";
+import { injectPawMAnimations } from "@/lib/animations";
+import { initScrollReveal } from "@/lib/scroll-reveal";
 
 import appCss from "../styles.css?url";
 import { IntroAnimation } from "@/components/IntroAnimation";
@@ -28,6 +31,16 @@ import { ThemeProvider } from "@/lib/use-theme";
 import { reportRuntimeError } from "@/lib/runtime-error-reporting";
 
 function NotFoundComponent() {
+  // Root error/not-found boundaries render *outside* the main I18nProvider in
+  // RootComponent, so they need their own provider to satisfy useI18n().
+  return (
+    <I18nProvider initialLang={readLangCookie()}>
+      <NotFoundContent />
+    </I18nProvider>
+  );
+}
+
+function NotFoundContent() {
   const { t } = useI18n();
   return (
     <section className="hero-gradient flex min-h-[70vh] items-center justify-center px-5 pb-24 pt-32 sm:pt-40">
@@ -63,8 +76,16 @@ function RouteLoadingSkeleton() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+function ErrorComponent(props: ErrorComponentProps) {
+  console.error(props.error);
+  return (
+    <I18nProvider initialLang={readLangCookie()}>
+      <ErrorContent {...props} />
+    </I18nProvider>
+  );
+}
+
+function ErrorContent({ error, reset }: ErrorComponentProps) {
   const { t } = useI18n();
   const router = useRouter();
   useEffect(() => {
@@ -249,6 +270,23 @@ function RootComponent() {
   const { queryClient, lang, dark } = Route.useRouteContext();
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
+
+  useEffect(() => {
+    // Inject Paw-M animations on mount (client-side only)
+    injectPawMAnimations();
+  }, []);
+
+  useEffect(() => {
+    // Global section reveals. Skip app/dashboard routes where sticky panels
+    // and dense toolbars should never be hidden. Re-run on pathname change
+    // because <motion.main key={pathname}> remounts all sections.
+    const appRoute = ["/dashboard", "/staff", "/cashier", "/account"].some((prefix) =>
+      pathname.startsWith(prefix),
+    );
+    if (appRoute) return;
+    const id = window.setTimeout(() => initScrollReveal(), 60);
+    return () => window.clearTimeout(id);
+  }, [pathname]);
 
   useEffect(() => {
     // Kick off the clinic-data fetch only after the hydration pass has fully

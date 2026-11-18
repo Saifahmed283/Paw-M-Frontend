@@ -26,14 +26,27 @@ export function I18nProvider({
 
   useEffect(() => {
     let stored: string | null = null;
+    let fromQuery = false;
     try {
-      stored = window.localStorage.getItem(LANG_KEY);
+      // hreflang links point to ?lang=xx. Honour them so those alternate URLs
+      // actually switch language on this statically prerendered site, where
+      // the server cannot read a cookie at request time.
+      const queryLang = new URLSearchParams(window.location.search).get("lang");
+      if (queryLang === "ar" || queryLang === "en") {
+        stored = queryLang;
+        fromQuery = true;
+      } else {
+        stored = window.localStorage.getItem(LANG_KEY);
+      }
     } catch {
       /* storage unavailable */
     }
     if (stored === "ar") {
       setLangState("ar");
       writeLangCookie("ar");
+    } else if (fromQuery && stored === "en") {
+      setLangState("en");
+      writeLangCookie("en");
     }
   }, []);
 

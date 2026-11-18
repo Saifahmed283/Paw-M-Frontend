@@ -752,7 +752,9 @@ export async function createOrder(input: {
   discountLabel?: string | undefined;
 }) {
   try {
-    const created = await api.post<Order>("/orders", input);
+    const created = await api.post<Order>("/orders", input, {
+      auth: input.source === "pos" ? "staff" : "client",
+    });
     invalidate(QUERY_KEYS.orders);
     return created;
   } catch (err) {
@@ -769,7 +771,7 @@ export async function trackOrder(orderId: string, phone: string) {
 
 export async function submitPaymentProof(
   id: string,
-  proof: { paymentRef?: string | undefined; proofImage?: string | undefined },
+  proof: { paymentRef?: string | undefined; proofImage?: string | undefined; phone?: string | undefined },
 ) {
   try {
     const updated = await api.post<Order>(`/orders/${id}/payment-proof`, proof);
