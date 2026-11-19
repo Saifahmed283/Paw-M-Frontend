@@ -796,7 +796,14 @@ export function ClientsPanel() {
                         <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                           {formatTime(c.lastActivity, lang)}
                         </TableCell>
-                        <TableCell className="text-end">
+                        <TableCell
+                          className="text-end"
+                          // Dialog/menu content is portaled, but React events still bubble
+                          // through the component tree to this row. Keep every action
+                          // click (suspend/delete confirm, notify, menu) from opening
+                          // the client detail view.
+                          onClick={(event) => event.stopPropagation()}
+                        >
                           <ClientActions client={c} onView={() => setSelectedId(c.id)} />
                         </TableCell>
                       </TableRow>
