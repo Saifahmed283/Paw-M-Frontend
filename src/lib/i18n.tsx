@@ -1,4 +1,5 @@
-﻿import { createContext, useContext } from "react";
+﻿/* eslint-disable prettier/prettier */
+import { createContext, useContext } from "react";
 
 export type Lang = "en" | "ar";
 
@@ -108,7 +109,8 @@ export const EN: Dict = {
   "rx.builder.breed": "Breed (optional)",
   "rx.builder.clinician": "Prescribing clinician",
   "rx.builder.noClinician": "Add a clinician in the Doctors panel before issuing a prescription.",
-  "rx.builder.draftWillIssue": "Saving this draft will issue it (make it printable and verifiable).",
+  "rx.builder.draftWillIssue":
+    "Saving this draft will issue it (make it printable and verifiable).",
   "rx.builder.diagnosis": "Diagnosis",
   "rx.builder.diagnosisPlaceholder": "Clinical diagnosis for this visit",
   "rx.builder.carePlan": "{species} wellness & care plan",
@@ -234,11 +236,14 @@ export const EN: Dict = {
   "dash.archive": "Archive",
   "dash.logs": "Activity log",
   "dash.recruitment": "Recruitment",
-  "dash.recruitmentDesc": "Hire new team members, create dashboard accounts, and manage existing records.",
+  "dash.recruitmentDesc":
+    "Hire new team members, create dashboard accounts, and manage existing records.",
   "dash.recruitment.employee": "Create Employee Record",
   "dash.recruitment.account": "Create Dashboard Account",
-  "dash.recruitment.employeeDesc": "Add a team member to the clinic roster with role, pay rate, and contact info.",
-  "dash.recruitment.accountDesc": "Create a login account for the staff dashboard (admin, payroll, or staff).",
+  "dash.recruitment.employeeDesc":
+    "Add a team member to the clinic roster with role, pay rate, and contact info.",
+  "dash.recruitment.accountDesc":
+    "Create a login account for the staff dashboard (admin, payroll, or staff).",
   "dash.recruitment.fullName": "Full name",
   "dash.recruitment.email": "Email",
   "dash.recruitment.phone": "Phone",
@@ -259,17 +264,19 @@ export const EN: Dict = {
   "dash.recruitment.invalidEmail": "Enter a valid email address.",
   "dash.recruitment.invalidRate": "Rate and salary must be zero or greater.",
   "dash.recruitment.invalidHours": "Hours per day must be between 1 and 24.",
-  "dash.recruitment.invalidCommission": "Commission rates must be a JSON object of non-negative numbers.",
+  "dash.recruitment.invalidCommission":
+    "Commission rates must be a JSON object of non-negative numbers.",
   "dash.recruitment.invalidUsername": "Username must be at least 3 characters.",
   "dash.recruitment.fullNamePlaceholder": "e.g. Dr. Ahmed Hassan",
   "dash.recruitment.phonePlaceholder": "+20 10 1234 5678",
   "dash.recruitment.usernamePlaceholder": "e.g. dr.ahmed",
-  "dash.recruitment.commissionPlaceholder": "{\"consultation\": 10, \"surgery\": 15}",
+  "dash.recruitment.commissionPlaceholder": '{"consultation": 10, "surgery": 15}',
   "dash.recruitment.hourly": "Hourly",
   "dash.recruitment.monthly": "Monthly",
   "dash.recruitment.payroll": "Payroll",
   "dash.recruitment.manageEmployees": "Manage employee records",
-  "dash.recruitment.manageEmployeesDesc": "Edit, suspend, activate, or delete employee records you have added.",
+  "dash.recruitment.manageEmployeesDesc":
+    "Edit, suspend, activate, or delete employee records you have added.",
   "dash.recruitment.manageAccounts": "Manage dashboard accounts",
   "dash.recruitment.manageAccountsDesc": "Edit, suspend, activate, or delete staff login accounts.",
   "dash.recruitment.noEmployees": "No employee records yet.",
@@ -288,13 +295,16 @@ export const EN: Dict = {
   "dash.recruitment.activateEmployeeTitle": "Activate employee",
   "dash.recruitment.activateEmployeeConfirm": "Re-activate {name}?",
   "dash.recruitment.deleteEmployeeTitle": "Delete employee",
-  "dash.recruitment.deleteEmployeeConfirm": "Permanently delete {name}? This cannot be undone. Employees with existing records may need to be suspended instead.",
+  "dash.recruitment.deleteEmployeeConfirm":
+    "Permanently delete {name}? This cannot be undone. Employees with existing records may need to be suspended instead.",
   "dash.recruitment.suspendAccountTitle": "Suspend account",
-  "dash.recruitment.suspendAccountConfirm": "Suspend the login account \"{name}\"? They will not be able to sign in.",
+  "dash.recruitment.suspendAccountConfirm":
+    'Suspend the login account "{name}"? They will not be able to sign in.',
   "dash.recruitment.activateAccountTitle": "Activate account",
-  "dash.recruitment.activateAccountConfirm": "Re-activate the login account \"{name}\"?",
+  "dash.recruitment.activateAccountConfirm": 'Re-activate the login account "{name}"?',
   "dash.recruitment.deleteAccountTitle": "Delete account",
-  "dash.recruitment.deleteAccountConfirm": "Permanently delete the login account \"{name}\"? This cannot be undone.",
+  "dash.recruitment.deleteAccountConfirm":
+    'Permanently delete the login account "{name}"? This cannot be undone.',
   "dash.recruitment.employeeUpdated": "Employee updated",
   "dash.recruitment.employeeDeleted": "Employee deleted",
   "dash.recruitment.employeeStatusUpdated": "Employee status updated",
@@ -409,7 +419,8 @@ export const EN: Dict = {
   "dash.settings.rolesNote": "Admin always has full access to every section.",
   "dash.settings.rolesAccess": "Access",
   "dash.settings.rolesReset": "Reset to defaults",
-  "dash.settings.rolesResetConfirm": "Restore the default tab permissions for every role and save them?",
+  "dash.settings.rolesResetConfirm":
+    "Restore the default tab permissions for every role and save them?",
   "homepage.clinicReviews.title": "What our clients say on Google",
   "homepage.clinicReviews.subtitle": "Real reviews from pet parents who trust Paw-M.",
   "homepage.clinicReviews.allReviews": "Read all reviews on Google",
@@ -1701,11 +1712,14 @@ const AR: Dict = {
   "dash.archive": "الأرشيف",
   "dash.logs": "سجل النشاط",
   "dash.recruitment": "التوظيف",
-  "dash.recruitmentDesc": "تعيين أعضاء جدد في الفريق، وإنشاء حسابات لوحة التحكم، وإدارة السجلات الحالية.",
+  "dash.recruitmentDesc":
+    "تعيين أعضاء جدد في الفريق، وإنشاء حسابات لوحة التحكم، وإدارة السجلات الحالية.",
   "dash.recruitment.employee": "إنشاء سجل موظف",
   "dash.recruitment.account": "إنشاء حساب لوحة التحكم",
-  "dash.recruitment.employeeDesc": "إضافة عضو فريق إلى قائمة العيادة مع الدور ومعدل الأجر ومعلومات الاتصال.",
-  "dash.recruitment.accountDesc": "إنشاء حساب تسجيل دخول للوحة تحكم الموظفين (مدير، رواتب، أو موظف).",
+  "dash.recruitment.employeeDesc":
+    "إضافة عضو فريق إلى قائمة العيادة مع الدور ومعدل الأجر ومعلومات الاتصال.",
+  "dash.recruitment.accountDesc":
+    "إنشاء حساب تسجيل دخول للوحة تحكم الموظفين (مدير، رواتب، أو موظف).",
   "dash.recruitment.fullName": "الاسم الكامل",
   "dash.recruitment.email": "البريد الإلكتروني",
   "dash.recruitment.phone": "الهاتف",
@@ -1731,14 +1745,16 @@ const AR: Dict = {
   "dash.recruitment.fullNamePlaceholder": "مثال: د. أحمد حسن",
   "dash.recruitment.phonePlaceholder": "+20 10 1234 5678",
   "dash.recruitment.usernamePlaceholder": "مثال: dr.ahmed",
-  "dash.recruitment.commissionPlaceholder": "{\"consultation\": 10, \"surgery\": 15}",
+  "dash.recruitment.commissionPlaceholder": '{"consultation": 10, "surgery": 15}',
   "dash.recruitment.hourly": "بالساعة",
   "dash.recruitment.monthly": "شهري",
   "dash.recruitment.payroll": "الرواتب",
   "dash.recruitment.manageEmployees": "إدارة سجلات الموظفين",
-  "dash.recruitment.manageEmployeesDesc": "تعديل أو تعليق أو تفعيل أو حذف سجلات الموظفين التي تمت إضافتها.",
+  "dash.recruitment.manageEmployeesDesc":
+    "تعديل أو تعليق أو تفعيل أو حذف سجلات الموظفين التي تمت إضافتها.",
   "dash.recruitment.manageAccounts": "إدارة حسابات لوحة التحكم",
-  "dash.recruitment.manageAccountsDesc": "تعديل أو تعليق أو تفعيل أو حذف حسابات تسجيل دخول الموظفين.",
+  "dash.recruitment.manageAccountsDesc":
+    "تعديل أو تعليق أو تفعيل أو حذف حسابات تسجيل دخول الموظفين.",
   "dash.recruitment.noEmployees": "لا توجد سجلات موظفين بعد.",
   "dash.recruitment.noAccounts": "لا توجد حسابات لوحة تحكم بعد.",
   "dash.recruitment.status": "الحالة",
@@ -1755,13 +1771,16 @@ const AR: Dict = {
   "dash.recruitment.activateEmployeeTitle": "تفعيل الموظف",
   "dash.recruitment.activateEmployeeConfirm": "إعادة تفعيل {name}؟",
   "dash.recruitment.deleteEmployeeTitle": "حذف الموظف",
-  "dash.recruitment.deleteEmployeeConfirm": "حذف {name} نهائيًا؟ لا يمكن التراجع عن ذلك. قد يلزم تعليق الموظفين الذين لديهم سجلات حالية بدلاً من حذفهم.",
+  "dash.recruitment.deleteEmployeeConfirm":
+    "حذف {name} نهائيًا؟ لا يمكن التراجع عن ذلك. قد يلزم تعليق الموظفين الذين لديهم سجلات حالية بدلاً من حذفهم.",
   "dash.recruitment.suspendAccountTitle": "تعليق الحساب",
-  "dash.recruitment.suspendAccountConfirm": "تعليق حساب تسجيل الدخول \"{name}\"؟ لن يتمكن من تسجيل الدخول.",
+  "dash.recruitment.suspendAccountConfirm":
+    'تعليق حساب تسجيل الدخول "{name}"؟ لن يتمكن من تسجيل الدخول.',
   "dash.recruitment.activateAccountTitle": "تفعيل الحساب",
-  "dash.recruitment.activateAccountConfirm": "إعادة تفعيل حساب تسجيل الدخول \"{name}\"؟",
+  "dash.recruitment.activateAccountConfirm": 'إعادة تفعيل حساب تسجيل الدخول "{name}"؟',
   "dash.recruitment.deleteAccountTitle": "حذف الحساب",
-  "dash.recruitment.deleteAccountConfirm": "حذف حساب تسجيل الدخول \"{name}\" نهائيًا؟ لا يمكن التراجع عن ذلك.",
+  "dash.recruitment.deleteAccountConfirm":
+    'حذف حساب تسجيل الدخول "{name}" نهائيًا؟ لا يمكن التراجع عن ذلك.',
   "dash.recruitment.employeeUpdated": "تم تحديث الموظف",
   "dash.recruitment.employeeDeleted": "تم حذف الموظف",
   "dash.recruitment.employeeStatusUpdated": "تم تحديث حالة الموظف",
