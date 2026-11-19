@@ -374,6 +374,12 @@ function invalidate(key: readonly unknown[]) {
   getQc()?.invalidateQueries({ queryKey: key, exact: true });
 }
 
+/** Orders and their Payment rows are kept in sync, so refresh both together. */
+function invalidateFinance() {
+  invalidate(QUERY_KEYS.orders);
+  invalidate(QUERY_KEYS.payments);
+}
+
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -794,7 +800,7 @@ export async function createOrder(input: {
 }) {
   try {
     const created = await api.post<Order>("/orders", input);
-    invalidate(QUERY_KEYS.orders);
+    invalidateFinance();
     return created;
   } catch (err) {
     console.error("Failed to create order", err);
@@ -810,11 +816,15 @@ export async function trackOrder(orderId: string, phone: string) {
 
 export async function submitPaymentProof(
   id: string,
-  proof: { paymentRef?: string | undefined; proofImage?: string | undefined },
+  proof: {
+    paymentRef?: string | undefined;
+    proofImage?: string | undefined;
+    phone?: string | undefined;
+  },
 ) {
   try {
     const updated = await api.post<Order>(`/orders/${id}/payment-proof`, proof);
-    invalidate(QUERY_KEYS.orders);
+    invalidateFinance();
     return updated;
   } catch (err) {
     console.error("Failed to submit payment proof", err);
@@ -822,10 +832,17 @@ export async function submitPaymentProof(
   }
 }
 
-export async function setOrderPaymentStatus(id: string, paymentStatus: PaymentStatus) {
+export async function setOrderPaymentStatus(
+  id: string,
+  paymentStatus: PaymentStatus,
+  paymentMethod?: PaymentMethod,
+) {
   try {
-    const updated = await api.patch<Order>(`/orders/${id}/payment`, { paymentStatus });
-    invalidate(QUERY_KEYS.orders);
+    await api.patch<Order>(`/orders/${id}/payment`, {
+      paymentStatus,
+      ...(paymentMethod ? { paymentMethod } : {}),
+    });
+    invalidateFinance();
   } catch (err) {
     console.error("Failed to update order payment status", err);
     throw err;
@@ -918,14 +935,18 @@ export async function createPayment(input: {
   title: string;
   amount: number;
   method: PaymentMethod;
-  status?: "unpaid" | "paid";
+  status?: PaymentStatus;
   date: string;
   notes?: string | undefined;
   orderId?: string | undefined;
+  kind?: PaymentKind | undefined;
 }) {
   try {
-    const created = await api.post<Payment>("/payments", input);
-    invalidate(QUERY_KEYS.payments);
+    const created = await api.post<Payment>("/payments", {
+      ...input,
+      kind: input.kind ?? "manual",
+    });
+    invalidateFinance();
     return created;
   } catch (err) {
     console.error("Failed to create payment", err);
@@ -941,7 +962,7 @@ export async function updatePayment(
 ) {
   try {
     const updated = await api.patch<Payment>(`/payments/${id}`, patch);
-    invalidate(QUERY_KEYS.payments);
+    invalidateFinance();
     return updated;
   } catch (err) {
     console.error("Failed to update payment", err);
@@ -952,7 +973,7 @@ export async function updatePayment(
 export async function deletePayment(id: string) {
   try {
     await api.delete(`/payments/${id}`);
-    invalidate(QUERY_KEYS.payments);
+    invalidateFinance();
   } catch (err) {
     console.error("Failed to delete payment", err);
     throw err;
@@ -966,7 +987,7 @@ export type PaymentRequestInput = {
   bookingId?: string | null;
   amount: number;
   method: PaymentMethod;
-  status?: "unpaid" | "paid" | undefined;
+  status?: PaymentStatus | undefined;
   date?: string;
   notes?: string;
   requestedBy?: string;
@@ -981,7 +1002,7 @@ export type PaymentRequestInput = {
 export async function createPaymentRequest(input: PaymentRequestInput) {
   try {
     const created = await api.post<Payment>("/payments", input);
-    invalidate(QUERY_KEYS.payments);
+    invalidateFinance();
     return created;
   } catch (err) {
     console.error("Failed to create payment request", err);
@@ -995,7 +1016,7 @@ export async function addPaymentItem(
 ) {
   try {
     const updated = await api.post<Payment>(`/payments/${id}/items`, { items });
-    invalidate(QUERY_KEYS.payments);
+    invalidateFinance();
     return updated;
   } catch (err) {
     console.error("Failed to add payment items", err);
@@ -1006,7 +1027,7 @@ export async function addPaymentItem(
 export async function settlePayment(id: string, input: { method: PaymentMethod; notes?: string }) {
   try {
     const updated = await api.post<Payment>(`/payments/${id}/settle`, input);
-    invalidate(QUERY_KEYS.payments);
+    invalidateFinance();
     return updated;
   } catch (err) {
     console.error("Failed to settle payment", err);

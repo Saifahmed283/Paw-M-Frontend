@@ -673,10 +673,11 @@ function CashierApp() {
       let paymentMethod = method;
       let paymentRef = method === "instapay" || method === "fawry" ? "" : undefined;
 
-      // Split payment support: choose the first non-cash allocation as the recorded
-      // method so fawry/instapay references can be captured; keep it simple.
+      // Split payment support: when any part was paid in cash the sale is
+      // settled on the spot, so record cash as the primary method. Only a fully
+      // electronic split stays pending proof verification.
       if (isSplit) {
-        const primary = (split.find((a) => a.method !== "cash") ?? split[0])!;
+        const primary = (split.find((a) => a.method === "cash") ?? split[0])!;
         paymentMethod = primary.method;
         paymentRef = primary.method === "instapay" || primary.method === "fawry" ? "" : undefined;
       }

@@ -244,19 +244,24 @@ export function OrdersPanel() {
                     ))}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {o.paymentStatus === "unpaid" && o.paymentMethod !== "cash" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          runAction(o.id, () => setOrderPaymentStatus(o.id, "paid"), "dash.toast.paid")
-                        }
-                      >
-                        {t("dash.markPaid")}
-                      </Button>
-                    )}
+                    {o.paymentStatus !== "paid" &&
+                      (o.paymentStatus === "proof_submitted" || o.paymentMethod === "cash") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
+                          disabled={busyId === o.id}
+                          onClick={() =>
+                            runAction(
+                              o.id,
+                              () => setOrderPaymentStatus(o.id, "paid"),
+                              "dash.toast.paid",
+                            )
+                          }
+                        >
+                          {t("dash.markPaid")}
+                        </Button>
+                      )}
                     {o.paymentStatus === "proof_submitted" && (o.proofImage || o.paymentRef) && (
                       <Button
                         size="sm"

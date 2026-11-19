@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  setOrderPaymentStatus,
   settlePayment,
   useClinicStore,
   type Payment,
@@ -37,7 +38,13 @@ export function PaymentSettleDialog({
     if (busy) return;
     setBusy(true);
     try {
-      await settlePayment(payment.id, { method, notes: notes.trim() });
+      if (payment.orderId) {
+        // Store orders own the payment status — settle through the order route
+        // so the Order and its Finance row are updated in one transaction.
+        await setOrderPaymentStatus(payment.orderId, "paid", method);
+      } else {
+        await settlePayment(payment.id, { method, notes: notes.trim() });
+      }
       toast.success(t("payments.settled"));
       onClose();
     } catch (err) {

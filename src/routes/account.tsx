@@ -575,6 +575,8 @@ function AppointmentsTab({ profile }: { profile: MeProfile }) {
 }
 
 function OrdersTab({ profile }: { profile: MeProfile }) {
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
   const sorted = [...profile.orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <div className="grid gap-5">
@@ -595,12 +597,21 @@ function OrdersTab({ profile }: { profile: MeProfile }) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-medium">Order {o.id.replace(/^order-/, "#")}</p>
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline">{o.paymentStatus.replace("_", " ")}</Badge>
+                <Badge variant="outline">
+                  {t(
+                    o.paymentStatus === "paid"
+                      ? "pay.paid"
+                      : o.paymentStatus === "proof_submitted"
+                        ? "pay.underReview"
+                        : "pay.unpaid",
+                  )}
+                </Badge>
                 <StatusBadge status={o.status} />
               </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {fmt(o.createdAt)} · {o.paymentMethod} · EGP {o.total.toFixed(2)}
+              {fmt(o.createdAt)} · {t(`checkout.method.${o.paymentMethod}.short`)} ·{" "}
+              {formatPrice(o.total, settings.currency)}
             </p>
             <ul className="mt-2 grid gap-1 text-xs text-muted-foreground">
               {o.items.slice(0, 3).map((item) => (
