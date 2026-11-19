@@ -65,9 +65,7 @@ interface DashboardAccount {
   createdAt: string;
 }
 
-type AccountAction =
-  | { type: "suspend" | "activate" | "delete"; account: DashboardAccount }
-  | null;
+type AccountAction = { type: "suspend" | "activate" | "delete"; account: DashboardAccount } | null;
 
 const DEFAULT_EMPLOYEE: EmployeeFormData = {
   fullName: "",
@@ -311,7 +309,9 @@ export function RecruitmentPanel() {
       toast.error(
         apiErrorMessage(
           err,
-          type === "delete" ? t("dash.recruitment.deleteFailed") : t("dash.recruitment.updateFailed"),
+          type === "delete"
+            ? t("dash.recruitment.deleteFailed")
+            : t("dash.recruitment.updateFailed"),
         ),
       );
     } finally {
@@ -361,7 +361,9 @@ export function RecruitmentPanel() {
             {/* Employee Form Tab */}
             <form onSubmit={createEmployee}>
               <TabsContent value="employee" className="space-y-6">
-                <p className="text-sm text-muted-foreground">{t("dash.recruitment.employeeDesc")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("dash.recruitment.employeeDesc")}
+                </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
@@ -420,7 +422,9 @@ export function RecruitmentPanel() {
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
-                    <Label htmlFor="employee-payRateType">{t("dash.recruitment.payRateType")}</Label>
+                    <Label htmlFor="employee-payRateType">
+                      {t("dash.recruitment.payRateType")}
+                    </Label>
                     <Select
                       value={employeeForm.payRateType}
                       onValueChange={(v) =>
@@ -438,7 +442,9 @@ export function RecruitmentPanel() {
                   </div>
                   {employeeForm.payRateType === "hourly" && (
                     <div className="grid gap-2">
-                      <Label htmlFor="employee-hourlyRate">{t("dash.recruitment.hourlyRate")}</Label>
+                      <Label htmlFor="employee-hourlyRate">
+                        {t("dash.recruitment.hourlyRate")}
+                      </Label>
                       <Input
                         id="employee-hourlyRate"
                         type="number"
@@ -570,9 +576,7 @@ export function RecruitmentPanel() {
                       value={accountForm.password}
                       onChange={(e) => handleAccountChange("password", e.target.value)}
                       placeholder={
-                        editingAccount
-                          ? t("dash.recruitment.newPasswordPlaceholder")
-                          : "••••••••"
+                        editingAccount ? t("dash.recruitment.newPasswordPlaceholder") : "••••••••"
                       }
                       minLength={editingAccount ? 0 : 6}
                       autoComplete="new-password"
@@ -721,7 +725,10 @@ export function RecruitmentPanel() {
         </CardContent>
       </Card>
 
-      <Dialog open={accountAction !== null} onOpenChange={(open) => !open && setAccountAction(null)}>
+      <Dialog
+        open={accountAction !== null}
+        onOpenChange={(open) => !open && setAccountAction(null)}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{actionTitle}</DialogTitle>
