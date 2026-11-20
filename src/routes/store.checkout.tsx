@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ClientAuthGate } from "@/components/ClientAuthGate";
+import { InstapayQrPanel } from "@/components/store/InstapayQrPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,11 +53,13 @@ function SuccessScreen({
   paymentMethod,
   total,
   instapay,
+  phone,
 }: {
   orderId: string;
   paymentMethod: PaymentMethod;
   total: string;
   instapay: string;
+  phone: string;
 }) {
   const { t } = useI18n();
   return (
@@ -74,14 +77,13 @@ function SuccessScreen({
         </p>
 
         {paymentMethod === "instapay" && (
-          <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4 text-left">
-            <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-              <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
-            </p>
-            <p className="mt-1 font-mono text-lg font-bold break-all">{instapay}</p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {t("checkout.instapayTransfer", { amount: total, account: instapay })}
-            </p>
+          <div className="mt-5 space-y-3 text-left">
+            <div>
+              <p className="text-sm font-bold">{t("checkout.paymentStepsTitle")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("checkout.stepTransfer")}</p>
+              <p className="text-xs text-muted-foreground">{t("checkout.stepProof")}</p>
+            </div>
+            <InstapayQrPanel account={instapay} amountLabel={total} />
           </div>
         )}
         {paymentMethod === "cash" && (
@@ -92,9 +94,19 @@ function SuccessScreen({
         <p className="mt-3 text-xs font-medium text-amber-600">{t("checkout.notPaidNote")}</p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <Button asChild className="flex-1 shadow-glow">
-            <Link to="/store/track">{t("checkout.trackOrder")}</Link>
-          </Button>
+          {paymentMethod === "instapay" ? (
+            <Button asChild className="flex-1 shadow-glow">
+              <Link to="/store/track" search={{ order: orderId, phone, proof: "1" }}>
+                {t("checkout.addPaymentProof")}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="flex-1 shadow-glow">
+              <Link to="/store/track" search={{ order: orderId, phone, proof: "0" }}>
+                {t("checkout.trackOrder")}
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline" className="flex-1">
             <Link to="/store">{t("checkout.continueShopping")}</Link>
           </Button>
@@ -184,6 +196,7 @@ function CheckoutForm() {
         paymentMethod={result.paymentMethod}
         total={result.total}
         instapay={settings.instapay}
+        phone={form.phone.trim()}
       />
     );
   }
@@ -309,17 +322,15 @@ function CheckoutForm() {
                 </div>
 
                 {method === "instapay" && (
-                  <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4">
-                    <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-                      <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
-                    </p>
-                    <p className="mt-1.5 font-mono text-sm font-bold">
-                      {settings.instapay || t("checkout.instapayMissing")}
-                    </p>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  <div className="mt-4 space-y-3">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {t("checkout.instapaySteps")}
                     </p>
-                    <p className="mt-2 text-xs font-medium text-amber-600">
+                    <InstapayQrPanel
+                      account={settings.instapay}
+                      amountLabel={formatPrice(total, settings.currency)}
+                    />
+                    <p className="text-xs font-medium text-amber-600">
                       {t("checkout.notPaidNote")}
                     </p>
                   </div>

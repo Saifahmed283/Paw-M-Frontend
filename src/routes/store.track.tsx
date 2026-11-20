@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ChevronLeft, ImageUp, Loader2, PackageSearch, Smartphone } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ImageUp, Loader2, PackageSearch, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InstapayQrPanel } from "@/components/store/InstapayQrPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,11 @@ import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/store/track")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    order: typeof search["order"] === "string" ? search["order"] : "",
+    phone: typeof search["phone"] === "string" ? search["phone"] : "",
+    proof: search["proof"] === "1" ? "1" : "0",
+  }),
   head: () => ({
     meta: [
       { title: "Track Order — Paw-M Store" },
@@ -63,20 +69,28 @@ function toIso(localDateTime: string): string | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
+/** Pre-fill the datetime-local field with "now" in the browser's timezone. */
+function localDateTimeNow(): string {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 function TransferSubmissionForm({
   order,
   phone,
   onUpdated,
+  autoFocus = false,
 }: {
   order: Order;
   phone: string;
   onUpdated: (o: Order) => void;
+  autoFocus?: boolean;
 }) {
   const { t } = useI18n();
   const { settings } = useClinicStore();
   const [senderName, setSenderName] = useState("");
   const [transferReference, setTransferReference] = useState("");
-  const [transferredAt, setTransferredAt] = useState("");
+  const [transferredAt, setTransferredAt] = useState(localDateTimeNow);
   const [note, setNote] = useState("");
   const [evidenceBase64, setEvidenceBase64] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,8 +99,12 @@ function TransferSubmissionForm({
 
   const submit = async () => {
     if (busy) return;
-    if (!senderName.trim() || !transferReference.trim()) {
-      toast.error(t("track.senderAndRefRequired"));
+    if (!senderName.trim() || !transferReference.trim() || !transferredAt || !evidenceBase64) {
+      toast.error(t("track.allProofFieldsRequired"));
+      return;
+    }
+    if (!toIso(transferredAt)) {
+      toast.error(t("track.allProofFieldsRequired"));
       return;
     }
     setBusy(true);
@@ -119,7 +137,7 @@ function TransferSubmissionForm({
       }
       setSenderName("");
       setTransferReference("");
-      setTransferredAt("");
+      setTransferredAt(localDateTimeNow());
       setNote("");
       setEvidenceBase64("");
       toast.success(t("track.submittedOk"));
@@ -131,9 +149,12 @@ function TransferSubmissionForm({
   };
 
   return (
-    <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-4">
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        <Smartphone className="size-4 text-primary" />
+    <div className="mt-5 rounded-2xl border border-primary/25 bg-muted/30 p-4">
+      <p className="flex items-center gap-2 text-sm font-bold text-primary">
+        <Smartphone className="size-4" />
+        {t("track.proofStepTwo")}
+      </p>
+      <p className="mt-1 text-xs font-semibold text-muted-foreground">
         {order.paymentStatus === "rejected" ? t("track.resubmitTitle") : t("track.proofTitle")}
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
@@ -145,10 +166,10 @@ function TransferSubmissionForm({
         </p>
       )}
 
-      <div className="mt-3 grid gap-3">
+      <div className="mt-4 grid gap-3">
         <div>
-          <Label htmlFor="track-sender" className="text-xs font-medium text-muted-foreground">
-            {t("track.senderName")}
+          <Label htmlFor="track-sender" className="text-xs font-medium">
+            {t("track.senderName")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="track-sender"
@@ -156,11 +177,12 @@ function TransferSubmissionForm({
             onChange={(e) => setSenderName(e.target.value)}
             className="mt-1"
             autoComplete="name"
+            required
           />
         </div>
         <div>
-          <Label htmlFor="track-ref" className="text-xs font-medium text-muted-foreground">
-            {t("track.transferReference")}
+          <Label htmlFor="track-ref" className="text-xs font-medium">
+            {t("track.transferReference")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="track-ref"
@@ -168,11 +190,13 @@ function TransferSubmissionForm({
             onChange={(e) => setTransferReference(e.target.value)}
             className="mt-1"
             placeholder={t("checkout.refPlaceholder")}
+            autoFocus={autoFocus}
+            required
           />
         </div>
         <div>
-          <Label htmlFor="track-date" className="text-xs font-medium text-muted-foreground">
-            {t("track.transferredAt")}
+          <Label htmlFor="track-date" className="text-xs font-medium">
+            {t("track.transferredAt")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="track-date"
@@ -180,6 +204,7 @@ function TransferSubmissionForm({
             value={transferredAt}
             onChange={(e) => setTransferredAt(e.target.value)}
             className="mt-1"
+            required
           />
         </div>
         <div>
@@ -195,10 +220,13 @@ function TransferSubmissionForm({
           />
         </div>
         <div>
+          <Label className="text-xs font-medium">
+            {t("checkout.proofImage")} <span className="text-destructive">*</span>
+          </Label>
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp,image/gif"
             className="hidden"
             onChange={async (e) => {
               try {
@@ -211,20 +239,33 @@ function TransferSubmissionForm({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
           >
             <ImageUp className="size-4" />
-            {evidenceBase64 ? t("checkout.imageChosen") : t("checkout.uploadProof")}
+            {evidenceBase64 ? t("checkout.imageChosen") : t("track.chooseScreenshot")}
           </button>
           {evidenceBase64 && (
-            <img
-              src={evidenceBase64}
-              alt=""
-              className="mt-2 h-32 w-full rounded-xl border border-border object-cover"
-            />
+            <div className="mt-2 space-y-2">
+              <img
+                src={evidenceBase64}
+                alt={t("track.proofImageAlt")}
+                className="h-32 w-full rounded-xl border border-border object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setEvidenceBase64("");
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+                className="flex items-center gap-1 text-xs font-medium text-destructive"
+              >
+                <X className="size-3.5" />
+                {t("track.removeScreenshot")}
+              </button>
+            </div>
           )}
         </div>
-        <Button size="sm" onClick={submit} disabled={busy} className="w-full sm:w-auto">
+        <Button size="lg" onClick={submit} disabled={busy} className="w-full">
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           {order.paymentStatus === "rejected" ? t("track.resubmit") : t("track.sendProof")}
         </Button>
@@ -237,10 +278,12 @@ function OrderCard({
   order,
   phone,
   onUpdated,
+  autoOpenProof = false,
 }: {
   order: Order;
   phone: string;
   onUpdated: (o: Order) => void;
+  autoOpenProof?: boolean;
 }) {
   const { t } = useI18n();
   const { settings } = useClinicStore();
@@ -292,37 +335,69 @@ function OrderCard({
         </div>
       )}
 
-      {canSubmit && <TransferSubmissionForm order={order} phone={phone} onUpdated={onUpdated} />}
+      {order.paymentMethod === "instapay" && canSubmit && (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm font-semibold">{t("track.proofStepOne")}</p>
+          <InstapayQrPanel account={settings.instapay} amountLabel={total} compact />
+        </div>
+      )}
+
+      {canSubmit && (
+        <TransferSubmissionForm
+          order={order}
+          phone={phone}
+          onUpdated={onUpdated}
+          autoFocus={autoOpenProof}
+        />
+      )}
     </div>
   );
 }
 
 function TrackPage() {
   const { t } = useI18n();
-  const [orderId, setOrderId] = useState("");
-  const [phone, setPhone] = useState("");
+  const { order: searchOrder, phone: searchPhone, proof } = Route.useSearch();
+  const [orderId, setOrderId] = useState(searchOrder);
+  const [phone, setPhone] = useState(searchPhone);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const autoLookedUp = useRef(false);
 
-  const lookup = async (e: React.FormEvent) => {
+  const performLookup = useCallback(
+    async (oid: string, ph: string) => {
+      const cleanOrder = oid.trim();
+      const cleanPhone = ph.trim();
+      if (!cleanOrder || !cleanPhone) {
+        setError(t("track.required"));
+        return;
+      }
+      setBusy(true);
+      setError(null);
+      try {
+        const found = await trackOrder(cleanOrder, cleanPhone);
+        setOrder(found);
+      } catch {
+        setOrder(null);
+        setError(t("track.notFound"));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [t],
+  );
+
+  // Arriving from checkout with prefilled details: look the order up once so
+  // the customer lands straight on the payment-proof step.
+  useEffect(() => {
+    if (autoLookedUp.current || !searchOrder || !searchPhone) return;
+    autoLookedUp.current = true;
+    void performLookup(searchOrder, searchPhone);
+  }, [searchOrder, searchPhone, performLookup]);
+
+  const lookup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (busy) return;
-    if (!orderId.trim() || !phone.trim()) {
-      setError(t("track.required"));
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const found = await trackOrder(orderId.trim(), phone.trim());
-      setOrder(found);
-    } catch {
-      setOrder(null);
-      setError(t("track.notFound"));
-    } finally {
-      setBusy(false);
-    }
+    void performLookup(orderId, phone);
   };
 
   return (
@@ -374,7 +449,14 @@ function TrackPage() {
           </div>
         </form>
 
-        {order && <OrderCard order={order} phone={phone} onUpdated={setOrder} />}
+        {order && (
+          <OrderCard
+            order={order}
+            phone={phone}
+            onUpdated={setOrder}
+            autoOpenProof={proof === "1"}
+          />
+        )}
 
         <p className="mt-6 text-center text-xs text-muted-foreground">{t("track.help")}</p>
       </div>

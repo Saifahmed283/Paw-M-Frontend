@@ -11,6 +11,12 @@ describe("i18n dictionaries", () => {
     const requiredKeys = [
       "checkout.notPaidYet",
       "checkout.notPaidNote",
+      "checkout.instapayQrTitle",
+      "checkout.addPaymentProof",
+      "track.senderName",
+      "track.transferReference",
+      "track.transferredAt",
+      "track.allProofFieldsRequired",
       "track.senderAndRefRequired",
       "verif.bankRefRequired",
       "verif.reasonRequired",
