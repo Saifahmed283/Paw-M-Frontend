@@ -11,6 +11,7 @@ import type { SplitPaymentAllocation } from "./types";
 type Props = {
   total: number;
   currency: string;
+  method: PaymentMethod;
   allocations: SplitPaymentAllocation[];
   onAllocationsChange: (a: SplitPaymentAllocation[]) => void;
   onMethodChange?: (method: PaymentMethod) => void;
@@ -31,13 +32,14 @@ function methodLabel(m: PaymentMethod, t: (k: string) => string): string {
 export function SplitPayment({
   total,
   currency,
+  method,
   allocations,
   onAllocationsChange,
   onMethodChange,
 }: Props) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState(allocations.length > 0);
-  const selectedMethod = allocations[0]?.method ?? "cash";
+  const selectedMethod = allocations[0]?.method ?? method;
   const amount = Math.round(total * 100) / 100;
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function SplitPayment({
     setEnabled((prev) => {
       const next = !prev;
       onAllocationsChange(next ? [{ method: selectedMethod, amount }] : []);
+      if (next) onMethodChange?.(selectedMethod);
       return next;
     });
   };

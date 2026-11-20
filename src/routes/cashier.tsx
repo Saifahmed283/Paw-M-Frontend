@@ -1267,6 +1267,7 @@ function CashierApp() {
               <SplitPayment
                 total={totals.total}
                 currency={settings.currency}
+                method={method}
                 allocations={split}
                 onAllocationsChange={(a) => setSplit(a)}
                 onMethodChange={setMethod}
