@@ -9,6 +9,9 @@ import {
   Edit,
   ListChecks,
   Minus,
+  Plus,
+  RotateCcw,
+  Trash2,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +27,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
   PaginationBar,
   SearchBox,
   SortChip,
@@ -31,7 +42,7 @@ import {
   useGrid,
   useSortState,
 } from "@/components/dash-grid";
-import { api } from "@/lib/api";
+import { api, apiErrorMessage } from "@/lib/api";
 import { currentRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -57,13 +68,33 @@ interface PayrollRecord {
   totalBonuses?: number;
   totalDeductions?: number;
   netPay?: number;
+  notes?: string;
+  paidAt?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  breakdown?: Array<{
+    date: string;
+    hours: number;
+    bookings: number;
+    orders: number;
+    revenue: number;
+    basePay: number;
+    commission: number;
+  }>;
   status: PayrollStatus;
   _searchName?: string;
+}
+
+interface PayrollEmployee {
+  id: string;
+  fullName: string;
+  role?: string;
 }
 
 interface CalculateResponse {
   records: unknown[];
   count: number;
+  recalculated?: number;
 }
 
 type RequestStatus = "pending" | "approved" | "rejected";
@@ -105,36 +136,79 @@ const REQUEST_STATUS_STYLES: Record<RequestStatus, string> = {
   rejected: "bg-destructive/15 text-destructive",
 };
 
-function AdjustAmountDialog({
+function RecordFormDialog({
   record,
+  employees,
   onClose,
   onSaved,
 }: {
-  record: PayrollRecord;
+  /** null means create a new off-cycle record. */
+  record: PayrollRecord | null;
+  employees: PayrollEmployee[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { t } = useI18n();
-  const [basePay, setBasePay] = useState(String(record.basePay ?? ""));
+  const isCreate = record === null;
+  const [employeeId, setEmployeeId] = useState(record?.employee?.id ?? "");
+  const [periodStart, setPeriodStart] = useState(record?.periodStart ?? localISODate(new Date()));
+  const [periodEnd, setPeriodEnd] = useState(record?.periodEnd ?? localISODate(new Date()));
+  const [basePay, setBasePay] = useState(String(record?.basePay ?? 0));
+  const [commissionPay, setCommissionPay] = useState(String(record?.commissionPay ?? 0));
+  const [totalBonuses, setTotalBonuses] = useState(String(record?.totalBonuses ?? 0));
+  const [totalDeductions, setTotalDeductions] = useState(String(record?.totalDeductions ?? 0));
+  const [notes, setNotes] = useState(record?.notes ?? "");
   const [saving, setSaving] = useState(false);
+
+  const numeric = (raw: string, field: string): number => {
+    const value = Number.parseFloat(raw.trim());
+    if (!raw.trim() || !Number.isFinite(value) || value < 0) {
+      throw new Error(t(field));
+    }
+    return value;
+  };
+
+  const net =
+    (Number.parseFloat(basePay) || 0) +
+    (Number.parseFloat(commissionPay) || 0) +
+    (Number.parseFloat(totalBonuses) || 0) -
+    (Number.parseFloat(totalDeductions) || 0);
 
   const save = async () => {
     if (saving) return;
-    const raw = basePay.trim();
-    const value = Number.parseFloat(raw);
-    if (!raw || !Number.isFinite(value) || value < 0) {
-      toast.error(t("dash.errorLoad"));
+    if (isCreate && !employeeId) {
+      toast.error(t("dash.selectEmployee"));
+      return;
+    }
+    if (periodStart > periodEnd) {
+      toast.error(t("dash.period"));
       return;
     }
     setSaving(true);
     try {
-      await api.patch(`/api/payroll/records/${record.id}/amount`, { basePay: value });
-      toast.success(t("dash.toast.adjusted"));
+      const amounts = {
+        basePay: numeric(basePay, "dash.basePay"),
+        commissionPay: numeric(commissionPay, "dash.commission"),
+        totalBonuses: numeric(totalBonuses, "dash.bonuses"),
+        totalDeductions: numeric(totalDeductions, "dash.deductions"),
+        notes: notes.trim(),
+      };
+      if (isCreate) {
+        await api.post("/api/payroll/records", {
+          employeeId,
+          periodStart,
+          periodEnd,
+          ...amounts,
+        });
+        toast.success(t("dash.toast.recordCreated"));
+      } else {
+        await api.patch(`/api/payroll/records/${record.id}`, amounts);
+        toast.success(t("dash.toast.adjusted"));
+      }
       onSaved();
       onClose();
     } catch (err) {
-      console.error("Error adjusting payroll amount:", err);
-      toast.error(t("dash.errorLoad"));
+      toast.error(apiErrorMessage(err, t("dash.errorLoad")));
     } finally {
       setSaving(false);
     }
@@ -142,31 +216,72 @@ function AdjustAmountDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("dash.adjustAmountTitle")}</DialogTitle>
-          <DialogDescription>{t("dash.adjustAmountHint")}</DialogDescription>
+          <DialogTitle>
+            {t(isCreate ? "dash.createRecordTitle" : "dash.editRecordTitle")}
+          </DialogTitle>
+          <DialogDescription>
+            {t(isCreate ? "dash.period" : "dash.editRecordHint")}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <Field label={t("dash.basePay")}>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={basePay}
-              onChange={(e) => setBasePay(e.target.value)}
-            />
-          </Field>
+          {isCreate ? (
+            <>
+              <Field label={t("dash.selectEmployee")}>
+                <Select value={employeeId} onValueChange={setEmployeeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("dash.selectEmployee")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label={t("dash.period")}>
+                  <input
+                    type="date"
+                    value={periodStart}
+                    onChange={(e) => setPeriodStart(e.target.value)}
+                    className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label={t("dash.period")}>
+                  <input
+                    type="date"
+                    value={periodEnd}
+                    onChange={(e) => setPeriodEnd(e.target.value)}
+                    className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm font-medium">{record.employee?.fullName ?? "—"}</p>
+          )}
           <div className="grid grid-cols-2 gap-4">
-            <Stat
-              label={t("dash.commission")}
-              value={`${t("dash.egp")}${(record.commissionPay ?? 0).toLocaleString()}`}
-            />
-            <Stat
-              label={t("dash.netPay")}
-              value={`${t("dash.egp")}${(record.netPay ?? 0).toLocaleString()}`}
-            />
+            <Field label={t("dash.basePay")}>
+              <Input type="number" min="0" step="0.01" value={basePay} onChange={(e) => setBasePay(e.target.value)} />
+            </Field>
+            <Field label={t("dash.commission")}>
+              <Input type="number" min="0" step="0.01" value={commissionPay} onChange={(e) => setCommissionPay(e.target.value)} />
+            </Field>
+            <Field label={t("dash.bonuses")}>
+              <Input type="number" min="0" step="0.01" value={totalBonuses} onChange={(e) => setTotalBonuses(e.target.value)} />
+            </Field>
+            <Field label={t("dash.deductions")}>
+              <Input type="number" min="0" step="0.01" value={totalDeductions} onChange={(e) => setTotalDeductions(e.target.value)} />
+            </Field>
           </div>
+          <Field label={t("dash.notes")}>
+            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </Field>
+          <Stat label={t("dash.netPay")} value={`${t("dash.egp")}${net.toLocaleString()}`} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
@@ -204,7 +319,7 @@ function BonusDeductionDialog({
     setLoading(true);
     try {
       const res = await api.get<BonusDeductionRequest[] | { data: BonusDeductionRequest[] }>(
-        `/api/payroll/${record.id}/requests`,
+        `/api/payroll/${record.id}/requests?limit=200`,
       );
       setRequests(Array.isArray(res) ? res : (res?.data ?? []));
     } catch (err) {
@@ -400,6 +515,8 @@ export function PayrollPanel() {
   const isAdmin = role === "admin";
   const initialRange = useMemo(currentRange, []);
   const [records, setRecords] = useState<PayrollRecord[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [employees, setEmployees] = useState<PayrollEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [calculating, setCalculating] = useState(false);
@@ -407,15 +524,17 @@ export function PayrollPanel() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PayrollStatus>("all");
   const [range, setRange] = useState(initialRange);
-  const [adjusting, setAdjusting] = useState<PayrollRecord | null>(null);
+  const [recordDialog, setRecordDialog] = useState<{ record: PayrollRecord | null } | null>(null);
   const [bonusDialog, setBonusDialog] = useState<PayrollRecord | null>(null);
+  const [deleting, setDeleting] = useState<PayrollRecord | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<{
     record: PayrollRecord;
     status: PayrollStatus;
   } | null>(null);
   const [notifying, setNotifying] = useState(false);
   const [confirmNotify, setConfirmNotify] = useState(false);
-  const { sort, toggle } = useSortState("createdAt", "desc");
+  const { sort, toggle } = useSortState("periodStart", "desc");
 
   const fetchPayrollRecords = useCallback(async (silent = false) => {
     // Silent refreshes after a mutation keep the panel mounted instead of
@@ -428,10 +547,9 @@ export function PayrollPanel() {
         periodEnd: range.end,
         limit: "200",
       });
-      const response = await api.get<PayrollRecord[] | { data: PayrollRecord[] }>(
-        `/api/payroll/records?${params}`,
-      );
-      setRecords(Array.isArray(response) ? response : (response?.data ?? []));
+      const page = await api.getPage<PayrollRecord>(`/api/payroll/records?${params}`);
+      setRecords(page.data ?? []);
+      setTotalCount(page.pagination?.total ?? page.data?.length ?? 0);
     } catch (err) {
       console.error("Error fetching payroll records:", err);
       setError(true);
@@ -483,21 +601,40 @@ export function PayrollPanel() {
     [actingId, fetchPayrollRecords, t],
   );
 
+  const openCreateDialog = useCallback(async () => {
+    try {
+      const response = await api.get<PayrollEmployee[] | { data: PayrollEmployee[] }>(
+        "/api/payroll/employees",
+      );
+      setEmployees(Array.isArray(response) ? response : (response?.data ?? []));
+      setRecordDialog({ record: null });
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("dash.errorLoad")));
+    }
+  }, [t]);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleting || actingId) return;
+    setActingId(deleting.id);
+    try {
+      await api.delete(`/api/payroll/records/${deleting.id}`);
+      toast.success(t("dash.toast.recordDeleted"));
+      setDeleting(null);
+      await fetchPayrollRecords(true);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("dash.errorLoad")));
+    } finally {
+      setActingId(null);
+    }
+  }, [deleting, actingId, fetchPayrollRecords, t]);
+
   const handleNotify = useCallback(async () => {
     if (records.length === 0 || notifying) return;
     setNotifying(true);
     try {
-      await api.post("/api/notifications/broadcast", {
-        type: "payroll",
-        title: t("dash.payrollNotificationTitle"),
-        body: t("dash.payrollNotificationBody", {
-          period: `${formatDate(range.start)} – ${formatDate(range.end)}`,
-        }),
-        data: {
-          periodStart: range.start,
-          periodEnd: range.end,
-          recordCount: records.length,
-        },
+      await api.post("/api/payroll/notify", {
+        periodStart: range.start,
+        periodEnd: range.end,
       });
       toast.success(t("dash.toast.notified"));
       setConfirmNotify(false);
@@ -525,7 +662,7 @@ export function PayrollPanel() {
 
   const comparators: Record<string, (a: PayrollRecord, b: PayrollRecord) => number> = {
     // Comparators are ascending; sortedSlice reverses them for "desc".
-    createdAt: (a, b) =>
+    periodStart: (a, b) =>
       new Date(a.periodStart ?? 0).getTime() - new Date(b.periodStart ?? 0).getTime(),
     total: (a, b) => (a.netPay ?? 0) - (b.netPay ?? 0),
     commission: (a, b) => (a.commissionPay ?? 0) - (b.commissionPay ?? 0),
@@ -601,14 +738,22 @@ export function PayrollPanel() {
             <ListChecks className="mr-2 size-4" />
             {calculating ? t("dash.calculating") : t("dash.calculate")}
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setConfirmNotify(true)}
-            disabled={records.length === 0}
-          >
-            <Edit className="mr-2 size-4" />
-            {t("dash.notifyStaff")}
-          </Button>
+          {(isAdmin || role === "payroll") && (
+            <Button variant="outline" onClick={openCreateDialog}>
+              <Plus className="mr-2 size-4" />
+              {t("dash.createRecord")}
+            </Button>
+          )}
+          {(isAdmin || role === "payroll") && (
+            <Button
+              variant="outline"
+              onClick={() => setConfirmNotify(true)}
+              disabled={records.length === 0}
+            >
+              <Edit className="mr-2 size-4" />
+              {t("dash.notifyStaff")}
+            </Button>
+          )}
         </div>
       </CardHeader>
 
@@ -640,12 +785,15 @@ export function PayrollPanel() {
               </button>
             ))}
           </div>
+          <span className="ms-auto text-xs text-muted-foreground">
+            {t("dash.totalRecords", { count: String(totalCount) })}
+          </span>
           <div className="flex flex-wrap items-center gap-1.5">
             <SortChip
               label={t("dash.period")}
-              active={sort.key === "createdAt"}
+              active={sort.key === "periodStart"}
               dir={sort.dir}
-              onToggle={() => toggle("createdAt", true)}
+              onToggle={() => toggle("periodStart", true)}
             />
             <SortChip
               label={t("dash.netPay")}
@@ -664,7 +812,7 @@ export function PayrollPanel() {
 
         {grid.slice.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            {t("dash.noPayrollRecords")}
+            {records.length === 0 ? t("dash.noPayrollRecords") : t("dash.noResults")}
           </p>
         ) : (
           <>
@@ -683,6 +831,14 @@ export function PayrollPanel() {
                       >
                         {t(`dash.payrollStatus.${record.status}`)}
                       </Badge>
+                      {(record.approvedBy || record.paidAt) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {record.approvedBy && `${t("dash.approvedBy")}: ${record.approvedBy}`}
+                          {record.approvedBy && record.paidAt && " · "}
+                          {record.paidAt &&
+                            `${t("dash.paidOn")}: ${formatDate(record.paidAt.slice(0, 10))}`}
+                        </p>
+                      )}
                     </div>
                     <div className="text-end">
                       <p className="text-lg font-bold">{money(record.netPay)}</p>
@@ -701,6 +857,44 @@ export function PayrollPanel() {
                     <Stat label={t("dash.bonuses")} value={money(record.totalBonuses)} />
                     <Stat label={t("dash.deductions")} value={money(record.totalDeductions)} />
                   </div>
+                  {record.notes && (
+                    <p className="mt-2 whitespace-pre-wrap rounded-lg bg-muted/50 p-2.5 text-xs">
+                      {record.notes}
+                    </p>
+                  )}
+                  {(record.breakdown?.length ?? 0) > 0 && (
+                    <div className="mt-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() =>
+                          setExpandedId((id) => (id === record.id ? null : record.id))
+                        }
+                      >
+                        {t("dash.breakdown")} ({record.breakdown?.length})
+                      </Button>
+                      {expandedId === record.id && (
+                        <div className="mt-2 space-y-1.5 rounded-lg border border-border p-3">
+                          {record.breakdown?.map((row, index) => (
+                            <div
+                              key={`${record.id}-${index}`}
+                              className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"
+                            >
+                              <span>{formatDate(row.date)}</span>
+                              <span>
+                                {hours(row.hours)}h · {row.bookings} {t("dash.bookings")} · {row.orders}{" "}
+                                {t("dash.sessions")} · {money(row.revenue)} {t("dash.revenue")}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                {money(row.basePay + row.commission)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {record.status === "calculated" && (isAdmin || role === "payroll") && (
@@ -751,13 +945,25 @@ export function PayrollPanel() {
                         {t("dash.markAsPaid")}
                       </Button>
                     )}
-                    {isAdmin && record.status !== "paid" && (
+                    {record.status === "rejected" && (isAdmin || role === "payroll") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        disabled={actingId === record.id}
+                        onClick={() => handleStatusChange(record, "calculated")}
+                      >
+                        <RotateCcw className="mr-1.5 size-3.5" />
+                        {t("dash.reopen")}
+                      </Button>
+                    )}
+                    {(isAdmin || role === "payroll") && record.status !== "paid" && (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="h-7"
                         disabled={actingId === record.id}
-                        onClick={() => setAdjusting(record)}
+                        onClick={() => setRecordDialog({ record })}
                       >
                         <Edit className="mr-1.5 size-3.5" />
                         {t("dash.adjustAmount")}
@@ -772,6 +978,18 @@ export function PayrollPanel() {
                       <DiamondPlus className="mr-1.5 size-3.5" />
                       {t("dash.bonusDeductions")}
                     </Button>
+                    {isAdmin && record.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-destructive hover:text-destructive"
+                        disabled={actingId === record.id}
+                        onClick={() => setDeleting(record)}
+                      >
+                        <Trash2 className="mr-1.5 size-3.5" />
+                        {t("dash.deleteRecord")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -788,11 +1006,12 @@ export function PayrollPanel() {
         )}
       </CardContent>
 
-      {adjusting && (
-        <AdjustAmountDialog
-          record={adjusting}
-          onClose={() => setAdjusting(null)}
-          onSaved={fetchPayrollRecords}
+      {recordDialog && (
+        <RecordFormDialog
+          record={recordDialog.record}
+          employees={employees}
+          onClose={() => setRecordDialog(null)}
+          onSaved={() => fetchPayrollRecords(true)}
         />
       )}
       {bonusDialog && (
@@ -812,6 +1031,14 @@ export function PayrollPanel() {
           pendingStatus ? handleStatusChange(pendingStatus.record, pendingStatus.status) : undefined
         }
         onClose={() => !actingId && setPendingStatus(null)}
+      />
+      <ConfirmActionDialog
+        open={deleting !== null}
+        title={t("dash.deleteRecord")}
+        description={t("dash.confirmDeleteRecord")}
+        busy={actingId !== null}
+        onConfirm={handleDelete}
+        onClose={() => !actingId && setDeleting(null)}
       />
       <ConfirmActionDialog
         open={confirmNotify}

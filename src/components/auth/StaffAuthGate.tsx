@@ -44,6 +44,7 @@ export function StaffAuthGate({ onUnlocked, showBack = true }: Props) {
       // means the API is unreachable — each needs its own message.
       if (err instanceof ApiError) {
         if (err.status === 400) setError(t("auth.missingFields"));
+        else if (err.status === 403) setError(t("auth.suspended"));
         else if (err.status === 429)
           setError(t("auth.locked", { minutes: String(err.retryAfterMinutes ?? 15) }));
         else setError(t("auth.unreachable"));

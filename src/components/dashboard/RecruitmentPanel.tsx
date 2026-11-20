@@ -32,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, apiErrorMessage } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "./dashboard-format";
 
@@ -99,19 +99,6 @@ function parseCommissionRates(raw: string): Record<string, number> | null {
     return result;
   } catch {
     return null;
-  }
-}
-
-/** Surface the backend's error message instead of the raw `API 4xx: {...}` envelope. */
-function apiErrorMessage(err: unknown, fallback: string): string {
-  if (!(err instanceof Error) || !err.message) return fallback;
-  const raw = err.message.replace(/^API \d+:\s*/, "").trim();
-  if (!raw) return fallback;
-  try {
-    const parsed = JSON.parse(raw) as { error?: string; message?: string };
-    return parsed.error || parsed.message || fallback;
-  } catch {
-    return raw;
   }
 }
 
@@ -535,6 +522,11 @@ export function RecruitmentPanel() {
                     ? t("dash.recruitment.editAccountDesc")
                     : t("dash.recruitment.accountDesc")}
                 </p>
+                {!editingAccount && (
+                  <p className="rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground">
+                    {t("dash.recruitment.accountEmployeeHint")}
+                  </p>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">

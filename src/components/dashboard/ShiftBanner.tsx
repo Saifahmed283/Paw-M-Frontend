@@ -4,6 +4,7 @@ import { LogIn, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api";
 import { checkIn, checkOut, refreshClinicData, useClinicStore } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
 import { localTodayISO } from "./dashboard-format";
@@ -45,8 +46,8 @@ export function ShiftBanner() {
         name: formatDayName(localTodayISO(), lang),
       });
       toast.success(`${shiftMessage} · ${folderMessage}`);
-    } catch {
-      toast.error(t("dash.toast.error"));
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("dash.toast.error")));
     } finally {
       setBusy(false);
     }
@@ -67,8 +68,8 @@ export function ShiftBanner() {
         name: formatDayName(localTodayISO(), lang),
       });
       toast.success(`${shiftMessage} · ${folderMessage}`);
-    } catch {
-      toast.error(t("dash.toast.error"));
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("dash.toast.error")));
     } finally {
       setBusy(false);
     }

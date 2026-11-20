@@ -54,6 +54,7 @@ import {
   settlePayment,
   type WorkSession,
 } from "@/lib/clinic-store";
+import { apiErrorMessage } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -349,8 +350,8 @@ function ShiftRequiredGate() {
       await checkIn();
       await refreshClinicData();
       toast.success(t("cashier.shiftStarted"));
-    } catch {
-      toast.error(t("dash.toast.error"));
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("dash.toast.error")));
     } finally {
       setBusy(false);
     }

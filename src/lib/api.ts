@@ -153,6 +153,19 @@ async function apiFetch(
   return json;
 }
 
+/** Pull the backend's `{error}` / `{message}` out of an `API <status>: ...` envelope. */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof Error) || !err.message) return fallback;
+  const raw = err.message.replace(/^API \d+:\s*/, "").trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw) as { error?: string; message?: string };
+    return parsed.error || parsed.message || fallback;
+  } catch {
+    return raw;
+  }
+}
+
 export const api = {
   get: <T = unknown>(path: string, init?: RequestInit) => apiFetch(path, init) as Promise<T>,
   getPage: <T = unknown>(path: string) =>
