@@ -172,7 +172,12 @@ export function ServicesPanel() {
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button size="sm" variant="outline" className="h-7" onClick={() => setEditing(s)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => setEditing(s)}
+                      >
                         {t("dash.edit")}
                       </Button>
                       <Button
@@ -204,7 +209,10 @@ export function ServicesPanel() {
         </div>
       </CardContent>
       {editing && (
-        <ServiceDialog service={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
+        <ServiceDialog
+          service={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+        />
       )}
       <ConfirmActionDialog
         open={pendingDelete !== null}

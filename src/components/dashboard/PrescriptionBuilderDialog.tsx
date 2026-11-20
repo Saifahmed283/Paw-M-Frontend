@@ -192,7 +192,9 @@ export function PrescriptionBuilderDialog({
       onClose();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message.split(": ").pop() ?? t("rx.builder.failed") : t("rx.builder.failed"),
+        err instanceof Error
+          ? (err.message.split(": ").pop() ?? t("rx.builder.failed"))
+          : t("rx.builder.failed"),
       );
     } finally {
       setBusy(false);
@@ -225,7 +227,9 @@ export function PrescriptionBuilderDialog({
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {editing ? t("rx.builder.editTitle", { code: editing.rxNumber }) : t("rx.builder.title")}
+            {editing
+              ? t("rx.builder.editTitle", { code: editing.rxNumber })
+              : t("rx.builder.title")}
           </DialogTitle>
           <DialogDescription>{t("rx.builder.hint")}</DialogDescription>
         </DialogHeader>
@@ -430,9 +434,7 @@ export function PrescriptionBuilderDialog({
                   <SelectItem value="issued">
                     {editing ? t("rx.status.issued") : t("rx.builder.status.issued")}
                   </SelectItem>
-                  {editing && (
-                    <SelectItem value="void">{t("rx.builder.status.void")}</SelectItem>
-                  )}
+                  {editing && <SelectItem value="void">{t("rx.builder.status.void")}</SelectItem>}
                 </SelectContent>
               </Select>
               {editing?.status === "draft" && (

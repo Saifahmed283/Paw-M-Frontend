@@ -463,7 +463,10 @@ function BookingForm() {
                     </span>
                   </span>
                   <span className="shrink-0">
-                    <Switch checked={draft.emergency} onCheckedChange={(v) => set("emergency", v)} />
+                    <Switch
+                      checked={draft.emergency}
+                      onCheckedChange={(v) => set("emergency", v)}
+                    />
                   </span>
                 </label>
               </div>

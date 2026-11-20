@@ -56,11 +56,7 @@ export function RefundDialog({ open, onOpenChange, orders, currency, onRefunded 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders
-      .filter((o) =>
-        !q
-          ? true
-          : `${o.id} ${o.customerName} ${o.phone}`.toLowerCase().includes(q),
-      )
+      .filter((o) => (!q ? true : `${o.id} ${o.customerName} ${o.phone}`.toLowerCase().includes(q)))
       .slice(0, 12);
   }, [orders, query]);
 
@@ -78,7 +74,9 @@ export function RefundDialog({ open, onOpenChange, orders, currency, onRefunded 
     : 0;
   const chosenSubtotal = chosen.reduce((n, i) => n + (Number(i.price) || 0) * i.qty, 0);
   const discountShare =
-    orderSubtotal > 0 ? ((Number(selected?.discountAmount) || 0) * chosenSubtotal) / orderSubtotal : 0;
+    orderSubtotal > 0
+      ? ((Number(selected?.discountAmount) || 0) * chosenSubtotal) / orderSubtotal
+      : 0;
   const refundAmount = Math.max(0, Math.round((chosenSubtotal - discountShare) * 100) / 100);
 
   const setQty = (index: number, qty: number, max: number) => {
@@ -272,7 +270,11 @@ export function RefundDialog({ open, onOpenChange, orders, currency, onRefunded 
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("cashier.close")}
           </Button>
-          <Button onClick={submit} disabled={!selected || chosen.length === 0 || busy} className="gap-1.5">
+          <Button
+            onClick={submit}
+            disabled={!selected || chosen.length === 0 || busy}
+            className="gap-1.5"
+          >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Undo2 className="size-4" />}
             {busy ? t("dash.saving") : t("cashier.refundConfirm")}
           </Button>

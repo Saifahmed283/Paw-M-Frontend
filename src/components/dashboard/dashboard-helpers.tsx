@@ -46,9 +46,7 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const { t } = useI18n();
   if (status === "paid") {
-    return (
-      <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>
-    );
+    return <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>;
   }
   if (status === "proof_submitted") {
     return (

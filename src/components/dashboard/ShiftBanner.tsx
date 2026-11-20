@@ -4,10 +4,10 @@ import { LogIn, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { apiErrorMessage } from "@/lib/api";
+import { localizedApiErrorMessage } from "@/lib/api";
 import { checkIn, checkOut, refreshClinicData, useClinicStore } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
-import { localTodayISO } from "./dashboard-format";
+import { clinicTodayISO } from "./dashboard-format";
 
 function formatDayName(dateISO: string, lang: "en" | "ar") {
   const date = new Date(`${dateISO}T00:00:00`);
@@ -43,11 +43,11 @@ export function ShiftBanner() {
             })
           : t("dash.shiftStarted");
       const folderMessage = t("dash.dayFolderOpen", {
-        name: formatDayName(localTodayISO(), lang),
+        name: formatDayName(clinicTodayISO(), lang),
       });
       toast.success(`${shiftMessage} · ${folderMessage}`);
     } catch (err) {
-      toast.error(apiErrorMessage(err, t("dash.toast.error")));
+      toast.error(localizedApiErrorMessage(err, t, t("dash.toast.error")));
     } finally {
       setBusy(false);
     }
@@ -65,11 +65,11 @@ export function ShiftBanner() {
         orders: String(archived.orders),
       });
       const folderMessage = t("dash.dayFolderSaved", {
-        name: formatDayName(localTodayISO(), lang),
+        name: formatDayName(clinicTodayISO(), lang),
       });
       toast.success(`${shiftMessage} · ${folderMessage}`);
     } catch (err) {
-      toast.error(apiErrorMessage(err, t("dash.toast.error")));
+      toast.error(localizedApiErrorMessage(err, t, t("dash.toast.error")));
     } finally {
       setBusy(false);
     }

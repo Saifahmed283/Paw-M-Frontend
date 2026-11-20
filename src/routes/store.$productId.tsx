@@ -263,10 +263,7 @@ function ProductPage() {
   const out = product.stock <= 0;
   const onSale = product.compareAtPrice != null && product.compareAtPrice > product.price;
   const related = products
-    .filter(
-      (p) =>
-        p.id !== product.id && categoryKey(p.category) === categoryKey(product.category),
-    )
+    .filter((p) => p.id !== product.id && categoryKey(p.category) === categoryKey(product.category))
     .slice(0, 4);
 
   const productJsonLd = {

@@ -266,16 +266,40 @@ function RecordFormDialog({
           )}
           <div className="grid grid-cols-2 gap-4">
             <Field label={t("dash.basePay")}>
-              <Input type="number" min="0" step="0.01" value={basePay} onChange={(e) => setBasePay(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={basePay}
+                onChange={(e) => setBasePay(e.target.value)}
+              />
             </Field>
             <Field label={t("dash.commission")}>
-              <Input type="number" min="0" step="0.01" value={commissionPay} onChange={(e) => setCommissionPay(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={commissionPay}
+                onChange={(e) => setCommissionPay(e.target.value)}
+              />
             </Field>
             <Field label={t("dash.bonuses")}>
-              <Input type="number" min="0" step="0.01" value={totalBonuses} onChange={(e) => setTotalBonuses(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={totalBonuses}
+                onChange={(e) => setTotalBonuses(e.target.value)}
+              />
             </Field>
             <Field label={t("dash.deductions")}>
-              <Input type="number" min="0" step="0.01" value={totalDeductions} onChange={(e) => setTotalDeductions(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={totalDeductions}
+                onChange={(e) => setTotalDeductions(e.target.value)}
+              />
             </Field>
           </div>
           <Field label={t("dash.notes")}>
@@ -536,27 +560,30 @@ export function PayrollPanel() {
   const [confirmNotify, setConfirmNotify] = useState(false);
   const { sort, toggle } = useSortState("periodStart", "desc");
 
-  const fetchPayrollRecords = useCallback(async (silent = false) => {
-    // Silent refreshes after a mutation keep the panel mounted instead of
-    // replacing it with the full-screen loading spinner.
-    if (!silent) setLoading(true);
-    setError(false);
-    try {
-      const params = new URLSearchParams({
-        periodStart: range.start,
-        periodEnd: range.end,
-        limit: "200",
-      });
-      const page = await api.getPage<PayrollRecord>(`/api/payroll/records?${params}`);
-      setRecords(page.data ?? []);
-      setTotalCount(page.pagination?.total ?? page.data?.length ?? 0);
-    } catch (err) {
-      console.error("Error fetching payroll records:", err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [range]);
+  const fetchPayrollRecords = useCallback(
+    async (silent = false) => {
+      // Silent refreshes after a mutation keep the panel mounted instead of
+      // replacing it with the full-screen loading spinner.
+      if (!silent) setLoading(true);
+      setError(false);
+      try {
+        const params = new URLSearchParams({
+          periodStart: range.start,
+          periodEnd: range.end,
+          limit: "200",
+        });
+        const page = await api.getPage<PayrollRecord>(`/api/payroll/records?${params}`);
+        setRecords(page.data ?? []);
+        setTotalCount(page.pagination?.total ?? page.data?.length ?? 0);
+      } catch (err) {
+        console.error("Error fetching payroll records:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [range],
+  );
 
   useEffect(() => {
     fetchPayrollRecords();
@@ -868,9 +895,7 @@ export function PayrollPanel() {
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-xs"
-                        onClick={() =>
-                          setExpandedId((id) => (id === record.id ? null : record.id))
-                        }
+                        onClick={() => setExpandedId((id) => (id === record.id ? null : record.id))}
                       >
                         {t("dash.breakdown")} ({record.breakdown?.length})
                       </Button>
@@ -883,8 +908,9 @@ export function PayrollPanel() {
                             >
                               <span>{formatDate(row.date)}</span>
                               <span>
-                                {hours(row.hours)}h · {row.bookings} {t("dash.bookings")} · {row.orders}{" "}
-                                {t("dash.sessions")} · {money(row.revenue)} {t("dash.revenue")}
+                                {hours(row.hours)}h · {row.bookings} {t("dash.bookings")} ·{" "}
+                                {row.orders} {t("dash.sessions")} · {money(row.revenue)}{" "}
+                                {t("dash.revenue")}
                               </span>
                               <span className="font-medium text-foreground">
                                 {money(row.basePay + row.commission)}

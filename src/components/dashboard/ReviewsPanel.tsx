@@ -22,10 +22,7 @@ function Stars({ rating }: { rating: number }) {
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
-          className={cn(
-            "size-3.5",
-            i < rating ? "fill-amber-400 text-amber-400" : "text-border",
-          )}
+          className={cn("size-3.5", i < rating ? "fill-amber-400 text-amber-400" : "text-border")}
         />
       ))}
     </span>

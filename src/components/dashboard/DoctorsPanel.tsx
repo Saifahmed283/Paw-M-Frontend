@@ -343,7 +343,9 @@ export function DoctorsPanel() {
                   <TableCell className="whitespace-nowrap text-sm">
                     {tOr(`doc.${d.id}.exp`, d.experience)}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm">★ {d.rating.toFixed(1)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">
+                    ★ {d.rating.toFixed(1)}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {d.days.map((day) => tOr(`day.${day}`, day)).join(", ")}
                   </TableCell>
@@ -388,7 +390,10 @@ export function DoctorsPanel() {
         </div>
       </CardContent>
       {editing && (
-        <DoctorDialog doctor={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
+        <DoctorDialog
+          doctor={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+        />
       )}
       <ConfirmActionDialog
         open={pendingDelete !== null}

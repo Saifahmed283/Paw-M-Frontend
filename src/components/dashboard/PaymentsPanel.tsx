@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Banknote, CalendarClock, ListChecks, Pencil, Plus, Trash2, Undo2, Wallet } from "lucide-react";
+import {
+  Banknote,
+  CalendarClock,
+  ListChecks,
+  Pencil,
+  Plus,
+  Trash2,
+  Undo2,
+  Wallet,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -202,9 +211,7 @@ export function PaymentsPanel() {
 
   // Older sales were stored only as Orders. Surface them as read-only payment
   // rows so Finance collects every sale, while new sales already have a Payment.
-  const linkedOrderIds = new Set(
-    payments.filter((p) => p.orderId).map((p) => p.orderId as string),
-  );
+  const linkedOrderIds = new Set(payments.filter((p) => p.orderId).map((p) => p.orderId as string));
   const orderRows: Payment[] = orders
     .filter((o) => !linkedOrderIds.has(o.id) && !o.archived && o.status !== "cancelled")
     .map((o) => ({
@@ -539,7 +546,10 @@ export function PaymentsPanel() {
                         </TableCell>
                         <TableCell className="text-end">
                           {p.id.startsWith("order-") ? (
-                            <Badge variant="outline" className="border-transparent bg-muted text-[10px] text-muted-foreground">
+                            <Badge
+                              variant="outline"
+                              className="border-transparent bg-muted text-[10px] text-muted-foreground"
+                            >
                               {t("payments.kind.order")}
                             </Badge>
                           ) : (

@@ -41,7 +41,10 @@ export function countByCategory(products: { category: string }[]): CategoryCount
     .sort((a, b) => {
       const ia = PRODUCT_CATEGORIES.indexOf(a.key as ProductCategory);
       const ib = PRODUCT_CATEGORIES.indexOf(b.key as ProductCategory);
-      if (ia !== ib) return (ia < 0 ? PRODUCT_CATEGORIES.length : ia) - (ib < 0 ? PRODUCT_CATEGORIES.length : ib);
+      if (ia !== ib)
+        return (
+          (ia < 0 ? PRODUCT_CATEGORIES.length : ia) - (ib < 0 ? PRODUCT_CATEGORIES.length : ib)
+        );
       return a.key.localeCompare(b.key);
     });
 }

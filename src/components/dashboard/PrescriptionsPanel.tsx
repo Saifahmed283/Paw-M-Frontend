@@ -66,7 +66,13 @@ export function PrescriptionsPanel() {
     if (filter !== "all" && rx.status !== filter) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return [rx.rxNumber, rx.petName || rx.pet?.name, rx.client?.fullName, rx.doctor?.name, rx.diagnosis]
+    return [
+      rx.rxNumber,
+      rx.petName || rx.pet?.name,
+      rx.client?.fullName,
+      rx.doctor?.name,
+      rx.diagnosis,
+    ]
       .join(" ")
       .toLowerCase()
       .includes(q);
@@ -269,7 +275,9 @@ export function PrescriptionsPanel() {
         </div>
       </CardContent>
 
-      {builder && <PrescriptionBuilderDialog open onClose={() => setBuilder(null)} onSaved={refresh} />}
+      {builder && (
+        <PrescriptionBuilderDialog open onClose={() => setBuilder(null)} onSaved={refresh} />
+      )}
       {editing && (
         <PrescriptionBuilderDialog
           open

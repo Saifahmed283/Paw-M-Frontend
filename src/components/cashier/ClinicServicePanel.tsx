@@ -60,9 +60,7 @@ export function ClinicServicePanel({ services, currency, onAdd }: Props) {
     const q = query.trim().toLowerCase();
     if (!q) return services;
     return services.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        (s.description ?? "").toLowerCase().includes(q),
+      (s) => s.title.toLowerCase().includes(q) || (s.description ?? "").toLowerCase().includes(q),
     );
   }, [services, query]);
 

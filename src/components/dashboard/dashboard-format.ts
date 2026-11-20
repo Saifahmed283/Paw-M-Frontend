@@ -19,6 +19,23 @@ export function localTodayISO(): string {
   return localISODate(new Date());
 }
 
+// The backend keys workdays and active sessions by the clinic's operational day
+// in Africa/Cairo, not by each browser's timezone. formatToParts guarantees a
+// YYYY-MM-DD key even on runtimes where en-CA formats with a different separator.
+const CLINIC_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Africa/Cairo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Current calendar date in Africa/Cairo (YYYY-MM-DD) for day folders and shifts. */
+export function clinicTodayISO(): string {
+  const parts = CLINIC_DATE_FORMATTER.formatToParts(new Date());
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export function formatDate(dateISO: string, lang: Lang) {
   if (!dateISO) return "—";
   // Accept both date-only (YYYY-MM-DD) and full ISO timestamps.

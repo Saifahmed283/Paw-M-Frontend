@@ -67,13 +67,7 @@ import {
   type ServiceItem,
   type Status,
 } from "@/lib/clinic-store";
-import {
-  changeCredentials,
-  currentRole,
-  currentUsername,
-  isAuthed,
-  logout,
-} from "@/lib/auth";
+import { changeCredentials, currentRole, currentUsername, isAuthed, logout } from "@/lib/auth";
 import { useNotificationSound } from "@/lib/use-notification-sound";
 import { cn } from "@/lib/utils";
 import { allowedTabsForRole } from "@/lib/roles";
@@ -81,18 +75,15 @@ import { StatusBadge } from "@/components/dashboard/dashboard-helpers";
 import { StaffAuthGate } from "@/components/auth/StaffAuthGate";
 import {
   STATUS_OPTIONS,
+  clinicTodayISO,
   formatDate,
   formatMoney,
   formatTime,
-  localTodayISO,
 } from "@/components/dashboard/dashboard-format";
 import { StatCard, OverviewCard } from "@/components/dashboard/dashboard-shared";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
-import {
-  DASHBOARD_NAVIGATE_EVENT,
-  type DashboardNavigateDetail,
-} from "@/lib/dashboard-navigation";
+import { DASHBOARD_NAVIGATE_EVENT, type DashboardNavigateDetail } from "@/lib/dashboard-navigation";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -225,13 +216,12 @@ function RequestsTable({
   );
 }
 
-
 /* ─── Overview Tab ───────────────────────────────────────────────────────────── */
 
 function OverviewTab() {
   const { t, lang, tOr } = useI18n();
   const store = useClinicStore();
-  const todayISO = localTodayISO();
+  const todayISO = clinicTodayISO();
 
   const pendingCount = store.requests.filter((r) => !r.archived && r.status === "pending").length;
   const confirmedCount = store.requests.filter(
@@ -451,7 +441,7 @@ function ReservationsTab() {
   const [rxFor, setRxFor] = useState<BookingRequest | null>(null);
   const [reqPayFor, setReqPayFor] = useState<BookingRequest | null>(null);
 
-  const todayISO = localTodayISO();
+  const todayISO = clinicTodayISO();
   const upcomingBase = useMemo(
     () =>
       store.requests
@@ -504,13 +494,17 @@ function ReservationsTab() {
                   <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
                     {r.diagnosis && (
                       <p className="rounded-lg bg-muted/60 p-2">
-                        <span className="font-semibold text-foreground">{t("dash.diagnosis")}:</span>{" "}
+                        <span className="font-semibold text-foreground">
+                          {t("dash.diagnosis")}:
+                        </span>{" "}
                         {r.diagnosis}
                       </p>
                     )}
                     {r.treatmentNotes && (
                       <p className="rounded-lg bg-muted/60 p-2">
-                        <span className="font-semibold text-foreground">{t("dash.treatment")}:</span>{" "}
+                        <span className="font-semibold text-foreground">
+                          {t("dash.treatment")}:
+                        </span>{" "}
                         {r.treatmentNotes}
                       </p>
                     )}
@@ -629,7 +623,9 @@ function ClinicalRecordDialog({
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label className="text-xs font-medium text-muted-foreground">{t("dash.diagnosis")}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">
+              {t("dash.diagnosis")}
+            </Label>
             <Textarea
               rows={2}
               value={diagnosis}
@@ -649,7 +645,9 @@ function ClinicalRecordDialog({
             />
           </div>
           <div className="grid gap-2">
-            <Label className="text-xs font-medium text-muted-foreground">{t("dash.followUp")}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">
+              {t("dash.followUp")}
+            </Label>
             <Input
               type="date"
               value={followUpDate}
@@ -734,7 +732,7 @@ function RequestPaymentDialog({
         amount: total,
         method: "cash",
         status: "unpaid",
-        date: localTodayISO(),
+        date: clinicTodayISO(),
         items: items.map((it) => ({
           label: it.label,
           amount: it.amount,
@@ -802,7 +800,10 @@ function RequestPaymentDialog({
                 <span className="w-8" />
               </div>
               {items.map((it) => (
-                <div key={it.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                <div
+                  key={it.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2"
+                >
                   <span className="min-w-0 truncate text-sm">{it.label}</span>
                   <Input
                     type="number"

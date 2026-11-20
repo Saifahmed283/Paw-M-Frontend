@@ -176,7 +176,11 @@ export function ArchivePanel() {
                               className="h-7"
                               disabled={busyId === r.id}
                               onClick={() =>
-                                runAction(r.id, () => archiveBooking(r.id, false), "dash.toast.restored")
+                                runAction(
+                                  r.id,
+                                  () => archiveBooking(r.id, false),
+                                  "dash.toast.restored",
+                                )
                               }
                             >
                               <ArchiveRestore className="size-3.5" /> {t("archive.restore")}
@@ -293,7 +297,11 @@ export function ArchivePanel() {
                               className="h-7"
                               disabled={busyId === o.id}
                               onClick={() =>
-                                runAction(o.id, () => archiveOrder(o.id, false), "dash.toast.restored")
+                                runAction(
+                                  o.id,
+                                  () => archiveOrder(o.id, false),
+                                  "dash.toast.restored",
+                                )
                               }
                             >
                               <ArchiveRestore className="size-3.5" /> {t("archive.restore")}

@@ -344,8 +344,7 @@ function ClientDetailView({ id, onBack }: { id: string; onBack: () => void }) {
                     <p className="mt-1 text-xs text-muted-foreground">{b.doctorName}</p>
                     {b.diagnosis && (
                       <p className="mt-2 rounded bg-muted/60 p-2 text-xs">
-                        <span className="font-semibold">{t("dash.diagnosis")}:</span>{" "}
-                        {b.diagnosis}
+                        <span className="font-semibold">{t("dash.diagnosis")}:</span> {b.diagnosis}
                       </p>
                     )}
                   </div>

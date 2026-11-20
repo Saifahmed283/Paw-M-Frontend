@@ -166,6 +166,68 @@ export function apiErrorMessage(err: unknown, fallback: string): string {
   }
 }
 
+/** Stable i18n keys for failures the client can recognise and translate. */
+export type ApiErrorKey =
+  | "apiError.noEmployee"
+  | "apiError.suspended"
+  | "apiError.csrf"
+  | "apiError.rateLimited"
+  | "apiError.unreachable";
+
+type Translator = (key: string, params?: Record<string, string>) => string;
+
+const API_ERROR_PATTERNS: { key: ApiErrorKey; pattern: RegExp }[] = [
+  { key: "apiError.noEmployee", pattern: /no employee profile found for your account/i },
+  { key: "apiError.suspended", pattern: /account suspended/i },
+  { key: "apiError.csrf", pattern: /csrf token mismatch/i },
+];
+
+const RATE_LIMIT_RE = /too many requests|rate[\s-]?limit/i;
+// Browsers word transport failures differently; all of them mean "no response".
+const FETCH_FAILURE_RE =
+  /failed to fetch|network ?error|network request failed|load failed|no response/i;
+
+function errorStatus(err: unknown): number | undefined {
+  if (err instanceof ApiError) return err.status;
+  if (err && typeof err === "object" && "status" in err) {
+    const status = (err as { status?: unknown }).status;
+    return typeof status === "number" ? status : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Recognise a known backend message or transport failure and return its i18n key.
+ * Unknown errors return null so callers can surface the backend text verbatim.
+ */
+export function apiErrorKey(err: unknown): ApiErrorKey | null {
+  const rawMessage = err instanceof Error ? err.message : "";
+  const message = apiErrorMessage(err, "");
+  if (
+    errorStatus(err) === 429 ||
+    /^API 429\b/.test(rawMessage) ||
+    RATE_LIMIT_RE.test(rawMessage) ||
+    RATE_LIMIT_RE.test(message)
+  ) {
+    return "apiError.rateLimited";
+  }
+  if (FETCH_FAILURE_RE.test(message) || (!message && err instanceof TypeError)) {
+    return "apiError.unreachable";
+  }
+  for (const { key, pattern } of API_ERROR_PATTERNS) {
+    if (pattern.test(message)) return key;
+  }
+  return null;
+}
+
+/** Localise known failures; unknown errors keep the existing verbatim fallback. */
+export function localizedApiErrorMessage(err: unknown, t: Translator, fallback: string): string {
+  const key = apiErrorKey(err);
+  if (!key) return apiErrorMessage(err, fallback);
+  const translated = t(key);
+  return translated && translated !== key ? translated : fallback;
+}
+
 export const api = {
   get: <T = unknown>(path: string, init?: RequestInit) => apiFetch(path, init) as Promise<T>,
   getPage: <T = unknown>(path: string) =>

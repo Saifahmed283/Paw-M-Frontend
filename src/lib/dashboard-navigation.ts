@@ -15,7 +15,6 @@ export type DashboardNavigateDetail = {
 
 export function navigateToDashboardTab(tabId: string, recordId?: string | number) {
   if (typeof window === "undefined") return;
-  const detail: DashboardNavigateDetail =
-    recordId === undefined ? { tabId } : { tabId, recordId };
+  const detail: DashboardNavigateDetail = recordId === undefined ? { tabId } : { tabId, recordId };
   window.dispatchEvent(new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail }));
 }

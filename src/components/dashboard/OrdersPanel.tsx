@@ -279,7 +279,11 @@ export function OrdersPanel() {
                         className="h-7"
                         disabled={busyId === o.id}
                         onClick={() =>
-                          runAction(o.id, () => setOrderStatus(o.id, "confirmed"), "dash.toast.saved")
+                          runAction(
+                            o.id,
+                            () => setOrderStatus(o.id, "confirmed"),
+                            "dash.toast.saved",
+                          )
                         }
                       >
                         {t("dash.confirmRow")}
@@ -390,10 +394,14 @@ export function OrdersPanel() {
               <Button
                 disabled={Boolean(busyId)}
                 onClick={() =>
-                  runAction(proofOrder.id, async () => {
-                    await setOrderPaymentStatus(proofOrder.id, "paid");
-                    setProofOrder(null);
-                  }, "dash.toast.paid")
+                  runAction(
+                    proofOrder.id,
+                    async () => {
+                      await setOrderPaymentStatus(proofOrder.id, "paid");
+                      setProofOrder(null);
+                    },
+                    "dash.toast.paid",
+                  )
                 }
               >
                 {t("dash.markPaid")}

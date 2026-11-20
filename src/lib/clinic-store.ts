@@ -514,10 +514,7 @@ export function useClinicStore() {
     enabled: mounted,
   });
 
-  const {
-    data: workSession = null,
-    isLoading: workSessionLoading,
-  } = useQuery({
+  const { data: workSession = null, isLoading: workSessionLoading } = useQuery({
     queryKey: QUERY_KEYS.workSession,
     queryFn: () => api.get<WorkSession | null>("/work-session"),
     staleTime: Infinity,
