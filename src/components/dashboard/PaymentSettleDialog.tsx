@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-  setOrderPaymentStatus,
   settlePayment,
   useClinicStore,
   type Payment,
   type PaymentMethod,
 } from "@/lib/clinic-store";
+import { isOrderPayment } from "@/lib/payment-verification";
+import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
 import { useI18n } from "@/lib/i18n";
 import { Field } from "./dashboard-helpers";
 import { formatMoney } from "./dashboard-format";
@@ -33,18 +34,13 @@ export function PaymentSettleDialog({
   const [method, setMethod] = useState<PaymentMethod>(payment.method || "cash");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const orderPayment = isOrderPayment(payment);
 
   const settle = async () => {
-    if (busy) return;
+    if (busy || orderPayment) return;
     setBusy(true);
     try {
-      if (payment.orderId) {
-        // Store orders own the payment status — settle through the order route
-        // so the Order and its Finance row are updated in one transaction.
-        await setOrderPaymentStatus(payment.orderId, "paid", method);
-      } else {
-        await settlePayment(payment.id, { method, notes: notes.trim() });
-      }
+      await settlePayment(payment.id, { method, notes: notes.trim() });
       toast.success(t("payments.settled"));
       onClose();
     } catch (err) {
@@ -69,32 +65,53 @@ export function PaymentSettleDialog({
               {formatMoney(payment.amount, settings.currency)}
             </p>
           </div>
-          <Field label={t("payments.settleMethod")}>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
-            >
-              <option value="cash">{t("checkout.method.cash.short")}</option>
-              <option value="fawry">{t("checkout.method.fawry.short")}</option>
-              <option value="instapay">{t("checkout.method.instapay.short")}</option>
-            </select>
-          </Field>
-          <Field label={t("payments.settleNotes")}>
-            <Input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("payments.notesPlaceholder")}
-            />
-          </Field>
+          {orderPayment ? (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 text-sm">
+              <p className="text-amber-600">{t("verif.orderSettled")}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => {
+                  navigateToDashboardTab("payment-verification");
+                  onClose();
+                }}
+              >
+                {t("verif.goQueue")}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Field label={t("payments.settleMethod")}>
+                <select
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value as PaymentMethod)}
+                  className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="cash">{t("checkout.method.cash.short")}</option>
+                  <option value="instapay">{t("checkout.method.instapay.short")}</option>
+                </select>
+              </Field>
+              <Field label={t("payments.settleNotes")}>
+                <Input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t("payments.notesPlaceholder")}
+                />
+              </Field>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t("payments.cancel")}
           </Button>
-          <Button onClick={settle} disabled={busy}>
-            {busy ? t("payments.saving") : t("payments.settle")}
-          </Button>
+          {!orderPayment && (
+            <Button onClick={settle} disabled={busy}>
+              {busy ? t("payments.saving") : t("payments.settle")}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

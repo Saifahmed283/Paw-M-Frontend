@@ -71,8 +71,10 @@ export type OrderItem = {
   qty: number;
 };
 
+// Keep `fawry` in the enum: historical records may still reference it, but no
+// store, cashier or settlement UI offers it as a payment option any more.
 export type PaymentMethod = "cash" | "fawry" | "instapay";
-export type PaymentStatus = "unpaid" | "proof_submitted" | "paid";
+export type PaymentStatus = "unpaid" | "proof_submitted" | "under_review" | "rejected" | "paid";
 
 export type Order = {
   id: string;
@@ -375,7 +377,7 @@ function invalidate(key: readonly unknown[]) {
 }
 
 /** Orders and their Payment rows are kept in sync, so refresh both together. */
-function invalidateFinance() {
+export function invalidateFinance() {
   invalidate(QUERY_KEYS.orders);
   invalidate(QUERY_KEYS.payments);
 }
@@ -794,6 +796,9 @@ export async function createOrder(input: {
   source?: "pos" | "store" | undefined;
   discountAmount?: number | undefined;
   discountLabel?: string | undefined;
+  /** POS cash sales are received at the counter and marked paid atomically. */
+  cashReceived?: boolean | undefined;
+  cashReceivedAmount?: number | undefined;
 }) {
   try {
     const created = await api.post<Order>("/orders", input);

@@ -9,7 +9,6 @@ import {
   ChevronDown,
   Grid2X2,
   Keyboard,
-  Landmark,
   LogIn,
   LogOut,
   Minus,
@@ -56,6 +55,7 @@ import {
 } from "@/lib/clinic-store";
 import { apiErrorMessage } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
+import { usesSinglePaymentMethod } from "@/lib/payment-verification";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/lib/i18n-components";
@@ -111,12 +111,6 @@ const PAYMENT_METHODS: {
     icon: Banknote,
     title: "checkout.method.cash.title",
     short: "checkout.method.cash.short",
-  },
-  {
-    value: "fawry",
-    icon: Landmark,
-    title: "checkout.method.fawry.title",
-    short: "checkout.method.fawry.short",
   },
   {
     value: "instapay",
@@ -394,7 +388,6 @@ function CashierApp() {
   const [result, setResult] = useState<{
     id: string;
     paymentMethod: PaymentMethod;
-    paymentRef: string;
   } | null>(null);
   const [activeTab, setActiveTab] = useState("scan");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -650,18 +643,22 @@ function CashierApp() {
       return;
     }
 
-    const isSplit = split.length > 1;
     const total = totals.total;
+    const selectedMethod = split[0]?.method ?? method;
 
-    if (isSplit) {
+    if (split.length > 0) {
       const allocated = split.reduce((n, a) => n + a.amount, 0);
       if (Math.abs(allocated - total) >= 0.005) {
         toast.error(t("cashier.splitNotComplete"));
         return;
       }
+      if (!usesSinglePaymentMethod(split)) {
+        toast.error(t("cashier.singleMethodOnly"));
+        return;
+      }
     }
 
-    if (method === "instapay" && !settings.instapay) {
+    if (selectedMethod === "instapay" && !settings.instapay) {
       toast.error(t("checkout.instapayNotConfigured"));
       return;
     }
@@ -671,18 +668,13 @@ function CashierApp() {
       const items = reduceCartForSubmission(cart, itemDiscounts);
       const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
 
-      // For a conventional (non-split) POS sale, record a single payment method.
-      let paymentMethod = method;
-      let paymentRef = method === "instapay" || method === "fawry" ? "" : undefined;
+      // One order uses one trusted settlement path: cash at the till or an
+      // InstaPay transfer that stays unpaid until admin bank verification.
+      const paymentMethod = selectedMethod;
 
-      // Split payment support: when any part was paid in cash the sale is
-      // settled on the spot, so record cash as the primary method. Only a fully
-      // electronic split stays pending proof verification.
-      if (isSplit) {
-        const primary = (split.find((a) => a.method === "cash") ?? split[0])!;
-        paymentMethod = primary.method;
-        paymentRef = primary.method === "instapay" || primary.method === "fawry" ? "" : undefined;
-      }
+      // Cash is physically received at the counter; InstaPay starts unpaid
+      // until the transfer is independently verified by the clinic.
+      const cashReceivedAtCounter = paymentMethod === "cash";
 
       const order = await createOrder({
         customerName: customer.name.trim() || t("cashier.walkInCustomer"),
@@ -691,8 +683,9 @@ function CashierApp() {
         address: "",
         items,
         paymentMethod,
-        paymentRef,
         source: "pos",
+        cashReceived: cashReceivedAtCounter,
+        ...(cashReceivedAtCounter ? { cashReceivedAmount: total } : {}),
         discountAmount,
         discountLabel:
           orderDiscount.type !== "none"
@@ -701,7 +694,7 @@ function CashierApp() {
               : t("cashier.discountOrder")
             : "",
       });
-      setResult({ id: order.id, paymentMethod: order.paymentMethod, paymentRef: order.paymentRef });
+      setResult({ id: order.id, paymentMethod: order.paymentMethod });
       clearCart();
       setSplit([]);
       setCashReceived(0);
@@ -740,11 +733,14 @@ function CashierApp() {
         <p className="font-mono text-lg">
           {t("cashier.orderId")}: {result.id}
         </p>
-        {result.paymentMethod === "fawry" && (
-          <div className="rounded-xl border border-primary/25 bg-primary/8 p-4 text-center">
-            <p className="text-xs font-semibold text-primary">{t("checkout.fawryRefTitle")}</p>
-            <p className="mt-1 font-mono text-xl font-bold">{result.paymentRef}</p>
-          </div>
+        {result.paymentMethod === "cash" ? (
+          <p className="rounded-xl border border-success/25 bg-success/10 p-4 text-center text-sm text-success">
+            {t("cashier.cashReceivedNotice")}
+          </p>
+        ) : (
+          <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-center text-sm text-amber-600">
+            {t("cashier.paymentPendingNotice")}
+          </p>
         )}
         <Button size="lg" onClick={() => setResult(null)} className="w-full max-w-xs">
           {t("cashier.newSale")}
@@ -781,7 +777,10 @@ function CashierApp() {
               <button
                 key={m.value}
                 type="button"
-                onClick={() => setMethod(m.value)}
+                onClick={() => {
+                  setMethod(m.value);
+                  setSplit([]);
+                }}
                 aria-pressed={method === m.value}
                 title={t(m.short)}
                 className={cn(
@@ -916,15 +915,11 @@ function CashierApp() {
         </div>
       </section>
 
-      {method === "fawry" && (
-        <p className="shrink-0 rounded-xl border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs text-primary">
-          {t("checkout.fawryHowTitle")}
-        </p>
-      )}
       {method === "instapay" && (
         <p className="shrink-0 rounded-xl border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs">
           <span className="font-semibold text-primary">{t("checkout.method.instapay.short")}</span>{" "}
           <span className="font-mono font-bold">{settings.instapay}</span>
+          <span className="ms-2 text-amber-600">{t("cashier.paymentPendingNotice")}</span>
         </p>
       )}
 
@@ -1272,8 +1267,9 @@ function CashierApp() {
               <SplitPayment
                 total={totals.total}
                 currency={settings.currency}
-                allocations={split.length > 1 ? split : []}
+                allocations={split}
                 onAllocationsChange={(a) => setSplit(a)}
+                onMethodChange={setMethod}
               />
 
               {method === "cash" && split.length <= 1 && (

@@ -4,6 +4,9 @@ import { Archive, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -22,12 +25,19 @@ import {
 } from "@/components/dash-grid";
 import {
   useClinicStore,
-  setOrderPaymentStatus,
   setOrderStatus,
   archiveOrder,
   deleteOrder,
   type Order,
 } from "@/lib/clinic-store";
+import {
+  canConfirmCashReceived,
+  canMarkOrderCompleted,
+  cashAmountMatches,
+  confirmCashReceived,
+} from "@/lib/payment-verification";
+import { localizedApiErrorMessage } from "@/lib/api";
+import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./dashboard-helpers";
@@ -44,6 +54,9 @@ export function OrdersPanel() {
   const { t } = useI18n();
   const { orders, settings } = useClinicStore();
   const [proofOrder, setProofOrder] = useState<Order | null>(null);
+  const [cashOrder, setCashOrder] = useState<Order | null>(null);
+  const [cashAmount, setCashAmount] = useState("");
+  const [cashNote, setCashNote] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
@@ -77,6 +90,34 @@ export function OrdersPanel() {
       toast.success(t(successKey));
     } catch {
       toast.error(t("dash.toast.error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openCashDialog = (order: Order) => {
+    setCashOrder(order);
+    setCashAmount(order.total.toFixed(2));
+    setCashNote("");
+  };
+
+  const confirmCash = async () => {
+    if (!cashOrder || busyId) return;
+    const amount = Number(cashAmount);
+    if (!cashAmountMatches(cashOrder.total, amount)) {
+      toast.error(t("dash.cashMismatch"));
+      return;
+    }
+    setBusyId(cashOrder.id);
+    try {
+      await confirmCashReceived(cashOrder.id, {
+        amountReceived: amount,
+        ...(cashNote.trim() ? { note: cashNote } : {}),
+      });
+      toast.success(t("dash.cashConfirmed"));
+      setCashOrder(null);
+    } catch (err) {
+      toast.error(localizedApiErrorMessage(err, t, t("dash.toast.error")));
     } finally {
       setBusyId(null);
     }
@@ -141,6 +182,8 @@ export function OrdersPanel() {
               { value: "all", key: "dash.filterAll" },
               { value: "paid", key: "pay.paid" },
               { value: "proof_submitted", key: "pay.underReview" },
+              { value: "under_review", key: "verif.underReview" },
+              { value: "rejected", key: "track.statusRejected" },
               { value: "unpaid", key: "pay.unpaid" },
             ].map((p) => (
               <button
@@ -211,9 +254,14 @@ export function OrdersPanel() {
                           <Badge className="border-transparent bg-success/15 text-success">
                             {t("pay.paid")}
                           </Badge>
-                        ) : o.paymentStatus === "proof_submitted" ? (
+                        ) : o.paymentStatus === "proof_submitted" ||
+                          o.paymentStatus === "under_review" ? (
                           <Badge className="border-transparent bg-amber-500/15 text-amber-600">
                             {t("pay.underReview")}
+                          </Badge>
+                        ) : o.paymentStatus === "rejected" ? (
+                          <Badge className="border-transparent bg-destructive/15 text-destructive">
+                            {t("track.statusRejected")}
                           </Badge>
                         ) : (
                           <Badge className="border-transparent bg-muted text-muted-foreground">
@@ -228,7 +276,7 @@ export function OrdersPanel() {
                       </p>
                       {o.paymentRef && (
                         <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-                          {t("track.fawryRef")}: {o.paymentRef}
+                          {t("checkout.refNumber")}: {o.paymentRef}
                         </p>
                       )}
                     </div>
@@ -244,24 +292,27 @@ export function OrdersPanel() {
                     ))}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {o.paymentStatus !== "paid" &&
-                      (o.paymentStatus === "proof_submitted" || o.paymentMethod === "cash") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
-                          disabled={busyId === o.id}
-                          onClick={() =>
-                            runAction(
-                              o.id,
-                              () => setOrderPaymentStatus(o.id, "paid"),
-                              "dash.toast.paid",
-                            )
-                          }
-                        >
-                          {t("dash.markPaid")}
-                        </Button>
-                      )}
+                    {canConfirmCashReceived(o) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 border-success/30 text-success hover:bg-success/10 hover:text-success"
+                        disabled={busyId === o.id}
+                        onClick={() => openCashDialog(o)}
+                      >
+                        {t("dash.confirmCash")}
+                      </Button>
+                    )}
+                    {o.paymentMethod === "instapay" && o.paymentStatus !== "paid" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => navigateToDashboardTab("payment-verification")}
+                      >
+                        {t("verif.goQueue")}
+                      </Button>
+                    )}
                     {o.paymentStatus === "proof_submitted" && (o.proofImage || o.paymentRef) && (
                       <Button
                         size="sm"
@@ -294,7 +345,13 @@ export function OrdersPanel() {
                         size="sm"
                         variant="outline"
                         className="h-7"
-                        disabled={busyId === o.id}
+                        disabled={busyId === o.id || !canMarkOrderCompleted(o)}
+                        title={
+                          canMarkOrderCompleted(o) ? undefined : t("dash.completeRequiresPayment")
+                        }
+                        aria-label={
+                          canMarkOrderCompleted(o) ? undefined : t("dash.completeRequiresPayment")
+                        }
                         onClick={() =>
                           runAction(
                             o.id,
@@ -305,6 +362,11 @@ export function OrdersPanel() {
                       >
                         {t("dash.complete")}
                       </Button>
+                    )}
+                    {!canMarkOrderCompleted(o) && (
+                      <span className="w-full text-[11px] text-amber-600">
+                        {t("dash.completeRequiresPayment")}
+                      </span>
                     )}
                     {o.status !== "cancelled" && (
                       <Button
@@ -390,23 +452,59 @@ export function OrdersPanel() {
             <Button variant="outline" onClick={() => setProofOrder(null)}>
               {t("dash.close")}
             </Button>
-            {proofOrder && proofOrder.paymentStatus !== "paid" && (
-              <Button
-                disabled={Boolean(busyId)}
-                onClick={() =>
-                  runAction(
-                    proofOrder.id,
-                    async () => {
-                      await setOrderPaymentStatus(proofOrder.id, "paid");
-                      setProofOrder(null);
-                    },
-                    "dash.toast.paid",
-                  )
-                }
-              >
-                {t("dash.markPaid")}
-              </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(cashOrder)} onOpenChange={(open) => !open && setCashOrder(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("dash.confirmCash")}</DialogTitle>
+            <DialogDescription>
+              {cashOrder?.id} · {t("dash.cashConfirmHint")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor="cash-amount">{t("dash.cashAmount")}</Label>
+              <Input
+                id="cash-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cash-note">{t("verif.note")}</Label>
+              <Textarea
+                id="cash-note"
+                rows={2}
+                value={cashNote}
+                onChange={(e) => setCashNote(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            {cashOrder && !cashAmountMatches(cashOrder.total, Number(cashAmount)) && (
+              <p className="text-xs text-destructive">{t("dash.cashMismatch")}</p>
             )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCashOrder(null)} disabled={Boolean(busyId)}>
+              {t("dash.close")}
+            </Button>
+            <Button
+              onClick={confirmCash}
+              disabled={
+                Boolean(busyId) ||
+                !cashOrder ||
+                !cashAmountMatches(cashOrder.total, Number(cashAmount))
+              }
+            >
+              {t("dash.confirmCash")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

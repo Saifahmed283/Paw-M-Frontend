@@ -1,13 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { ChevronLeft, ImageUp, Landmark, Loader2, PackageSearch, Smartphone } from "lucide-react";
+import { ChevronLeft, ImageUp, Loader2, PackageSearch, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { submitPaymentProof, trackOrder, useClinicStore, type Order } from "@/lib/clinic-store";
+import { Textarea } from "@/components/ui/textarea";
+import { clientIsAuthed } from "@/lib/client-auth";
+import { trackOrder, useClinicStore, type Order } from "@/lib/clinic-store";
+import {
+  canSubmitTransfer,
+  showCashPickupNotice,
+  submitTransferSubmission,
+} from "@/lib/payment-verification";
+import { localizedApiErrorMessage } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
@@ -27,8 +35,13 @@ function PaymentStatusBadge({ order }: { order: Order }) {
   if (order.paymentStatus === "paid") {
     return <Badge className="bg-success/15 text-success">{t("pay.paid")}</Badge>;
   }
-  if (order.paymentStatus === "proof_submitted") {
+  if (order.paymentStatus === "proof_submitted" || order.paymentStatus === "under_review") {
     return <Badge className="bg-amber-500/15 text-amber-600">{t("pay.underReview")}</Badge>;
+  }
+  if (order.paymentStatus === "rejected") {
+    return (
+      <Badge className="bg-destructive/15 text-destructive">{t("track.statusRejected")}</Badge>
+    );
   }
   return <Badge className="bg-muted text-muted-foreground">{t("pay.unpaid")}</Badge>;
 }
@@ -44,6 +57,182 @@ function readImageFile(file: File | undefined): Promise<string> {
   });
 }
 
+function toIso(localDateTime: string): string | undefined {
+  if (!localDateTime) return undefined;
+  const date = new Date(localDateTime);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function TransferSubmissionForm({
+  order,
+  phone,
+  onUpdated,
+}: {
+  order: Order;
+  phone: string;
+  onUpdated: (o: Order) => void;
+}) {
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
+  const [senderName, setSenderName] = useState("");
+  const [transferReference, setTransferReference] = useState("");
+  const [transferredAt, setTransferredAt] = useState("");
+  const [note, setNote] = useState("");
+  const [evidenceBase64, setEvidenceBase64] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const total = formatPrice(order.total, settings.currency);
+
+  const submit = async () => {
+    if (busy) return;
+    if (!senderName.trim() || !transferReference.trim()) {
+      toast.error(t("track.senderAndRefRequired"));
+      return;
+    }
+    setBusy(true);
+    try {
+      // Only guest orders need the phone ownership fallback; signed-in clients
+      // are identified by their token. The tracking lookup phone is still used
+      // as the fallback value.
+      const isGuest = !clientIsAuthed();
+      const result = await submitTransferSubmission(order.id, {
+        senderName,
+        transferReference,
+        ...(toIso(transferredAt) ? { transferredAt: toIso(transferredAt) } : {}),
+        ...(evidenceBase64 ? { evidenceBase64 } : {}),
+        ...(note.trim() ? { note } : {}),
+        ...(isGuest ? { phone: phone.trim() } : {}),
+      });
+      try {
+        onUpdated(await trackOrder(order.id, phone.trim()));
+      } catch {
+        // Fall back to the claim decision if a tracking refresh is unavailable.
+        const paymentStatus =
+          result.decision === "approved"
+            ? "paid"
+            : result.decision === "rejected"
+              ? "rejected"
+              : result.decision === "submitted"
+                ? "proof_submitted"
+                : "under_review";
+        onUpdated({ ...order, paymentStatus });
+      }
+      setSenderName("");
+      setTransferReference("");
+      setTransferredAt("");
+      setNote("");
+      setEvidenceBase64("");
+      toast.success(t("track.submittedOk"));
+    } catch (err) {
+      toast.error(localizedApiErrorMessage(err, t, t("track.submissionFailed")));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <Smartphone className="size-4 text-primary" />
+        {order.paymentStatus === "rejected" ? t("track.resubmitTitle") : t("track.proofTitle")}
+      </p>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+        {t("track.instapayProofDesc", { amount: total })}
+      </p>
+      {settings.instapay && (
+        <p className="mt-2 rounded-lg bg-background px-3 py-2 font-mono text-sm font-bold">
+          {t("checkout.method.instapay.short")}: {settings.instapay}
+        </p>
+      )}
+
+      <div className="mt-3 grid gap-3">
+        <div>
+          <Label htmlFor="track-sender" className="text-xs font-medium text-muted-foreground">
+            {t("track.senderName")}
+          </Label>
+          <Input
+            id="track-sender"
+            value={senderName}
+            onChange={(e) => setSenderName(e.target.value)}
+            className="mt-1"
+            autoComplete="name"
+          />
+        </div>
+        <div>
+          <Label htmlFor="track-ref" className="text-xs font-medium text-muted-foreground">
+            {t("track.transferReference")}
+          </Label>
+          <Input
+            id="track-ref"
+            value={transferReference}
+            onChange={(e) => setTransferReference(e.target.value)}
+            className="mt-1"
+            placeholder={t("checkout.refPlaceholder")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="track-date" className="text-xs font-medium text-muted-foreground">
+            {t("track.transferredAt")}
+          </Label>
+          <Input
+            id="track-date"
+            type="datetime-local"
+            value={transferredAt}
+            onChange={(e) => setTransferredAt(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="track-note" className="text-xs font-medium text-muted-foreground">
+            {t("verif.note")}
+          </Label>
+          <Textarea
+            id="track-note"
+            rows={2}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              try {
+                setEvidenceBase64(await readImageFile(e.target.files?.[0]));
+              } catch {
+                toast.error(t("checkout.imageError"));
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            <ImageUp className="size-4" />
+            {evidenceBase64 ? t("checkout.imageChosen") : t("checkout.uploadProof")}
+          </button>
+          {evidenceBase64 && (
+            <img
+              src={evidenceBase64}
+              alt=""
+              className="mt-2 h-32 w-full rounded-xl border border-border object-cover"
+            />
+          )}
+        </div>
+        <Button size="sm" onClick={submit} disabled={busy} className="w-full sm:w-auto">
+          {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+          {order.paymentStatus === "rejected" ? t("track.resubmit") : t("track.sendProof")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function OrderCard({
   order,
   phone,
@@ -55,42 +244,9 @@ function OrderCard({
 }) {
   const { t } = useI18n();
   const { settings } = useClinicStore();
-  const [ref, setRef] = useState("");
-  const [proofImage, setProofImage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const submitProof = async () => {
-    if (busy) return;
-    const hasRef = ref.trim().length > 0;
-    const hasImage = proofImage.length > 0;
-    if (order.paymentMethod === "fawry" && !hasRef) {
-      toast.error(t("track.refRequired"));
-      return;
-    }
-    if (order.paymentMethod === "instapay" && !hasRef && !hasImage) {
-      toast.error(t("track.proofRequired"));
-      return;
-    }
-    setBusy(true);
-    try {
-      const updated = await submitPaymentProof(order.id, {
-        paymentRef: ref.trim() || undefined,
-        proofImage: hasImage ? proofImage : undefined,
-        phone,
-      });
-      onUpdated(updated);
-      setRef("");
-      setProofImage("");
-      toast.success(t("track.proofSent"));
-    } catch {
-      toast.error(t("track.failed"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const canSubmitProof = order.paymentStatus !== "paid" && order.paymentMethod !== "cash";
+  const total = formatPrice(order.total, settings.currency);
+  const canSubmit = canSubmitTransfer(order);
+  const showCash = showCashPickupNotice(order);
 
   return (
     <div className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-card">
@@ -123,105 +279,20 @@ function OrderCard({
         <span className="text-sm text-muted-foreground">
           {t(`checkout.method.${order.paymentMethod}.title`)}
         </span>
-        <span className="text-xl font-bold">{formatPrice(order.total, settings.currency)}</span>
+        <span className="text-xl font-bold">{total}</span>
       </div>
 
-      {order.paymentRef && order.paymentMethod === "fawry" && (
-        <p className="mt-3 rounded-xl bg-muted/50 px-4 py-2.5 font-mono text-sm">
-          {t("track.fawryRef")}:{" "}
-          <span className="font-bold tracking-widest">{order.paymentRef}</span>
-        </p>
-      )}
-
-      {order.proofImage && (
-        <a href={order.proofImage} target="_blank" rel="noreferrer" className="mt-3 block">
-          <img
-            src={order.proofImage}
-            alt={t("track.proofImageAlt")}
-            className="h-40 w-full rounded-xl border border-border object-cover"
-          />
-        </a>
-      )}
-
-      {canSubmitProof && (
-        <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold">
-            {order.paymentMethod === "fawry" ? (
-              <Landmark className="size-4 text-primary" />
-            ) : (
-              <Smartphone className="size-4 text-primary" />
-            )}
-            {t("track.proofTitle")}
+      {showCash && (
+        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <p className="text-sm font-semibold">{t("track.payAtPickup", { amount: total })}</p>
+          <p className="mt-1 font-mono text-xs text-muted-foreground">
+            {t("track.pickupReference", { orderId: order.id })}
           </p>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {order.paymentMethod === "fawry"
-              ? t("track.fawryProofDesc")
-              : t("track.instapayProofDesc")}
-          </p>
-          {order.paymentMethod === "instapay" && settings.instapay && (
-            <p className="mt-2 rounded-lg bg-background px-3 py-2 font-mono text-sm font-bold">
-              {t("checkout.method.instapay.short")}: {settings.instapay}
-            </p>
-          )}
-
-          <div className="mt-3 grid gap-3">
-            <div>
-              <Label htmlFor="track-ref" className="text-xs font-medium text-muted-foreground">
-                {t("track.refNumber")}
-              </Label>
-              <Input
-                id="track-ref"
-                value={ref}
-                onChange={(e) => setRef(e.target.value)}
-                className="mt-1"
-                placeholder={t("checkout.refPlaceholder")}
-              />
-            </div>
-            {order.paymentMethod === "instapay" && (
-              <div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    try {
-                      setProofImage(await readImageFile(e.target.files?.[0]));
-                    } catch {
-                      toast.error(t("checkout.imageError"));
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-4 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                >
-                  <ImageUp className="size-4" />
-                  {proofImage ? t("checkout.imageChosen") : t("checkout.uploadProof")}
-                </button>
-                {proofImage && (
-                  <img
-                    src={proofImage}
-                    alt=""
-                    className="mt-2 h-32 w-full rounded-xl border border-border object-cover"
-                  />
-                )}
-              </div>
-            )}
-            <Button size="sm" onClick={submitProof} disabled={busy} className="w-full sm:w-auto">
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {t("track.sendProof")}
-            </Button>
-          </div>
+          <p className="mt-2 text-xs font-medium text-amber-600">{t("checkout.notPaidNote")}</p>
         </div>
       )}
 
-      {order.paymentMethod === "cash" && order.paymentStatus !== "paid" && (
-        <p className="mt-4 rounded-xl bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-          {t("checkout.cashNote")}
-        </p>
-      )}
+      {canSubmit && <TransferSubmissionForm order={order} phone={phone} onUpdated={onUpdated} />}
     </div>
   );
 }

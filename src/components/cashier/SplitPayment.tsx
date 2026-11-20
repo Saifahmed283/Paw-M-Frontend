@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { ArrowLeftRight, Check, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeftRight, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PaymentMethod } from "@/lib/clinic-store";
+import { STORE_CHECKOUT_METHODS } from "@/lib/payment-verification";
 import type { SplitPaymentAllocation } from "./types";
 
 type Props = {
@@ -14,44 +13,48 @@ type Props = {
   currency: string;
   allocations: SplitPaymentAllocation[];
   onAllocationsChange: (a: SplitPaymentAllocation[]) => void;
+  onMethodChange?: (method: PaymentMethod) => void;
 };
 
-const METHODS: PaymentMethod[] = ["cash", "fawry", "instapay"];
+const METHODS: readonly PaymentMethod[] = STORE_CHECKOUT_METHODS;
 
 function methodLabel(m: PaymentMethod, t: (k: string) => string): string {
   return t(`checkout.method.${m}.short`);
 }
 
-export function SplitPayment({ total, currency, allocations, onAllocationsChange }: Props) {
+/**
+ * Payment-method picker for the till. Mixed-method splits are intentionally not
+ * offered: an InstaPay portion would need bank-statement verification while a
+ * cash portion is settled at the counter, which cannot be represented by one
+ * order payment status. Each order uses exactly one trusted settlement path.
+ */
+export function SplitPayment({
+  total,
+  currency,
+  allocations,
+  onAllocationsChange,
+  onMethodChange,
+}: Props) {
   const { t } = useI18n();
-  const [enabled, setEnabled] = useState(allocations.length > 1);
+  const [enabled, setEnabled] = useState(allocations.length > 0);
+  const selectedMethod = allocations[0]?.method ?? "cash";
+  const amount = Math.round(total * 100) / 100;
 
-  const allocated = allocations.reduce((n, a) => n + a.amount, 0);
-  const remaining = total - allocated;
-  const complete = Math.abs(remaining) < 0.005;
+  useEffect(() => {
+    if (allocations.length === 0) setEnabled(false);
+  }, [allocations.length]);
 
   const toggle = () => {
     setEnabled((prev) => {
       const next = !prev;
-      onAllocationsChange([{ method: "cash", amount: Math.round(total * 100) / 100 }]);
+      onAllocationsChange(next ? [{ method: selectedMethod, amount }] : []);
       return next;
     });
   };
 
-  const addMethod = (method: PaymentMethod) => {
-    if (allocations.some((a) => a.method === method)) return;
-    onAllocationsChange([...allocations, { method, amount: 0 }]);
-  };
-
-  const updateAmount = (index: number, amount: number) => {
-    const clamped = Math.min(Math.round(amount * 100) / 100, total);
-    onAllocationsChange(
-      allocations.map((a, i) => (i === index ? { ...a, amount: Math.max(0, clamped) } : a)),
-    );
-  };
-
-  const resetToSingle = () => {
-    onAllocationsChange([{ method: "cash", amount: Math.round(total * 100) / 100 }]);
+  const selectMethod = (method: PaymentMethod) => {
+    onAllocationsChange([{ method, amount }]);
+    onMethodChange?.(method);
   };
 
   return (
@@ -77,89 +80,31 @@ export function SplitPayment({ total, currency, allocations, onAllocationsChange
 
       {enabled && (
         <div className="space-y-3">
+          <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+            {t("cashier.singleMethodOnly")}
+          </p>
           <div className="flex flex-wrap gap-1.5">
-            {METHODS.filter((m) => !allocations.some((a) => a.method === m)).map((m) => (
+            {METHODS.map((method) => (
               <Button
-                key={m}
+                key={method}
                 type="button"
-                variant="outline"
+                variant={method === selectedMethod ? "default" : "outline"}
                 size="sm"
-                onClick={() => addMethod(m)}
+                disabled={method === selectedMethod}
+                onClick={() => selectMethod(method)}
                 className="gap-1"
               >
-                <Plus className="size-3.5" />
-                {methodLabel(m, t)}
+                <Check className="size-3.5" />
+                {methodLabel(method, t)}
               </Button>
             ))}
           </div>
-
-          <div className="space-y-2">
-            {allocations.map((a, idx) => (
-              <div key={a.method} className="flex items-center gap-2">
-                <span className="w-24 shrink-0 text-xs font-semibold">
-                  {methodLabel(a.method, t)}
-                </span>
-                <div className="relative flex-1">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    {currency}
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={total}
-                    inputMode="decimal"
-                    value={a.amount === 0 ? "" : String(a.amount)}
-                    onChange={(e) => {
-                      const v = e.target.value === "" ? 0 : Number(e.target.value);
-                      if (Number.isFinite(v)) updateAmount(idx, v);
-                    }}
-                    className="pl-8"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
-                  onClick={() => {
-                    if (allocations.length <= 1) {
-                      resetToSingle();
-                      return;
-                    }
-                    const next = allocations.filter((_, i) => i !== idx);
-                    onAllocationsChange(next);
-                  }}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          <Separator />
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t("cashier.allocated")}</span>
-            <span>
-              {allocated.toFixed(2)} {currency}
+          <div className="flex justify-between rounded-xl border border-border px-3 py-2 text-sm">
+            <span className="text-muted-foreground">{methodLabel(selectedMethod, t)}</span>
+            <span className="font-semibold">
+              {amount.toFixed(2)} {currency}
             </span>
           </div>
-          <div
-            className={cn(
-              "flex justify-between text-sm font-semibold",
-              complete ? "text-success" : "text-amber-600",
-            )}
-          >
-            <span>{complete ? t("cashier.fullyAllocated") : t("cashier.unallocated")}</span>
-            <span>
-              {Math.abs(remaining).toFixed(2)} {currency}
-            </span>
-          </div>
-
-          {!complete && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {t("cashier.splitNotComplete")}
-            </p>
-          )}
         </div>
       )}
     </div>

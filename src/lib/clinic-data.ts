@@ -283,7 +283,7 @@ export const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "Cash, Fawry and InstaPay. Written estimates are provided before any procedure begins, and online store orders can be paid with proof of transfer submitted on the order tracking page.",
+    a: "Cash and InstaPay. Written estimates are provided before any procedure begins, and online store orders can be paid with transfer details submitted on the order tracking page.",
   },
   {
     q: "Do you treat animals other than cats and dogs?",

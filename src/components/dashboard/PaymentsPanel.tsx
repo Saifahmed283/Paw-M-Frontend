@@ -48,6 +48,8 @@ import {
   type Payment,
   type PaymentMethod,
 } from "@/lib/clinic-store";
+import { canSettlePayment, isOrderPayment } from "@/lib/payment-verification";
+import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -72,6 +74,12 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
   const [notes, setNotes] = useState(payment?.notes ?? "");
   const [orderId, setOrderId] = useState(payment?.orderId ?? "");
   const [saving, setSaving] = useState(false);
+  const orderPayment = isOrderPayment(payment ?? { kind: undefined, orderId: orderId.trim() });
+  const lockedStatus =
+    orderPayment ||
+    payment?.status === "proof_submitted" ||
+    payment?.status === "under_review" ||
+    payment?.status === "rejected";
 
   const save = async () => {
     if (saving) return;
@@ -80,14 +88,17 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
       toast.error(t("payments.invalid"));
       return;
     }
-    // Editing an under-review payment must not silently downgrade it to unpaid
-    // just because the status dropdown has no "proof submitted" option.
-    const keepReviewStatus = payment?.status === "proof_submitted" && status === "unpaid";
+    if (orderPayment && status === "paid") {
+      toast.error(t("verif.orderSettled"));
+      return;
+    }
+    // Order payments are settled only through verification; other locked
+    // statuses (under review / rejected) must not be silently downgraded.
     const payload = {
       title: title.trim(),
       amount: value,
       method,
-      ...(keepReviewStatus ? {} : { status }),
+      ...(lockedStatus ? {} : { status }),
       date,
       notes: notes.trim(),
       orderId: orderId.trim(),
@@ -144,14 +155,13 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
               >
                 <option value="cash">{t("checkout.method.cash.short")}</option>
-                <option value="fawry">{t("checkout.method.fawry.short")}</option>
                 <option value="instapay">{t("checkout.method.instapay.short")}</option>
               </select>
             </Field>
             <Field label={t("payments.status")}>
-              {payment?.status === "proof_submitted" ? (
+              {lockedStatus && payment ? (
                 <div className="flex h-9 items-center rounded-lg border border-border bg-muted/40 px-3">
-                  <PaymentStatusBadge status="proof_submitted" />
+                  <PaymentStatusBadge status={payment.status} />
                 </div>
               ) : (
                 <select
@@ -379,22 +389,12 @@ export function PaymentsPanel() {
               {savingProvider ? t("dash.saving") : t("payments.providersSave")}
             </Button>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2">
-                <Badge className="border-transparent bg-primary/15 text-primary">
-                  {t("payments.fawry")}
-                </Badge>
-                <p className="text-xs text-muted-foreground">{t("payments.fawryInfo")}</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2">
-                <Badge className="border-transparent bg-amber-500/15 text-amber-600">
-                  {t("payments.cash")}
-                </Badge>
-                <p className="text-xs text-muted-foreground">{t("payments.cashInfo")}</p>
-              </div>
+          <div className="rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2">
+              <Badge className="border-transparent bg-amber-500/15 text-amber-600">
+                {t("payments.cash")}
+              </Badge>
+              <p className="text-xs text-muted-foreground">{t("payments.cashInfo")}</p>
             </div>
           </div>
         </CardContent>
@@ -417,7 +417,6 @@ export function PaymentsPanel() {
               {[
                 { value: "all", key: "dash.filterAll" },
                 { value: "cash", key: "checkout.method.cash.short" },
-                { value: "fawry", key: "checkout.method.fawry.short" },
                 { value: "instapay", key: "checkout.method.instapay.short" },
               ].map((m) => (
                 <button
@@ -443,6 +442,8 @@ export function PaymentsPanel() {
                 { value: "paid", key: "pay.paid" },
                 { value: "unpaid", key: "pay.unpaid" },
                 { value: "proof_submitted", key: "pay.underReview" },
+                { value: "under_review", key: "verif.underReview" },
+                { value: "rejected", key: "verif.rejected" },
               ].map((s) => (
                 <button
                   type="button"
@@ -545,16 +546,29 @@ export function PaymentsPanel() {
                           </div>
                         </TableCell>
                         <TableCell className="text-end">
-                          {p.id.startsWith("order-") ? (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-muted text-[10px] text-muted-foreground"
-                            >
-                              {t("payments.kind.order")}
-                            </Badge>
+                          {isOrderPayment(p) ? (
+                            <div className="flex flex-col items-end gap-1">
+                              {p.status === "paid" ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-transparent bg-muted text-[10px] text-muted-foreground"
+                                >
+                                  {t("verif.orderSettled")}
+                                </Badge>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2"
+                                  onClick={() => navigateToDashboardTab("payment-verification")}
+                                >
+                                  {t("verif.goQueue")}
+                                </Button>
+                              )}
+                            </div>
                           ) : (
                             <div className="flex items-center justify-end gap-1.5">
-                              {p.status !== "paid" && (
+                              {canSettlePayment(p) && (
                                 <Button
                                   size="sm"
                                   variant="outline"

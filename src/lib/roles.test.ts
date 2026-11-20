@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
 import { ALL_TAB_IDS, DEFAULT_ROLE_PERMISSIONS, allowedTabsForRole } from "@/lib/roles";
 
 describe("roles permissions", () => {
@@ -40,5 +41,14 @@ describe("roles permissions", () => {
     expect(allowedTabsForRole(undefined, "staff")).toContain("prescriptions");
     expect(allowedTabsForRole(undefined, "payroll")).toContain("prescriptions");
     expect(allowedTabsForRole(undefined, "admin")).toContain("prescriptions");
+  });
+
+  it("keeps the payment verification queue admin-only", () => {
+    const item = ALL_NAV_ITEMS.find((i) => i.id === "payment-verification");
+    expect(item?.roles).toEqual(["admin"]);
+    expect(ALL_TAB_IDS).toContain("payment-verification");
+    expect(DEFAULT_ROLE_PERMISSIONS.admin).toContain("payment-verification");
+    expect(DEFAULT_ROLE_PERMISSIONS.payroll).not.toContain("payment-verification");
+    expect(allowedTabsForRole(undefined, "payroll")).not.toContain("payment-verification");
   });
 });

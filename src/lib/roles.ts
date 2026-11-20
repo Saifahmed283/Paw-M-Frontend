@@ -10,6 +10,7 @@ export const ALL_TAB_IDS = [
   "clients",
   "reservations",
   "finance",
+  "payment-verification",
   "doctors",
   "services",
   "products",

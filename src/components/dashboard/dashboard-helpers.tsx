@@ -48,10 +48,17 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   if (status === "paid") {
     return <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>;
   }
-  if (status === "proof_submitted") {
+  if (status === "proof_submitted" || status === "under_review") {
     return (
       <Badge className="border-transparent bg-amber-500/15 text-amber-600">
         {t("pay.underReview")}
+      </Badge>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <Badge className="border-transparent bg-destructive/15 text-destructive">
+        {t("verif.rejected")}
       </Badge>
     );
   }

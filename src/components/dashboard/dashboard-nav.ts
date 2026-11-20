@@ -12,6 +12,7 @@ import {
   MessageSquareText,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Stethoscope,
   UserPlus,
@@ -74,6 +75,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "payroll", icon: Banknote, roles: ["payroll", "admin"] },
       { id: "finance", icon: Wallet, roles: ["payroll", "admin"] },
+      { id: "payment-verification", icon: ShieldCheck, roles: ["admin"] },
     ],
   },
   {

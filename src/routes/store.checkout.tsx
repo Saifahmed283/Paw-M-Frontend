@@ -1,15 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import {
-  Banknote,
-  CheckCircle2,
-  ChevronLeft,
-  ImageUp,
-  Landmark,
-  QrCode,
-  Smartphone,
-  Trash2,
-} from "lucide-react";
+import { useState } from "react";
+import { Banknote, CheckCircle2, ChevronLeft, QrCode, Smartphone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { clearCart, removeFromCart, setCartQty, useCart } from "@/lib/cart-store";
 import { currentClient } from "@/lib/client-auth";
 import { createOrder, useClinicStore, type PaymentMethod } from "@/lib/clinic-store";
+import { STORE_CHECKOUT_METHODS } from "@/lib/payment-verification";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -35,52 +27,35 @@ export const Route = createFileRoute("/store/checkout")({
   component: CheckoutPage,
 });
 
-const PAYMENT_METHODS: {
-  value: PaymentMethod;
-  icon: typeof Banknote;
-  title: string;
-  desc: string;
-}[] = [
-  {
-    value: "cash",
+const METHOD_CONTENT: Record<
+  (typeof STORE_CHECKOUT_METHODS)[number],
+  { icon: typeof Banknote; title: string; desc: string }
+> = {
+  cash: {
     icon: Banknote,
     title: "checkout.method.cash.title",
     desc: "checkout.method.cash.desc",
   },
-  {
-    value: "fawry",
-    icon: Landmark,
-    title: "checkout.method.fawry.title",
-    desc: "checkout.method.fawry.desc",
-  },
-  {
-    value: "instapay",
+  instapay: {
     icon: Smartphone,
     title: "checkout.method.instapay.title",
     desc: "checkout.method.instapay.desc",
   },
-];
-
-function readImageFile(file: File | undefined): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!file) return reject(new Error("no file"));
-    if (file.size > 4 * 1024 * 1024) return reject(new Error("too large"));
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("read failed"));
-    reader.readAsDataURL(file);
-  });
-}
+};
+const PAYMENT_METHODS = STORE_CHECKOUT_METHODS.map((value) => ({
+  value,
+  ...METHOD_CONTENT[value],
+}));
 
 function SuccessScreen({
   orderId,
   paymentMethod,
-  paymentRef,
+  total,
   instapay,
 }: {
   orderId: string;
   paymentMethod: PaymentMethod;
-  paymentRef: string;
+  total: string;
   instapay: string;
 }) {
   const { t } = useI18n();
@@ -92,25 +67,12 @@ function SuccessScreen({
         </span>
         <h1 className="mt-5 text-2xl font-bold">{t("checkout.successTitle")}</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {t("checkout.successDesc")}
+          {t("checkout.notPaidYet")}
         </p>
         <p className="mt-4 rounded-xl border border-border bg-muted/50 px-4 py-3 font-mono text-sm break-all">
           {t("checkout.orderId")}: {orderId}
         </p>
 
-        {paymentMethod === "fawry" && (
-          <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4 text-left">
-            <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-              <Landmark className="size-4" /> {t("checkout.fawryRefTitle")}
-            </p>
-            <p className="mt-1 font-mono text-lg font-bold break-all tracking-normal sm:text-xl sm:tracking-widest">
-              {paymentRef}
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {t("checkout.fawrySteps")}
-            </p>
-          </div>
-        )}
         {paymentMethod === "instapay" && (
           <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4 text-left">
             <p className="flex items-center gap-2 text-xs font-semibold text-primary">
@@ -118,15 +80,16 @@ function SuccessScreen({
             </p>
             <p className="mt-1 font-mono text-lg font-bold break-all">{instapay}</p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {t("checkout.instapaySteps")}
+              {t("checkout.instapayTransfer", { amount: total, account: instapay })}
             </p>
           </div>
         )}
         {paymentMethod === "cash" && (
           <p className="mt-4 rounded-xl border border-border bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-            {t("checkout.cashNote")}
+            {t("checkout.payAtPickup", { amount: total, orderId })}
           </p>
         )}
+        <p className="mt-3 text-xs font-medium text-amber-600">{t("checkout.notPaidNote")}</p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Button asChild className="flex-1 shadow-glow">
@@ -161,15 +124,12 @@ function CheckoutForm() {
     address: "",
   });
   const [method, setMethod] = useState<PaymentMethod>("cash");
-  const [ref, setRef] = useState("");
-  const [proofImage, setProofImage] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{
     id: string;
     paymentMethod: PaymentMethod;
-    paymentRef: string;
+    total: string;
   } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const total = cart.reduce((n, i) => n + i.qty * i.price, 0);
 
@@ -198,11 +158,13 @@ function CheckoutForm() {
         address: form.address.trim(),
         items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
         paymentMethod: method,
-        paymentRef: method === "instapay" || method === "fawry" ? ref.trim() : undefined,
-        proofImage: method === "instapay" ? proofImage : undefined,
       });
       clearCart();
-      setResult({ id: order.id, paymentMethod: order.paymentMethod, paymentRef: order.paymentRef });
+      setResult({
+        id: order.id,
+        paymentMethod: order.paymentMethod,
+        total: formatPrice(total, settings.currency),
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("only")) {
@@ -220,7 +182,7 @@ function CheckoutForm() {
       <SuccessScreen
         orderId={result.id}
         paymentMethod={result.paymentMethod}
-        paymentRef={result.paymentRef}
+        total={result.total}
         instapay={settings.instapay}
       />
     );
@@ -346,78 +308,20 @@ function CheckoutForm() {
                   ))}
                 </div>
 
-                {method === "fawry" && (
+                {method === "instapay" && (
                   <div className="mt-4 rounded-xl border border-primary/25 bg-primary/8 p-4">
                     <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-                      <Landmark className="size-4" /> {t("checkout.fawryHowTitle")}
+                      <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
+                    </p>
+                    <p className="mt-1.5 font-mono text-sm font-bold">
+                      {settings.instapay || t("checkout.instapayMissing")}
                     </p>
                     <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                      {t("checkout.fawryHow")}
+                      {t("checkout.instapaySteps")}
                     </p>
-                  </div>
-                )}
-
-                {method === "instapay" && (
-                  <div className="mt-4 space-y-4">
-                    <div className="rounded-xl border border-primary/25 bg-primary/8 p-4">
-                      <p className="flex items-center gap-2 text-xs font-semibold text-primary">
-                        <Smartphone className="size-4" /> {t("checkout.method.instapay.short")}
-                      </p>
-                      <p className="mt-1.5 font-mono text-sm font-bold">
-                        {settings.instapay || t("checkout.instapayMissing")}
-                      </p>
-                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                        {t("checkout.instapayHint")}
-                      </p>
-                    </div>
-                    <div>
-                      <Label htmlFor="co-ref" className="text-xs font-medium text-muted-foreground">
-                        {t("checkout.refNumber")}
-                      </Label>
-                      <Input
-                        id="co-ref"
-                        value={ref}
-                        onChange={(e) => setRef(e.target.value)}
-                        className="mt-1.5"
-                        placeholder={t("checkout.refPlaceholder")}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-medium text-muted-foreground">
-                        {t("checkout.proofImage")}
-                      </Label>
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          try {
-                            setProofImage(await readImageFile(e.target.files?.[0]));
-                          } catch {
-                            toast.error(t("checkout.imageError"));
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileRef.current?.click()}
-                        className="mt-1.5 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-6 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                      >
-                        <ImageUp className="size-4" />
-                        {proofImage ? t("checkout.imageChosen") : t("checkout.uploadProof")}
-                      </button>
-                      {proofImage && (
-                        <img
-                          src={proofImage}
-                          alt=""
-                          className="mt-2 h-32 w-full rounded-xl border border-border object-cover"
-                        />
-                      )}
-                      <p className="mt-1.5 text-[11px] text-muted-foreground">
-                        {t("checkout.proofLater")}
-                      </p>
-                    </div>
+                    <p className="mt-2 text-xs font-medium text-amber-600">
+                      {t("checkout.notPaidNote")}
+                    </p>
                   </div>
                 )}
               </div>
