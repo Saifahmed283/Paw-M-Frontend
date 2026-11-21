@@ -178,6 +178,25 @@ function periodRange(period: Period): { start: string; end: string } {
   return { start: localISODate(start), end: localISODate(end) };
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Legacy companion emails can contain two @ signs; offer a valid one on edit. */
+function editableEmail(email: string, fallback: string): string {
+  const value = email.trim();
+  if (EMAIL_RE.test(value)) return value;
+  const local = fallback
+    .replace(/[^A-Za-z0-9._-]+/g, ".")
+    .replace(/\.+/g, ".")
+    .replace(/^\.|\.$/g, "")
+    .toLowerCase();
+  return `${local || "staff"}@paw-m.local`;
+}
+
+/** Login-less employee records are active/inactive on their profile alone. */
+function isStaffActive(row: StaffRow): boolean {
+  return row.accountId > 0 ? row.loginIsActive && row.isActive : row.isActive;
+}
+
 function parseCommissionRates(raw: string): Record<string, number> | null {
   try {
     const parsed = JSON.parse(raw.trim() || "{}") as unknown;
@@ -316,7 +335,7 @@ export function StaffPanel() {
     () =>
       rows.filter((row) => {
         if (roleFilter !== "all" && row.role !== roleFilter) return false;
-        const active = row.loginIsActive && row.isActive;
+        const active = isStaffActive(row);
         if (statusFilter === "active" && !active) return false;
         if (statusFilter === "suspended" && active) return false;
         return true;
@@ -348,7 +367,7 @@ export function StaffPanel() {
     setEditing(row);
     setForm({
       fullName: row.fullName ?? "",
-      email: row.email ?? "",
+      email: editableEmail(row.email ?? "", row.username || row.fullName || "staff"),
       phone: row.phone ?? "",
       username: row.username,
       password: "",
@@ -376,7 +395,7 @@ export function StaffPanel() {
       toast.error(t("dash.recruitment.requiredName"));
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!EMAIL_RE.test(email)) {
       toast.error(t("dash.recruitment.invalidEmail"));
       return false;
     }
@@ -464,6 +483,8 @@ export function StaffPanel() {
       await load();
     } catch (err) {
       toast.error(apiErrorMessage(err, t("dash.recruitment.error")));
+      // The login may already have been updated before the profile step failed.
+      await load();
     } finally {
       setSaving(false);
     }
@@ -476,11 +497,11 @@ export function StaffPanel() {
     try {
       if (type === "delete") {
         if (row.accountId) await api.delete(`/api/auth/accounts/${row.accountId}`);
-        if (row.linked && row.id) {
+        if (row.id) {
           try {
             await api.delete(`/api/employees/${row.id}`);
           } catch {
-            // Records may reference this employee; suspend instead of deleting.
+            // Historical records may reference this employee; suspend instead.
             await api.patch(`/api/employees/${row.id}`, { isActive: false });
           }
         }
@@ -490,13 +511,12 @@ export function StaffPanel() {
         if (row.accountId) {
           await api.patch(`/api/auth/accounts/${row.accountId}`, { isActive: nextActive });
         }
-        if (row.linked && row.id) {
+        if (row.id) {
           await api.patch(`/api/employees/${row.id}`, { isActive: nextActive });
         }
         toast.success(t("dash.recruitment.accountStatusUpdated"));
       }
       setAction(null);
-      await load();
     } catch (err) {
       toast.error(
         apiErrorMessage(
@@ -508,6 +528,9 @@ export function StaffPanel() {
       );
     } finally {
       setActionBusy(false);
+      // A failed second step can still leave the first one applied — always
+      // reload so the table shows what the server actually holds.
+      await load();
     }
   };
 
@@ -545,7 +568,7 @@ export function StaffPanel() {
 
   const formValid =
     form.fullName.trim().length > 0 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
+    EMAIL_RE.test(form.email.trim()) &&
     form.username.trim().length >= 3 &&
     (!form.password || form.password.length >= 6);
 
@@ -681,7 +704,7 @@ export function StaffPanel() {
                   </TableHeader>
                   <TableBody>
                     {grid.slice.map((row) => {
-                      const active = row.loginIsActive && row.isActive;
+                      const active = isStaffActive(row);
                       return (
                         <TableRow key={row.accountId || `emp-${row.id}`}>
                           <TableCell>
@@ -742,7 +765,7 @@ export function StaffPanel() {
                                   ? t("dash.recruitment.active")
                                   : t("dash.recruitment.noLogin")}
                               </Badge>
-                              {row.linked && !row.isActive && (
+                              {!row.isActive && (
                                 <span className="text-[10px] text-muted-foreground">
                                   {t("dash.recruitment.suspended")}
                                 </span>
