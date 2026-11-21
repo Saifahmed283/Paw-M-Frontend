@@ -5,7 +5,7 @@ export type RolePermissions = Partial<Record<Role, string[]>>;
 export const ALL_TAB_IDS = [
   "overview",
   "requests",
-  "staff-overview",
+  "staff",
   "payroll",
   "clients",
   "reservations",
@@ -21,7 +21,6 @@ export const ALL_TAB_IDS = [
   "logs",
   "settings",
   "prescriptions",
-  "recruitment",
 ] as const;
 
 export const SHARED_TAB_IDS: string[] = ["overview", "requests"];

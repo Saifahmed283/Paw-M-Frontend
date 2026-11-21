@@ -67,7 +67,8 @@ import { clinicTodayISO } from "@/components/dashboard/dashboard-format";
 import { PaymentKindBadge } from "@/components/dashboard/dashboard-helpers";
 import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog";
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
-import { ScannerStatus } from "@/components/cashier/ScannerStatus";
+import { ScannerStatusIcon } from "@/components/cashier/ScannerStatus";
+import { useHardwareScanner } from "@/components/cashier/useHardwareScanner";
 import { QuickAddGrid } from "@/components/cashier/QuickAddGrid";
 import { ClinicServicePanel } from "@/components/cashier/ClinicServicePanel";
 import { HoldManager } from "@/components/cashier/HoldManager";
@@ -387,6 +388,9 @@ function CashierApp() {
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, ItemDiscount>>({});
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscount>({ type: "none", value: 0 });
   const [customer, setCustomer] = useState<CustomerInfo>({ name: "", phone: "" });
+  const [customerErrors, setCustomerErrors] = useState<{ name?: string; phone?: string }>({});
+  const customerNameRef = useRef<HTMLInputElement>(null);
+  const customerPhoneRef = useRef<HTMLInputElement>(null);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [holdSales, setHoldSales] = useState<HeldSale[]>([]);
   const [split, setSplit] = useState<SplitPaymentAllocation[]>([]);
@@ -404,8 +408,6 @@ function CashierApp() {
   const [activeTab, setActiveTab] = useState("scan");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [barcodeBuffer, setBarcodeBuffer] = useState("");
-  const [barcodeTimeout, setBarcodeTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const totals = useMemo(
     () => computeTotals(cart, itemDiscounts, orderDiscount),
@@ -462,33 +464,30 @@ function CashierApp() {
   const addService = useCallback(
     (service: ServiceItem, amount: number, note: string) => {
       const baseName = service.title.trim() || t("cashier.clinicService");
+      // Notes travel with the sale line so the clinic sees visit-specific
+      // changes. Restrict to 200 chars — the backend order line name limit.
+      const detail = note.replace(/\s+/g, " ").trim();
+      const name = detail ? `${baseName} — ${detail}`.slice(0, 200) : baseName;
       const price = Math.max(0, amount);
-      const id = `service-${service.slug}`;
-      // Keep any extra details from the note on the sale line so the clinic
-      // team can see them on the receipt and in the saved order.
-      const name = note ? `${baseName} — ${note}` : baseName;
-      setCart((prev) => {
-        const existing = prev.find((i) => i.id === id);
-        if (existing) {
-          return prev.map((i) => (i.id === id ? { ...i, qty: i.qty + 1, name } : i));
-        }
-        return [
-          ...prev,
-          {
-            id,
-            productId: id,
-            name,
-            price,
-            originalPrice: price,
-            qty: 1,
-            stock: Number.MAX_SAFE_INTEGER,
-            image: "",
-          },
-        ];
-      });
+      // Each add is its own line: the same service can be sold twice at
+      // different prices or with different notes in one sale.
+      const id = `service-${service.slug}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setCart((prev) => [
+        ...prev,
+        {
+          id,
+          productId: id,
+          name,
+          price,
+          originalPrice: price,
+          qty: 1,
+          stock: Number.MAX_SAFE_INTEGER,
+          image: "",
+        },
+      ]);
       setLastScanned(id);
       setTimeout(() => setLastScanned(null), 700);
-      toast.success(t("cashier.added", { name: baseName }));
+      toast.success(t("cashier.added", { name }));
     },
     [t],
   );
@@ -512,30 +511,10 @@ function CashierApp() {
     [products, t, addProduct],
   );
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        processBarcode(barcodeBuffer);
-        setBarcodeBuffer("");
-        if (barcodeTimeout) clearTimeout(barcodeTimeout);
-        return;
-      }
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        setBarcodeBuffer((prev) => prev + e.key);
-        if (barcodeTimeout) clearTimeout(barcodeTimeout);
-        setBarcodeTimeout(setTimeout(() => setBarcodeBuffer(""), 200));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (barcodeTimeout) clearTimeout(barcodeTimeout);
-    };
-  }, [barcodeBuffer, barcodeTimeout, processBarcode]);
+  // A USB scanner is just a very fast keyboard. This single global listener
+  // adds scanned products from anywhere in the till, even while another field
+  // is focused, without typing the code into that field.
+  useHardwareScanner(processBarcode);
 
   // F-key shortcuts
   useEffect(() => {
@@ -581,6 +560,7 @@ function CashierApp() {
     setItemDiscounts({});
     setOrderDiscount({ type: "none", value: 0 });
     setCustomer({ name: "", phone: "" });
+    setCustomerErrors({});
   };
 
   const holdCurrentSale = () => {
@@ -655,6 +635,26 @@ function CashierApp() {
       return;
     }
 
+    const name = customer.name.trim();
+    const phone = customer.phone.trim();
+    const phoneDigits = phone.replace(/\D/g, "");
+    const nextErrors: { name?: string; phone?: string } = {};
+    if (name.length < 2) nextErrors.name = t("cashier.customerNameRequired");
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      nextErrors.phone = t("cashier.customerPhoneInvalid");
+    }
+    setCustomerErrors(nextErrors);
+    if (nextErrors.name) {
+      customerNameRef.current?.focus();
+      toast.error(nextErrors.name);
+      return;
+    }
+    if (nextErrors.phone) {
+      customerPhoneRef.current?.focus();
+      toast.error(nextErrors.phone);
+      return;
+    }
+
     const total = totals.total;
     const selectedMethod = split[0]?.method ?? method;
 
@@ -689,8 +689,8 @@ function CashierApp() {
       const cashReceivedAtCounter = paymentMethod === "cash";
 
       const order = await createOrder({
-        customerName: customer.name.trim() || t("cashier.walkInCustomer"),
-        phone: customer.phone.trim(),
+        customerName: name,
+        phone,
         email: "",
         address: "",
         items,
@@ -868,33 +868,63 @@ function CashierApp() {
                 htmlFor="cashier-customer-name"
                 className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
               >
-                {t("cashier.customerName")}
+                {t("cashier.customerName")} <span className="text-destructive">*</span>
               </Label>
               <Input
+                ref={customerNameRef}
                 id="cashier-customer-name"
                 value={customer.name}
-                onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  setCustomer((prev) => ({ ...prev, name: e.target.value }));
+                  setCustomerErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.name;
+                    return next;
+                  });
+                }}
                 placeholder={t("cashier.customerNamePlaceholder")}
-                className="h-8 w-full min-w-0 flex-1 text-xs sm:w-36 sm:flex-none"
+                className={cn(
+                  "h-8 w-full min-w-0 flex-1 text-xs sm:w-36 sm:flex-none",
+                  customerErrors.name && "border-destructive",
+                )}
                 autoComplete="off"
+                aria-invalid={Boolean(customerErrors.name)}
               />
+              {customerErrors.name && (
+                <p className="text-[10px] text-destructive">{customerErrors.name}</p>
+              )}
             </div>
             <div className="space-y-1">
               <Label
                 htmlFor="cashier-customer-phone"
                 className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
               >
-                {t("cashier.customerPhone")}
+                {t("cashier.customerPhone")} <span className="text-destructive">*</span>
               </Label>
               <Input
+                ref={customerPhoneRef}
                 id="cashier-customer-phone"
                 value={customer.phone}
-                onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => {
+                  setCustomer((prev) => ({ ...prev, phone: e.target.value }));
+                  setCustomerErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.phone;
+                    return next;
+                  });
+                }}
                 placeholder={t("cashier.customerPhonePlaceholder")}
-                className="h-8 w-full min-w-0 flex-1 text-xs sm:w-40 sm:flex-none"
+                className={cn(
+                  "h-8 w-full min-w-0 flex-1 text-xs sm:w-40 sm:flex-none",
+                  customerErrors.phone && "border-destructive",
+                )}
                 inputMode="tel"
                 autoComplete="off"
+                aria-invalid={Boolean(customerErrors.phone)}
               />
+              {customerErrors.phone && (
+                <p className="text-[10px] text-destructive">{customerErrors.phone}</p>
+              )}
             </div>
           </div>
           <div className="mb-1 flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-soft sm:w-auto sm:flex-1">
@@ -978,6 +1008,7 @@ function CashierApp() {
                 <div className="flex items-center gap-2">
                   <Input
                     ref={barcodeInputRef}
+                    data-barcode-input
                     type="text"
                     value={barcodeInput}
                     onChange={(e) => setBarcodeInput(e.target.value)}
@@ -1008,23 +1039,25 @@ function CashierApp() {
                     <Search className="size-4" />
                   </Button>
                 </div>
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-muted-foreground"
-                    >
-                      <ScanLine className="size-4" />
-                      {t("cashier.phoneScanner")}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <PhoneScannerMode onScan={processBarcode} />
-                  </CollapsibleContent>
-                </Collapsible>
-                <ScannerStatus />
+                <div className="flex items-center justify-between gap-2">
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-muted-foreground"
+                      >
+                        <ScanLine className="size-4" />
+                        {t("cashier.phoneScanner")}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3">
+                      <PhoneScannerMode onScan={processBarcode} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                  <ScannerStatusIcon />
+                </div>
               </TabsContent>
               <TabsContent value="quick" className="mt-0">
                 <QuickAddGrid

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
-import { PawMLogoSeal } from "@/components/PawMMark";
 import { cn } from "@/lib/utils";
 import { CrestBackdrop } from "./CrestBackdrop";
 
@@ -64,28 +63,22 @@ export function PageIntro({
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         {crumb}
 
-        <div className="mt-6 flex items-start justify-between gap-6">
-          <div className="min-w-0">
-            {eyebrow && (
-              <motion.span
-                {...reveal(0.05)}
-                className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold-400)]"
-              >
-                <span className="pm-gild h-px w-6 bg-[var(--gold-500)]" />
-                {eyebrow}
-              </motion.span>
-            )}
-            <motion.h1
-              {...reveal(0.12)}
-              className="mt-4 max-w-4xl font-display text-[length:var(--step-4)] font-semibold tracking-tight text-white sm:text-[length:var(--step-5)]"
+        <div className="mt-6 min-w-0">
+          {eyebrow && (
+            <motion.span
+              {...reveal(0.05)}
+              className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold-400)]"
             >
-              {title}
-            </motion.h1>
-          </div>
-
-          <motion.div {...reveal(0.2)} className="hidden shrink-0 sm:block">
-            <PawMLogoSeal size="md" />
-          </motion.div>
+              <span className="pm-gild h-px w-6 bg-[var(--gold-500)]" />
+              {eyebrow}
+            </motion.span>
+          )}
+          <motion.h1
+            {...reveal(0.12)}
+            className="mt-4 max-w-4xl font-display text-[length:var(--step-4)] font-semibold tracking-tight text-white sm:text-[length:var(--step-5)]"
+          >
+            {title}
+          </motion.h1>
         </div>
 
         <div className="pm-gild mt-6 h-px w-16 bg-[var(--gold-500)]" />

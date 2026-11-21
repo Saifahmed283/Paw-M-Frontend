@@ -1,0 +1,1 @@
+import{Vt as e}from"./index-CB_MVMnl.js";import{t}from"./jsx-runtime-CkXRJ162.js";var n=t();function r(){return(0,n.jsx)(e,{})}export{r as component};

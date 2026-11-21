@@ -35,7 +35,6 @@ import { Label } from "@/components/ui/label";
 import { ScrollText } from "lucide-react";
 
 // Dashboard Panels
-import { StaffOverviewPanel } from "@/components/dashboard/StaffOverviewPanel";
 import { PayrollPanel } from "@/components/dashboard/PayrollPanel";
 import { PaymentsPanel } from "@/components/dashboard/PaymentsPanel";
 import { PaymentVerificationPanel } from "@/components/dashboard/PaymentVerificationPanel";
@@ -51,7 +50,7 @@ import { OrdersPanel } from "@/components/dashboard/OrdersPanel";
 import { ReviewsPanel } from "@/components/dashboard/ReviewsPanel";
 import { WorkdaysPanel } from "@/components/dashboard/WorkdaysPanel";
 import { LogsPanel } from "@/components/dashboard/LogsPanel";
-import { RecruitmentPanel } from "@/components/dashboard/RecruitmentPanel";
+import { StaffPanel } from "@/components/dashboard/StaffPanel";
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 
 import { useI18n } from "@/lib/i18n";
@@ -970,7 +969,7 @@ function DashboardPage() {
       {tab === "requests" && <RequestsTab />}
       {tab === "reservations" && <ReservationsTab />}
 
-      {tab === "staff-overview" && <StaffOverviewPanel />}
+      {tab === "staff" && <StaffPanel />}
       {tab === "payroll" && <PayrollPanel />}
       {tab === "finance" && <PaymentsPanel />}
       {tab === "payment-verification" && <PaymentVerificationPanel />}
@@ -985,7 +984,6 @@ function DashboardPage() {
       {tab === "archive" && <ArchivePanel />}
       {tab === "logs" && <LogsPanel />}
       {tab === "settings" && <SettingsPanel />}
-      {tab === "recruitment" && <RecruitmentPanel />}
     </DashboardLayout>
   );
 }

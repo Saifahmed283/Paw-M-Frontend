@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   ShoppingBag,
   Stethoscope,
-  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -65,8 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "nav.group.team",
     items: [
-      { id: "staff-overview", icon: Users, roles: ["admin"] },
-      { id: "recruitment", icon: UserPlus, roles: ["admin"] },
+      { id: "staff", icon: Users, roles: ["admin"] },
       { id: "clients", icon: Contact, roles: ["payroll", "admin"] },
     ],
   },

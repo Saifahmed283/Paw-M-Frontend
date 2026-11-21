@@ -1,9 +1,9 @@
-import { CircleAlert, ScanLine } from "lucide-react";
+import { ScanLine } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { StatusOrb } from "@/design-system/primitives/StatusOrb";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useHardwareScanner } from "./useHardwareScanner";
@@ -19,11 +19,15 @@ function timeAgo(ts: number, t: (k: string, p?: Record<string, string>) => strin
   return t("time.shortHrMin", { h: String(h), m: String(m % 60) });
 }
 
-export function ScannerStatus({ className }: { className?: string }) {
+/**
+ * A quiet, one-click status badge for the USB scanner. The big diagnostic panel
+ * was replaced by this icon so the till keeps its space; the full test helper
+ * lives in a popover for the rare times it's needed.
+ */
+export function ScannerStatusIcon({ className }: { className?: string }) {
   const { t } = useI18n();
   const { detected, lastCode, lastAt, scanCount } = useHardwareScanner();
   const [now, setNow] = useState(() => Date.now());
-  const [testing, setTesting] = useState(false);
   const [testValue, setTestValue] = useState("");
   const testRef = useRef<HTMLInputElement>(null);
 
@@ -32,13 +36,7 @@ export function ScannerStatus({ className }: { className?: string }) {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (testing) testRef.current?.focus();
-  }, [testing]);
-
   const active = detected && lastAt !== null && now - lastAt <= SCANNER_ACTIVE_WINDOW_MS;
-
-  const orbTone = active ? "ok" : detected ? "idle" : "watch";
 
   let message: string;
   if (active && lastAt !== null) message = t("cashier.scannerActive", { ago: timeAgo(lastAt, t) });
@@ -47,70 +45,65 @@ export function ScannerStatus({ className }: { className?: string }) {
   else message = t("cashier.scannerNever");
 
   return (
-    <div
-      className={cn(
-        "rounded-[var(--radius-lg)] border border-border bg-surface-2/60 px-3 py-2.5",
-        className,
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-          <StatusOrb tone={orbTone} size="sm" pulse={active} />
-          {message}
-        </span>
-        {detected && (
-          <span className="ml-auto inline-flex items-center gap-3 text-xs text-muted-foreground">
-            {lastCode && <span className="font-mono">{lastCode}</span>}
-            {scanCount > 0 && (
-              <span>{t("cashier.scannerCount", { count: String(scanCount) })}</span>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={message}
+          title={message}
+          className={cn(
+            "relative inline-grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)] border transition-colors",
+            active
+              ? "border-success/40 bg-success/10 text-success"
+              : detected
+                ? "border-[var(--gold-500)]/40 bg-[var(--gold-500)]/10 text-[var(--gold-700)] dark:text-[var(--gold-400)]"
+                : "border-border bg-surface-2 text-muted-foreground hover:text-foreground",
+            className,
+          )}
+        >
+          <ScanLine className="size-4" />
+          <span
+            aria-hidden
+            className={cn(
+              "absolute -end-0.5 -top-0.5 size-2.5 rounded-full border-2 border-[var(--surface)]",
+              active ? "bg-success" : detected ? "bg-[var(--gold-500)]" : "bg-muted-foreground/50",
             )}
-          </span>
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 space-y-2">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <ScanLine className="size-4" />
+          {t("cashier.scanBarcode")}
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{message}</p>
+        {lastCode && <p className="rounded-md bg-muted px-2 py-1 font-mono text-xs">{lastCode}</p>}
+        {scanCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {t("cashier.scannerCount", { count: String(scanCount) })}
+          </p>
         )}
-      </div>
-
-      <div className="mt-2 border-t pt-2">
-        {!testing ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => setTesting(true)}
-          >
-            <ScanLine className="size-3.5" />
-            {t("cashier.scannerTest")}
-          </Button>
-        ) : (
-          <div className="space-y-2">
-            <Input
-              ref={testRef}
-              type="text"
-              value={testValue}
-              onChange={(e) => setTestValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  setTestValue("");
-                }
-              }}
-              placeholder={t("cashier.scannerTestPlaceholder")}
-              autoComplete="off"
-              className="h-9 font-mono text-xs"
-            />
-            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <CircleAlert className="mt-0.5 size-3.5 shrink-0" />
-              {t("cashier.scannerTestDesc")}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setTesting(false)}
-            >
-              {t("cashier.scannerTestClose")}
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+        <div className="space-y-1.5 border-t pt-2">
+          <Input
+            ref={testRef}
+            data-barcode-input
+            value={testValue}
+            onChange={(e) => setTestValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                setTestValue("");
+              }
+            }}
+            placeholder={t("cashier.scannerTestPlaceholder")}
+            autoComplete="off"
+            className="h-8 font-mono text-xs"
+          />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {t("cashier.scannerTestDesc")}
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
