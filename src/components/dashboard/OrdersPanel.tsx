@@ -303,7 +303,7 @@ export function OrdersPanel() {
                         {t("dash.confirmCash")}
                       </Button>
                     )}
-                    {o.paymentMethod === "instapay" && o.paymentStatus !== "paid" && (
+                    {o.paymentMethod !== "cash" && o.paymentStatus !== "paid" && (
                       <Button
                         size="sm"
                         variant="outline"

@@ -114,6 +114,12 @@ const PAYMENT_METHODS: {
     short: "checkout.method.cash.short",
   },
   {
+    value: "fawry",
+    icon: ReceiptText,
+    title: "checkout.method.fawry.title",
+    short: "checkout.method.fawry.short",
+  },
+  {
     value: "instapay",
     icon: Smartphone,
     title: "checkout.method.instapay.title",
@@ -916,12 +922,17 @@ function CashierApp() {
         </div>
       </section>
 
-      {method === "instapay" && (
+      {method !== "cash" && (
         <p className="shrink-0 rounded-xl border border-primary/25 bg-primary-tint px-3 py-1.5 text-xs">
           <span className="font-semibold text-primary-strong">
-            {t("checkout.method.instapay.short")}
+            {t(`checkout.method.${method}.short`)}
           </span>{" "}
-          <span className="font-mono font-bold">{settings.instapay}</span>
+          {method === "instapay" && (
+            <span className="font-mono font-bold">{settings.instapay}</span>
+          )}
+          {method === "fawry" && (
+            <span className="text-muted-foreground">{t("checkout.fawrySteps")}</span>
+          )}
           <span className="ms-2 text-status-watch-ink">{t("cashier.paymentPendingNotice")}</span>
         </p>
       )}

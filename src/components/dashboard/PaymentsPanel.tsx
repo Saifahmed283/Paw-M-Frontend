@@ -155,6 +155,7 @@ function PaymentDialog({ payment, onClose }: { payment: Payment | null; onClose:
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
               >
                 <option value="cash">{t("checkout.method.cash.short")}</option>
+                <option value="fawry">{t("checkout.method.fawry.short")}</option>
                 <option value="instapay">{t("checkout.method.instapay.short")}</option>
               </select>
             </Field>
@@ -397,6 +398,14 @@ export function PaymentsPanel() {
               <p className="text-xs text-muted-foreground">{t("payments.cashInfo")}</p>
             </div>
           </div>
+          <div className="rounded-xl border border-border p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-transparent bg-[var(--gold-500)]/15 text-[var(--gold-700)] dark:text-[var(--gold-400)]">
+                {t("payments.fawry")}
+              </Badge>
+              <p className="text-xs text-muted-foreground">{t("payments.fawryInfo")}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -417,6 +426,7 @@ export function PaymentsPanel() {
               {[
                 { value: "all", key: "dash.filterAll" },
                 { value: "cash", key: "checkout.method.cash.short" },
+                { value: "fawry", key: "checkout.method.fawry.short" },
                 { value: "instapay", key: "checkout.method.instapay.short" },
               ].map((m) => (
                 <button

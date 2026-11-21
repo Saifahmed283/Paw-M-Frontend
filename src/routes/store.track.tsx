@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FawryPaymentPanel } from "@/components/store/FawryPaymentPanel";
 import { InstapayQrPanel } from "@/components/store/InstapayQrPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -158,9 +159,11 @@ function TransferSubmissionForm({
         {order.paymentStatus === "rejected" ? t("track.resubmitTitle") : t("track.proofTitle")}
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-        {t("track.instapayProofDesc", { amount: total })}
+        {order.paymentMethod === "fawry"
+          ? t("track.fawryProofDesc")
+          : t("track.instapayProofDesc", { amount: total })}
       </p>
-      {settings.instapay && (
+      {order.paymentMethod === "instapay" && settings.instapay && (
         <p className="mt-2 rounded-lg bg-background px-3 py-2 font-mono text-sm font-bold">
           {t("checkout.method.instapay.short")}: {settings.instapay}
         </p>
@@ -182,7 +185,8 @@ function TransferSubmissionForm({
         </div>
         <div>
           <Label htmlFor="track-ref" className="text-xs font-medium">
-            {t("track.transferReference")} <span className="text-destructive">*</span>
+            {order.paymentMethod === "fawry" ? t("track.fawryRef") : t("track.transferReference")}{" "}
+            <span className="text-destructive">*</span>
           </Label>
           <Input
             id="track-ref"
@@ -335,10 +339,18 @@ function OrderCard({
         </div>
       )}
 
-      {order.paymentMethod === "instapay" && canSubmit && (
+      {(order.paymentMethod === "instapay" || order.paymentMethod === "fawry") && canSubmit && (
         <div className="mt-4 space-y-3">
-          <p className="text-sm font-semibold">{t("track.proofStepOne")}</p>
-          <InstapayQrPanel account={settings.instapay} amountLabel={total} compact />
+          <p className="text-sm font-semibold">
+            {order.paymentMethod === "fawry"
+              ? t("track.fawryProofStepOne")
+              : t("track.proofStepOne")}
+          </p>
+          {order.paymentMethod === "fawry" ? (
+            <FawryPaymentPanel amountLabel={total} reference={order.id} compact />
+          ) : (
+            <InstapayQrPanel account={settings.instapay} amountLabel={total} compact />
+          )}
         </div>
       )}
 

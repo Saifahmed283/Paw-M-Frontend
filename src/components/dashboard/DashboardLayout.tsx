@@ -39,7 +39,6 @@ export function DashboardLayout({
               onTabChange={handleTabChange}
               canAccess={canAccess}
               collapsed={collapsed}
-              onToggleCollapse={() => setCollapsed(!collapsed)}
             />
           )}
 
@@ -55,7 +54,6 @@ export function DashboardLayout({
                   onTabChange={handleTabChange}
                   canAccess={canAccess}
                   collapsed={false}
-                  onToggleCollapse={() => setMobileOpen(false)}
                 />
               </SheetContent>
             </Sheet>
@@ -66,6 +64,8 @@ export function DashboardLayout({
             <DashboardHeader
               canAccess={canAccess}
               onMobileMenuToggle={isMobile ? () => setMobileOpen(true) : undefined}
+              collapsed={isMobile ? undefined : collapsed}
+              onToggleCollapse={isMobile ? undefined : () => setCollapsed((value) => !value)}
             />
 
             <main className="flex-1 overflow-auto px-4 py-8 sm:px-6 lg:px-8">

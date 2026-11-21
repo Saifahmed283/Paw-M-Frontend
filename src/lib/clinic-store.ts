@@ -71,8 +71,8 @@ export type OrderItem = {
   qty: number;
 };
 
-// Keep `fawry` in the enum: historical records may still reference it, but no
-// store, cashier or settlement UI offers it as a payment option any more.
+// All three methods are offered at checkout. Fawry and InstaPay settle through
+// submitted payment proof; cash is confirmed at the counter.
 export type PaymentMethod = "cash" | "fawry" | "instapay";
 export type PaymentStatus = "unpaid" | "proof_submitted" | "under_review" | "rejected" | "paid";
 

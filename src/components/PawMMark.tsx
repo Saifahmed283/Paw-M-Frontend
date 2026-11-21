@@ -52,3 +52,58 @@ export function PawMLogo({ className }: { className?: string }) {
     </span>
   );
 }
+
+/**
+ * The bare badge seal. We use the traced SVG here: it has no paper chip, no
+ * white plate behind the mark, and stays crisp when the opening enlarges it.
+ * A gold hairline and a slow compass ring keep the heraldic Crest framing.
+ */
+export function PawMLogoSeal({
+  className,
+  size = "md",
+  animated = true,
+}: {
+  className?: string;
+  size?: "rail" | "sm" | "md" | "lg" | "display";
+  /** The compass ring spins in openings and page headers, but sits still in rails. */
+  animated?: boolean;
+}) {
+  const dimension = {
+    rail: "size-10",
+    sm: "size-12",
+    md: "size-16",
+    lg: "size-24",
+    display: "size-[clamp(10rem,32vw,16rem)]",
+  }[size];
+  return (
+    <span className={cn("relative inline-grid shrink-0 place-items-center", dimension, className)}>
+      <img
+        src="/assets/logos/logo-badge.svg"
+        alt="Paw-M"
+        className="size-full object-contain drop-shadow-[0_8px_28px_rgba(0,0,0,0.42)]"
+        decoding="async"
+        draggable={false}
+      />
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute -inset-[5%] size-[110%] text-[var(--gold-500)] opacity-50",
+          animated && "pm-compass",
+        )}
+        style={{ transformOrigin: "50% 50%" }}
+      >
+        <circle cx="50" cy="50" r="47" stroke="currentColor" strokeWidth="0.35" />
+        <circle
+          cx="50"
+          cy="50"
+          r="42"
+          stroke="currentColor"
+          strokeWidth="0.25"
+          strokeDasharray="1 3"
+        />
+      </svg>
+    </span>
+  );
+}

@@ -13,6 +13,7 @@ import { motion, MotionConfig } from "motion/react";
 
 import appCss from "../styles.css?url";
 import { PawMMark } from "@/components/PawMMark";
+import { IntroAnimation } from "@/components/IntroAnimation";
 import { ActionDock } from "@/design-system/primitives/ActionDock";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -315,6 +316,7 @@ function RootComponent() {
             </motion.main>
             {!isAppSurface && <SiteFooter />}
             {!isAppSurface && <ActionDock />}
+            {!isAppSurface && <IntroAnimation />}
             <Toaster position="top-center" richColors />
           </ThemeProvider>
         </QueryClientProvider>

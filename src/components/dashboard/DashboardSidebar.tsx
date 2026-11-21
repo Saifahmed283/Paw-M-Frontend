@@ -1,9 +1,6 @@
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { PawMMark } from "@/components/PawMMark";
+import { PawMLogoSeal } from "@/components/PawMMark";
 import { StatusOrb } from "@/design-system/primitives/StatusOrb";
 import { useI18n } from "@/lib/i18n";
 import { useClinicStore } from "@/lib/clinic-store";
@@ -36,13 +33,11 @@ export function DashboardSidebar({
   onTabChange,
   canAccess,
   collapsed,
-  onToggleCollapse,
 }: {
   activeTab: string;
   onTabChange: (tab: string) => void;
   canAccess: (tabId: string) => boolean;
   collapsed: boolean;
-  onToggleCollapse: () => void;
 }) {
   const { t } = useI18n();
   const { requests, orders } = useClinicStore();
@@ -54,14 +49,17 @@ export function DashboardSidebar({
     <aside
       className={cn(
         "sticky top-0 flex h-dvh shrink-0 flex-col border-e border-[var(--navy-700)] bg-[var(--navy-900)] text-white transition-[width] duration-300 ease-[var(--ease-entrance)]",
-        collapsed ? "w-[72px]" : "w-64",
+        collapsed ? "w-20" : "w-64",
       )}
     >
       {/* Identity */}
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 px-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)] border border-[var(--gold-500)]/50 text-[var(--gold-400)]">
-          <PawMMark className="size-6" />
-        </span>
+      <div
+        className={cn(
+          "flex h-14 shrink-0 items-center gap-3 border-b border-white/10",
+          collapsed ? "justify-center px-2" : "px-4",
+        )}
+      >
+        <PawMLogoSeal size="rail" animated={false} />
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate font-display text-base font-semibold tracking-tight text-white">
@@ -72,25 +70,16 @@ export function DashboardSidebar({
             </p>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "size-7 shrink-0 rounded-[var(--radius-md)] text-white/50 hover:bg-white/10 hover:text-white",
-            collapsed && "absolute end-1 top-[52px]",
-          )}
-          onClick={onToggleCollapse}
-          aria-label={collapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
-        >
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </Button>
       </div>
 
       <div className="h-px shrink-0 bg-[var(--gold-500)]/50" />
 
       {/* Navigation */}
       <ScrollArea className="flex-1 py-4">
-        <nav className="space-y-6 px-3" aria-label={t("header.mobileAria")}>
+        <nav
+          className={cn("space-y-6", collapsed ? "px-2" : "px-3")}
+          aria-label={t("header.mobileAria")}
+        >
           {NAV_GROUPS.map((group) => {
             const visible = group.items.filter((item) => canAccess(item.id));
             if (visible.length === 0) return null;
@@ -123,7 +112,7 @@ export function DashboardSidebar({
         <div
           className={cn(
             "rounded-[var(--radius-md)] border border-white/10 bg-white/5 px-3 py-2",
-            collapsed && "px-0",
+            collapsed && "flex justify-center px-0",
           )}
         >
           <StatusOrb

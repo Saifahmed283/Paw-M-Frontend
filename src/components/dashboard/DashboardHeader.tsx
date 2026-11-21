@@ -3,6 +3,8 @@ import {
   LogOut,
   Menu,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   ScanLine,
   Shield,
   ShieldAlert,
@@ -62,9 +64,13 @@ function RoleBadge({ role }: { role: string }) {
 export function DashboardHeader({
   canAccess,
   onMobileMenuToggle,
+  collapsed,
+  onToggleCollapse,
 }: {
   canAccess: (tabId: string) => boolean;
   onMobileMenuToggle?: (() => void) | undefined;
+  collapsed?: boolean | undefined;
+  onToggleCollapse?: (() => void) | undefined;
 }) {
   const { t } = useI18n();
   const { dark, toggle: toggleTheme } = useTheme();
@@ -106,6 +112,19 @@ export function DashboardHeader({
           aria-label={t("header.openMenu")}
         >
           <Menu className="size-4" />
+        </Button>
+      )}
+
+      {onToggleCollapse && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden size-8 shrink-0 text-white/70 hover:bg-white/10 hover:text-white lg:inline-flex"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
+          title={collapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
+        >
+          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
         </Button>
       )}
 

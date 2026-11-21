@@ -4,8 +4,12 @@ import { invalidateFinance, type Order, type PaymentMethod } from "@/lib/clinic-
 /** Only these methods can be chosen in store and cashier flows. */
 export const STORE_CHECKOUT_METHODS = [
   "cash",
+  "fawry",
   "instapay",
 ] as const satisfies readonly PaymentMethod[];
+
+/** Orders settled by submitting evidence, not by cash confirmation. */
+const PROOF_PAYMENT_METHODS: readonly PaymentMethod[] = ["fawry", "instapay"];
 
 export type VerificationDecision =
   "submitted" | "under_review" | "approved" | "rejected" | "superseded";
@@ -88,10 +92,10 @@ export function isStoreCheckoutMethod(method: PaymentMethod): boolean {
 }
 
 export function canSubmitTransfer(order: Pick<Order, "paymentMethod" | "paymentStatus">): boolean {
-  // A submitted transfer is already queued for review; the backend rejects
+  // A submitted proof is already queued for review; the backend rejects
   // duplicate submissions until it is rejected or settled.
   return (
-    order.paymentMethod === "instapay" &&
+    PROOF_PAYMENT_METHODS.includes(order.paymentMethod) &&
     (order.paymentStatus === "unpaid" || order.paymentStatus === "rejected")
   );
 }
@@ -102,7 +106,8 @@ export function showCashPickupNotice(
   return order.paymentMethod === "cash" && order.paymentStatus !== "paid";
 }
 
-/** Mixed-method splits cannot be settled by a single trusted verification path. */
+/** Mixed-method splits cannot be settled by a single trusted verification path
+ * (cash is attested at the counter, Fawry/InstaPay need proof review). */
 export function usesSinglePaymentMethod(
   allocations: readonly { method: PaymentMethod }[],
 ): boolean {

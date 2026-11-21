@@ -90,6 +90,7 @@ export function PaymentSettleDialog({
                   className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
                 >
                   <option value="cash">{t("checkout.method.cash.short")}</option>
+                  <option value="fawry">{t("checkout.method.fawry.short")}</option>
                   <option value="instapay">{t("checkout.method.instapay.short")}</option>
                 </select>
               </Field>

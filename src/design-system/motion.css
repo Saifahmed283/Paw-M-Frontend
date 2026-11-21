@@ -1,9 +1,9 @@
 /*
  * The Crest motion registry. CSS-only so the global prefers-reduced-motion
- * block in styles.css disables everything in one place. Motion is a one-shot
- * engraving gesture: ink draws, a jewel sets, a gilded rule reveals. There is
- * no ECG waveform, no scaling heartbeat and no looping decorative animation.
- * The only repeat is a quiet opacity halo on live status dots.
+ * block in styles.css disables everything in one place. Motion is either a
+ * one-shot engraving gesture (ink draws, a jewel sets, a gilded rule reveals)
+ * or a very slow ambient drift on branded backdrops. Nothing scales like a
+ * heartbeat and nothing loops loudly — the field always stays quiet.
  */
 
 @keyframes pm-engrave {
@@ -51,6 +51,73 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Ambient field motion — translation only, no blur and no layout churn. */
+@keyframes pm-field-drift {
+  from {
+    transform: translate3d(-2%, -1%, 0);
+  }
+  to {
+    transform: translate3d(2%, 1%, 0);
+  }
+}
+
+@keyframes pm-compass {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pm-mote {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  30%,
+  70% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes pm-sweep {
+  from {
+    opacity: 0;
+    transform: translate3d(-120%, 0, 0);
+  }
+  18% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(120%, 0, 0);
+  }
+}
+
+@keyframes pm-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
   }
 }
 
@@ -103,6 +170,29 @@
 .pm-gild {
   clip-path: inset(0 50% 0 50%);
   animation: pm-gild 0.9s var(--ease-entrance) 0.15s forwards;
+}
+
+/* Slow, quiet ambient layers for branded backgrounds. */
+.pm-field-drift {
+  animation: pm-field-drift 24s ease-in-out infinite alternate;
+}
+
+.pm-compass {
+  animation: pm-compass 40s linear infinite;
+}
+
+.pm-mote {
+  opacity: 0;
+  animation: pm-mote 7s ease-in-out infinite;
+  animation-delay: var(--mote-delay, 0ms);
+}
+
+.pm-sweep {
+  animation: pm-sweep 1.3s var(--ease-entrance) 0.2s both;
+}
+
+.pm-shake {
+  animation: pm-shake 0.4s ease-in-out;
 }
 
 /* The review seal: toes bloom first, then the main pad settles. */

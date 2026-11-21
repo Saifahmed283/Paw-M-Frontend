@@ -43,12 +43,11 @@ beforeEach(() => {
 });
 
 describe("store checkout methods", () => {
-  it("offers cash and InstaPay only", () => {
-    expect([...STORE_CHECKOUT_METHODS]).toEqual(["cash", "instapay"]);
-    expect(STORE_CHECKOUT_METHODS).not.toContain("fawry");
+  it("offers cash, Fawry and InstaPay", () => {
+    expect([...STORE_CHECKOUT_METHODS]).toEqual(["cash", "fawry", "instapay"]);
   });
 
-  it("does not generate a Fawry payment reference when an order is created", async () => {
+  it("does not generate a client payment reference when an order is created", async () => {
     vi.mocked(api.post).mockResolvedValue({
       id: "ord-1",
       paymentMethod: "instapay",
@@ -94,16 +93,18 @@ describe("store checkout methods", () => {
 });
 
 describe("verification UI guards", () => {
-  it("allows transfer details for unpaid or rejected InstaPay orders only", () => {
-    expect(canSubmitTransfer({ paymentMethod: "instapay", paymentStatus: "unpaid" })).toBe(true);
-    expect(canSubmitTransfer({ paymentMethod: "instapay", paymentStatus: "rejected" })).toBe(true);
-    expect(canSubmitTransfer({ paymentMethod: "instapay", paymentStatus: "proof_submitted" })).toBe(
-      false,
-    );
-    expect(canSubmitTransfer({ paymentMethod: "instapay", paymentStatus: "under_review" })).toBe(
-      false,
-    );
-    expect(canSubmitTransfer({ paymentMethod: "instapay", paymentStatus: "paid" })).toBe(false);
+  it("allows proof details for unpaid or rejected Fawry and InstaPay orders only", () => {
+    for (const method of ["fawry", "instapay"] as const) {
+      expect(canSubmitTransfer({ paymentMethod: method, paymentStatus: "unpaid" })).toBe(true);
+      expect(canSubmitTransfer({ paymentMethod: method, paymentStatus: "rejected" })).toBe(true);
+      expect(canSubmitTransfer({ paymentMethod: method, paymentStatus: "proof_submitted" })).toBe(
+        false,
+      );
+      expect(canSubmitTransfer({ paymentMethod: method, paymentStatus: "under_review" })).toBe(
+        false,
+      );
+      expect(canSubmitTransfer({ paymentMethod: method, paymentStatus: "paid" })).toBe(false);
+    }
     expect(canSubmitTransfer({ paymentMethod: "cash", paymentStatus: "unpaid" })).toBe(false);
   });
 
@@ -123,11 +124,13 @@ describe("verification UI guards", () => {
     expect(canMarkOrderCompleted({ paymentStatus: "under_review" })).toBe(false);
   });
 
-  it("rejects mixed cash and InstaPay allocations", () => {
+  it("rejects mixed cash and proof-based allocations", () => {
     expect(usesSinglePaymentMethod([])).toBe(true);
     expect(usesSinglePaymentMethod([{ method: "cash" }])).toBe(true);
     expect(usesSinglePaymentMethod([{ method: "cash" }, { method: "cash" }])).toBe(true);
     expect(usesSinglePaymentMethod([{ method: "cash" }, { method: "instapay" }])).toBe(false);
+    expect(usesSinglePaymentMethod([{ method: "cash" }, { method: "fawry" }])).toBe(false);
+    expect(usesSinglePaymentMethod([{ method: "fawry" }, { method: "instapay" }])).toBe(false);
   });
 
   it("keeps order-kind payments out of manual settlement", () => {

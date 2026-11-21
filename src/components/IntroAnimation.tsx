@@ -1,162 +1,186 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
-import { PawMMark } from "@/components/PawMMark";
+import { PawMLogoSeal } from "@/components/PawMMark";
+import { CrestBackdrop } from "@/design-system/primitives/CrestBackdrop";
 import { useI18n } from "@/lib/i18n";
 
-/** Toggle the whole splash off for QA/dev without touching component code. */
+/** Toggle the whole opening off for QA/dev without touching component code. */
 export const ENABLE_INTRO_ANIMATION = true;
 
-const MAX_DURATION = 900;
-const INTRO_SEEN_KEY = "paw-m:intro-seen";
+const STORAGE_KEY = "paw-m:opening-seen";
+const DURATION = 2400;
 
-function hasSeenIntro(): boolean {
+function hasSeenOpening(): boolean {
   try {
-    return window.sessionStorage.getItem(INTRO_SEEN_KEY) === "1";
+    return window.sessionStorage.getItem(STORAGE_KEY) === "1";
   } catch {
     return false;
   }
 }
 
-function markIntroSeen() {
+function markOpeningSeen() {
   try {
-    window.sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+    window.sessionStorage.setItem(STORAGE_KEY, "1");
   } catch {
     /* storage unavailable */
   }
 }
 
+/**
+ * A short first-visit opening: the real logo seal sets on the animated crest
+ * field, a gilded rule fills, then the overlay lifts. Once per browser session,
+ * skippable by any key or pointer, and honest about the reduced-motion setting.
+ */
 export function IntroAnimation() {
-  const reduceMotion = useReducedMotion();
-  const reduceRef = useRef(reduceMotion);
-  reduceRef.current = reduceMotion;
+  const reduce = !!useReducedMotion();
+  const reduceRef = useRef(reduce);
+  reduceRef.current = reduce;
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSkip, setShowSkip] = useState(false);
 
   useEffect(() => {
-    if (!ENABLE_INTRO_ANIMATION) return;
-    // Marking the intro as seen here made React Strict Mode's second effect
-    // invocation bail out before installing `finish()`, leaving the full-screen
-    // overlay stuck forever. Mark it only when the animation actually ends.
-    if (hasSeenIntro()) return;
+    if (!ENABLE_INTRO_ANIMATION || hasSeenOpening()) return;
     setVisible(true);
 
+    const total = reduceRef.current ? 420 : DURATION;
     const start = performance.now();
-    const total = reduceRef.current ? 400 : MAX_DURATION;
     let raf = 0;
+    let finished = false;
 
-    // Real load signal: fonts + first paint, capped by the hard duration budget.
-    let fontsDone = false;
-    let fontBudgetTimer = 0;
-    Promise.resolve(document.fonts?.ready)
-      .then(() => {
-        fontsDone = true;
-        window.clearTimeout(fontBudgetTimer);
-      })
-      .catch(() => {
-        fontsDone = true;
-        window.clearTimeout(fontBudgetTimer);
-      });
-    fontBudgetTimer = window.setTimeout(() => {
-      fontsDone = true;
-    }, 6000);
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(raf);
+      markOpeningSeen();
+      setVisible(false);
+      window.removeEventListener("keydown", finish);
+      window.removeEventListener("pointerdown", finish);
+    };
 
     const tick = () => {
       const elapsed = performance.now() - start;
-      const timed = Math.min(1, elapsed / total);
-      const eased = 1 - Math.pow(1 - timed, 3);
-      setProgress(fontsDone ? Math.max(eased, Math.min(1, elapsed / (total * 0.75))) : eased);
+      setProgress(Math.min(1, elapsed / total));
       if (elapsed >= total) finish();
       else raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
 
-    const skipTimer = window.setTimeout(() => setShowSkip(true), 500);
-
-    function finish() {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(skipTimer);
-      markIntroSeen();
-      setVisible(false);
-      window.removeEventListener("keydown", finish);
-      window.removeEventListener("pointerdown", finish);
-    }
+    const skipTimer = window.setTimeout(() => setShowSkip(true), reduceRef.current ? 0 : 720);
 
     window.addEventListener("keydown", finish);
     window.addEventListener("pointerdown", finish);
 
     return () => {
+      finished = true;
       cancelAnimationFrame(raf);
       window.clearTimeout(skipTimer);
-      window.clearTimeout(fontBudgetTimer);
       window.removeEventListener("keydown", finish);
       window.removeEventListener("pointerdown", finish);
     };
   }, []);
 
   const ease = [0.16, 1, 0.3, 1] as const;
+  const rise = (delay: number) =>
+    reduce
+      ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.12 } }
+      : {
+          initial: { opacity: 0, y: 14, scale: 0.94 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: { duration: 0.45, delay, ease },
+        };
+
+  // The badge "sets" like a seal pressing into wax: it drops into place,
+  // overshoots a touch, then settles. A separate slow drift keeps it alive
+  // without the generic scaling-pulse look.
+  const badgeSet = reduce
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }
+    : {
+        initial: { opacity: 0, scale: 0.68, rotate: -10, y: 24 },
+        animate: { opacity: 1, scale: [0.68, 1.06, 1], rotate: [-10, 2, 0], y: [24, -8, 0] },
+        transition: { duration: 1.15, times: [0, 0.62, 1], ease },
+      };
+  const badgeDrift = reduce
+    ? {}
+    : {
+        animate: { y: [0, -7, 0], rotate: [0, 1.25, 0] },
+        transition: { duration: 3.4, repeat: Infinity, ease: "easeInOut" as const, delay: 1.1 },
+      };
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          key="paw-m-intro"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
+          key="paw-m-opening"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-[var(--navy-950)] text-white"
           initial={{ opacity: 1 }}
-          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-          transition={{ duration: reduceMotion ? 0.15 : 0.25, ease }}
+          exit={{ opacity: 0, scale: reduce ? 1 : 1.03 }}
+          transition={{ duration: reduce ? 0.18 : 0.42, ease }}
           role="status"
           aria-label={t("intro.loadingAria")}
         >
-          <div className="hero-gradient absolute inset-0" />
+          <CrestBackdrop animated={!reduce} />
 
-          <div className="relative flex flex-col items-center gap-5 px-6">
-            <div className="flex items-center gap-4">
-              <motion.div
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, ease, delay: 0.05 }}
-                className="text-primary"
-              >
-                <IntroMark reduceMotion={!!reduceMotion} />
+          <div className="relative flex flex-col items-center px-6">
+            <motion.div {...badgeSet} className="relative">
+              <motion.div {...badgeDrift}>
+                <PawMLogoSeal size="display" />
               </motion.div>
 
-              <motion.span
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease, delay: reduceMotion ? 0.05 : 0.5 }}
-                className="text-4xl font-bold tracking-[-0.035em] text-foreground sm:text-5xl"
-              >
-                Paw-M
-              </motion.span>
-            </div>
+              {!reduce && (
+                <svg
+                  viewBox="0 0 100 100"
+                  fill="none"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-[12%] size-[124%] overflow-visible text-[var(--gold-400)]"
+                >
+                  <motion.circle
+                    cx="50"
+                    cy="50"
+                    r="47"
+                    pathLength={1}
+                    stroke="currentColor"
+                    strokeWidth="0.45"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 0.85 }}
+                    transition={{ duration: 0.9, delay: 0.5, ease }}
+                  />
+                </svg>
+              )}
+            </motion.div>
 
             <motion.p
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease, delay: reduceMotion ? 0.1 : 0.62 }}
-              className="text-sm text-muted-foreground"
+              {...rise(0.72)}
+              className="mt-8 font-display text-3xl font-semibold tracking-tight sm:text-5xl"
+            >
+              Paw-M
+            </motion.p>
+
+            <motion.p
+              {...rise(0.95)}
+              className="mt-2 text-center text-sm text-white/75 sm:text-base"
             >
               {t("intro.tagline")}
             </motion.p>
 
-            <div className="mt-2 h-[2px] w-52 overflow-hidden rounded-full bg-border">
+            <div className="mt-8 h-px w-56 overflow-hidden bg-white/15 sm:w-72">
               <div
-                className="h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
+                className="h-full bg-[var(--gold-500)] transition-[width] duration-75 ease-linear"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
           </div>
 
           <AnimatePresence>
-            {showSkip && (
+            {showSkip && !reduce && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="absolute bottom-8 text-xs tracking-wide text-muted-foreground"
+                className="absolute bottom-8 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45"
               >
                 {t("intro.skip")}
               </motion.span>
@@ -167,34 +191,3 @@ export function IntroAnimation() {
     </AnimatePresence>
   );
 }
-
-function IntroMark({ reduceMotion }: { reduceMotion: boolean }) {
-  return (
-    <svg viewBox="0 0 64 64" className="h-14 w-14 sm:h-16 sm:w-16" fill="none" aria-hidden="true">
-      <motion.path
-        d="M4 42h9l5-11 6 20 5-15 4 6h6"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={reduceMotion ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 1 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.16, 1, 0.3, 1] }}
-      />
-      <motion.g
-        fill="currentColor"
-        initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        style={{ transformOrigin: "52px 28px" }}
-        transition={{ duration: 0.4, delay: reduceMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <ellipse cx="43.5" cy="20" rx="3.1" ry="4.2" />
-        <ellipse cx="52" cy="16.5" rx="3.1" ry="4.4" />
-        <ellipse cx="60" cy="21" rx="2.9" ry="4" />
-        <path d="M45 34.5c0-4.6 3.4-8 7.5-8s7.5 3.4 7.5 8c0 4.2-3.1 6.6-7.5 6.6S45 38.7 45 34.5Z" />
-      </motion.g>
-    </svg>
-  );
-}
-
-export { PawMMark };

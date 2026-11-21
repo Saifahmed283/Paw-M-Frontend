@@ -1271,6 +1271,7 @@ export const EN: Dict = {
   "track.chooseScreenshot": "Choose payment screenshot",
   "track.removeScreenshot": "Remove screenshot",
   "track.proofStepOne": "1. Transfer the total",
+  "track.fawryProofStepOne": "1. Pay at any Fawry outlet with the reference below",
   "track.proofStepTwo": "2. Send the payment proof",
   "track.refNumber": "Reference / receipt number",
   "track.sendProof": "Send proof",
@@ -1496,6 +1497,14 @@ export const EN: Dict = {
 
   // Staff sign-in
   "auth.signInHelp": "Can't sign in? Contact your administrator.",
+  "auth.portal": "Staff portal",
+  "auth.brandTitle": "Care behind every credential.",
+  "auth.brandDesc": "A considered workspace for the people who make it happen.",
+  "auth.point.secure": "Secure access",
+  "auth.point.clear": "Clear records",
+  "auth.point.care": "Care first",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
 
   // Cashier page chrome
   "cashier.backToDashboard": "Back to Dashboard",
@@ -2835,6 +2844,7 @@ const AR: Dict = {
   "track.chooseScreenshot": "اختر لقطة الدفع",
   "track.removeScreenshot": "إزالة اللقطة",
   "track.proofStepOne": "١. حوّل المبلغ",
+  "track.fawryProofStepOne": "١. ادفع في أي منفذ فوري باستخدام الرقم المرجعي أدناه",
   "track.proofStepTwo": "٢. أرسل إثبات الدفع",
   "track.refNumber": "رقم المرجع / الإيصال",
   "track.sendProof": "إرسال الإثبات",
@@ -3058,6 +3068,14 @@ const AR: Dict = {
 
   // Staff sign-in
   "auth.signInHelp": "لا يمكنك تسجيل الدخول؟ تواصل مع المسؤول.",
+  "auth.portal": "بوابة الموظفين",
+  "auth.brandTitle": "رعاية خلف كل بيانات دخول.",
+  "auth.brandDesc": "مساحة مدروسة لمن يجعلون ذلك ممكنًا.",
+  "auth.point.secure": "وصول آمن",
+  "auth.point.clear": "سجلات واضحة",
+  "auth.point.care": "الرعاية أولًا",
+  "auth.showPassword": "إظهار كلمة المرور",
+  "auth.hidePassword": "إخفاء كلمة المرور",
 
   // Cashier page chrome
   "cashier.backToDashboard": "العودة إلى لوحة التحكم",

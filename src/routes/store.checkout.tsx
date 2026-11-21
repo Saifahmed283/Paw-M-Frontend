@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ClientAuthGate } from "@/components/ClientAuthGate";
+import { FawryPaymentPanel } from "@/components/store/FawryPaymentPanel";
 import { InstapayQrPanel } from "@/components/store/InstapayQrPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,11 @@ const METHOD_CONTENT: Record<
     icon: Banknote,
     title: "checkout.method.cash.title",
     desc: "checkout.method.cash.desc",
+  },
+  fawry: {
+    icon: QrCode,
+    title: "checkout.method.fawry.title",
+    desc: "checkout.method.fawry.desc",
   },
   instapay: {
     icon: Smartphone,
@@ -76,14 +82,20 @@ function SuccessScreen({
           {t("checkout.orderId")}: {orderId}
         </p>
 
-        {paymentMethod === "instapay" && (
+        {paymentMethod !== "cash" && (
           <div className="mt-5 space-y-3 text-left">
             <div>
               <p className="text-sm font-bold">{t("checkout.paymentStepsTitle")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("checkout.stepTransfer")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {paymentMethod === "fawry" ? t("checkout.fawrySteps") : t("checkout.stepTransfer")}
+              </p>
               <p className="text-xs text-muted-foreground">{t("checkout.stepProof")}</p>
             </div>
-            <InstapayQrPanel account={instapay} amountLabel={total} />
+            {paymentMethod === "fawry" ? (
+              <FawryPaymentPanel amountLabel={total} reference={orderId} />
+            ) : (
+              <InstapayQrPanel account={instapay} amountLabel={total} />
+            )}
           </div>
         )}
         {paymentMethod === "cash" && (
@@ -94,7 +106,7 @@ function SuccessScreen({
         <p className="mt-3 text-xs font-medium text-amber-600">{t("checkout.notPaidNote")}</p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          {paymentMethod === "instapay" ? (
+          {paymentMethod !== "cash" ? (
             <Button asChild className="flex-1 shadow-glow">
               <Link to="/store/track" search={{ order: orderId, phone, proof: "1" }}>
                 {t("checkout.addPaymentProof")}
@@ -333,6 +345,12 @@ function CheckoutForm() {
                     <p className="text-xs font-medium text-amber-600">
                       {t("checkout.notPaidNote")}
                     </p>
+                  </div>
+                )}
+
+                {method === "fawry" && (
+                  <div className="mt-4">
+                    <FawryPaymentPanel amountLabel={formatPrice(total, settings.currency)} />
                   </div>
                 )}
               </div>

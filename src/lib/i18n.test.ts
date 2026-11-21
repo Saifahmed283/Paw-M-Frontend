@@ -29,6 +29,9 @@ describe("i18n dictionaries", () => {
       "cashier.paymentPendingNotice",
       "cashier.singleMethodOnly",
       "dash.payment-verification",
+      "auth.brandDesc",
+      "checkout.fawryHowTitle",
+      "track.fawryProofStepOne",
     ];
 
     for (const key of requiredKeys) {
