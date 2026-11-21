@@ -3,7 +3,7 @@ import { Heart, PackageSearch } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard } from "@/components/site/ProductCard";
-import { SectionHeading } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -30,8 +30,11 @@ function WishlistPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.wishlist.eyebrow")}
+        title={t("page.wishlist.title")}
+        description={t("page.wishlist.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
@@ -39,14 +42,8 @@ function WishlistPage() {
               { label: t("page.wishlist.title"), to: "/store/wishlist" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.wishlist.eyebrow")}
-            title={t("page.wishlist.title")}
-            description={t("page.wishlist.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         {items.length === 0 ? (

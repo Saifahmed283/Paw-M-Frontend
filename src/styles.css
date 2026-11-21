@@ -1,58 +1,98 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./design-system/tokens.css";
+@import "./design-system/typography.css";
+@import "./design-system/motion.css";
 
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Paw-M design system.
- * Gentle beginnings: soft sage greens, warm creams, blush peaches.
- * Calming, relaxing and airy. All colors are oklch tokens.
- * Never hardcode colors in components.
+ * Paw-M — "The Crest" (Editorial Heritage)
+ * Badge-derived navy / royal blue / gold on warm paper, with 8px rhythm,
+ * hairline rules and serif display. Colour resolves through tokens.css.
  */
 
 @theme inline {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-    ui-sans-serif, system-ui, sans-serif;
-  --font-display:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, ui-sans-serif,
-    system-ui, sans-serif;
-  --font-arabic: "Cairo", system-ui, sans-serif;
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-data: var(--font-data);
+  --font-mono: var(--font-mono);
+  --font-arabic: var(--font-arabic);
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 30px;
-  --radius-3xl: 40px;
-  --radius-4xl: 50px;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+  --radius-4xl: var(--radius-4xl);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-tint: var(--primary-tint);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-tint: var(--accent-tint);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-urgent: var(--urgent);
+  --color-urgent-tint: var(--urgent-tint);
+  --color-warm: var(--warm);
+  --color-warm-tint: var(--warm-tint);
+  --color-line: var(--line);
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-bg: var(--status-ok-bg);
+  --color-status-watch: var(--status-watch);
+  --color-status-watch-bg: var(--status-watch-bg);
+  --color-status-critical: var(--status-critical);
+  --color-status-critical-bg: var(--status-critical-bg);
   --color-brass: var(--brass);
   --color-brass-foreground: var(--brass-foreground);
   --color-brass-strong: var(--brass-strong);
-  --color-surface: var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
+
+  /* Crest brand scale */
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-blue-700: var(--blue-700);
+  --color-blue-600: var(--blue-600);
+  --color-blue-500: var(--blue-500);
+  --color-blue-400: var(--blue-400);
+  --color-blue-300: var(--blue-300);
+  --color-gold-700: var(--gold-700);
+  --color-gold-600: var(--gold-600);
+  --color-gold-500: var(--gold-500);
+  --color-gold-400: var(--gold-400);
+  --color-gold-300: var(--gold-300);
+  --color-gold: var(--gold);
+  --color-gold-tint: var(--gold-tint);
+  --color-gold-ink: var(--gold-ink);
+  --color-line-strong: var(--line-strong);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -71,164 +111,49 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-sm: 0 1px 2px 0 oklch(0.18 0.02 257 / 0.04), 0 1px 3px 0 oklch(0.18 0.02 257 / 0.06);
-  --shadow-md:
-    0 4px 14px -2px oklch(0.18 0.02 257 / 0.09), 0 2px 6px -2px oklch(0.18 0.02 257 / 0.05);
-  --shadow-lg:
-    0 24px 50px -12px oklch(0.18 0.02 257 / 0.18), 0 8px 20px -8px oklch(0.18 0.02 257 / 0.1);
-  --shadow-glow: 0 12px 32px -8px var(--primary-glow);
+  --shadow-sm: var(--shadow-1);
+  --shadow-md: var(--shadow-2);
+  --shadow-lg: var(--shadow-3);
+  --shadow-glow: var(--shadow-2);
 
   --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
-:root {
-  --radius: 14px;
+/*
+ * Legacy palette remap.
+ * The staff surfaces predate the design system and use Tailwind's default
+ * amber/violet/emerald/rose shades. Routing those shade names through our
+ * status tokens makes the entire back office coherent in one place, with no
+ * risk to the behaviour of the 40+ panels that use them. Opacity modifiers
+ * still work because @theme inline emits the token variable directly.
+ */
+@theme inline {
+  --color-amber-100: var(--gold-tint);
+  --color-amber-400: var(--gold-500);
+  --color-amber-500: var(--gold-600);
+  --color-amber-600: var(--gold-700);
+  --color-amber-700: var(--gold-700);
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.22 0.04 257);
-  --surface: oklch(0.985 0.004 257);
-  --surface-elevated: oklch(1 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.04 257);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.04 257);
+  --color-violet-400: var(--blue-400);
+  --color-violet-500: var(--blue-500);
+  --color-violet-600: var(--blue-700);
 
-  --primary: oklch(0.22 0.04 257);
-  --primary-foreground: oklch(1 0 0);
-  --primary-glow: oklch(0.22 0.04 257 / 0.15);
+  --color-emerald-100: var(--accent-tint);
+  --color-emerald-500: var(--blue-600);
+  --color-emerald-700: var(--blue-700);
+  --color-green-500: var(--blue-600);
+  --color-green-600: var(--blue-700);
 
-  --secondary: oklch(0.95 0.015 257);
-  --secondary-foreground: oklch(0.26 0.04 257);
+  --color-red-100: var(--urgent-tint);
+  --color-red-500: var(--urgent);
+  --color-red-700: var(--urgent);
+  --color-rose-300: var(--urgent);
+  --color-rose-500: var(--urgent);
+  --color-rose-600: var(--urgent);
 
-  --muted: oklch(0.965 0.006 257);
-  --muted-foreground: oklch(0.45 0.02 257);
-
-  --accent: oklch(0.78 0.15 75);
-  --accent-foreground: oklch(0.2 0.04 257);
-
-  --destructive: oklch(0.62 0.15 25);
-  --destructive-foreground: oklch(0.992 0.008 95);
-  --warning: oklch(0.8 0.11 85);
-  --warning-foreground: oklch(0.3 0.04 80);
-  --success: oklch(0.62 0.12 155);
-  --success-foreground: oklch(0.992 0.008 95);
-  --brass: oklch(0.76 0.15 75);
-  --brass-foreground: oklch(0.2 0.04 257);
-  --brass-strong: oklch(0.32 0.11 60);
-
-  --border: oklch(0.91 0.008 257);
-  --input: oklch(0.91 0.008 257);
-  --ring: oklch(0.22 0.04 257);
-
-  --chart-1: oklch(0.22 0.04 257);
-  --chart-2: oklch(0.76 0.15 75);
-  --chart-3: oklch(0.42 0.07 257);
-  --chart-4: oklch(0.86 0.09 75);
-  --chart-5: oklch(0.3 0.05 257);
-
-  --sidebar: oklch(0.22 0.04 257);
-  --sidebar-foreground: oklch(0.94 0.02 90);
-  --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0.22 0.04 257);
-  --sidebar-accent: oklch(0.3 0.05 257);
-  --sidebar-accent-foreground: oklch(0.95 0.02 90);
-  --sidebar-border: oklch(0.3 0.04 257);
-  --sidebar-ring: oklch(0.94 0.02 90);
-
-  --glass-bg: oklch(1 0 0 / 0.72);
-  --glass-border: oklch(1 0 0 / 0.5);
-  --blob-1: oklch(0.22 0.04 257 / 0.42);
-  --blob-2: oklch(0.34 0.06 257 / 0.3);
-  --blob-3: oklch(0.78 0.15 75 / 0.22);
-  --blob-4: oklch(0.22 0.04 257 / 0.26);
-  --gradient-hero:
-    radial-gradient(110% 95% at 8% 0%, oklch(0.93 0.02 257 / 0.5) 0%, transparent 55%),
-    radial-gradient(95% 75% at 96% 8%, oklch(0.9 0.09 75 / 0.42) 0%, transparent 58%),
-    radial-gradient(80% 80% at 50% 110%, oklch(0.26 0.05 257 / 0.22) 0%, transparent 62%);
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.22 0.04 257) 0%,
-    oklch(0.32 0.06 257) 50%,
-    oklch(0.78 0.15 75) 100%
-  );
-  --gradient-soft: linear-gradient(
-    135deg,
-    oklch(0.78 0.15 75) 0%,
-    oklch(0.86 0.1 75) 45%,
-    oklch(0.3 0.05 257) 85%
-  );
-  --gradient-peach: linear-gradient(135deg, oklch(0.9 0.08 75) 0%, oklch(0.96 0.03 75) 100%);
-}
-
-.dark {
-  --background: oklch(0.18 0.03 257);
-  --foreground: oklch(0.94 0.015 90);
-  --surface: oklch(0.2 0.03 257);
-  --surface-elevated: oklch(0.24 0.04 257);
-  --card: oklch(0.21 0.03 257);
-  --card-foreground: oklch(0.94 0.015 90);
-  --popover: oklch(0.24 0.04 257);
-  --popover-foreground: oklch(0.94 0.015 90);
-
-  --primary: oklch(0.4 0.06 257);
-  --primary-foreground: oklch(1 0 0);
-  --primary-glow: oklch(0.4 0.06 257 / 0.35);
-
-  --secondary: oklch(0.28 0.04 257);
-  --secondary-foreground: oklch(0.94 0.015 90);
-
-  --muted: oklch(0.25 0.03 257);
-  --muted-foreground: oklch(0.7 0.02 257);
-
-  --accent: oklch(0.72 0.14 75);
-  --accent-foreground: oklch(0.18 0.03 257);
-
-  --destructive: oklch(0.66 0.14 25);
-  --destructive-foreground: oklch(0.94 0.015 95);
-  --warning: oklch(0.8 0.11 85);
-  --warning-foreground: oklch(0.25 0.03 80);
-  --success: oklch(0.64 0.11 155);
-  --success-foreground: oklch(0.2 0.03 165);
-  --brass: oklch(0.72 0.14 75);
-  --brass-foreground: oklch(0.18 0.03 257);
-  --brass-strong: oklch(0.72 0.14 75);
-
-  --border: oklch(0.3 0.03 257);
-  --input: oklch(0.3 0.03 257);
-  --ring: oklch(0.72 0.14 75);
-
-  --chart-1: oklch(0.4 0.06 257);
-  --chart-2: oklch(0.72 0.14 75);
-  --chart-3: oklch(0.6 0.08 257);
-  --chart-4: oklch(0.85 0.1 75);
-  --chart-5: oklch(0.3 0.06 257);
-
-  --sidebar: oklch(0.16 0.03 257);
-  --sidebar-foreground: oklch(0.9 0.02 90);
-  --sidebar-primary: oklch(0.78 0.15 75);
-  --sidebar-primary-foreground: oklch(0.18 0.03 257);
-  --sidebar-accent: oklch(0.25 0.04 257);
-  --sidebar-accent-foreground: oklch(0.94 0.015 90);
-  --sidebar-border: oklch(0.3 0.04 257);
-  --sidebar-ring: oklch(0.72 0.14 75);
-
-  --glass-bg: oklch(0.22 0.03 257 / 0.7);
-  --glass-border: oklch(1 0 0 / 0.08);
-  --blob-1: oklch(0.78 0.15 75 / 0.16);
-  --blob-2: oklch(0.35 0.06 257 / 0.32);
-  --blob-3: oklch(0.24 0.04 257 / 0.26);
-  --blob-4: oklch(0.78 0.15 75 / 0.13);
-  --gradient-hero:
-    radial-gradient(110% 95% at 8% 0%, oklch(0.3 0.05 257 / 0.5) 0%, transparent 55%),
-    radial-gradient(96% 70% at 96% 8%, oklch(0.72 0.14 75 / 0.22) 0%, transparent 58%),
-    radial-gradient(80% 80% at 50% 110%, oklch(0.78 0.15 75 / 0.12) 0%, transparent 62%);
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.65 0.06 257) 0%,
-    oklch(0.75 0.06 257) 50%,
-    oklch(0.78 0.15 75) 100%
-  );
+  --color-sky-500: var(--blue-500);
+  --color-indigo-500: var(--blue-600);
 }
 
 @layer base {
@@ -241,21 +166,36 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: var(--color-canvas);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: var(--step-0);
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
 
   html.lang-ar body,
   html.lang-ar h1,
   html.lang-ar h2,
   html.lang-ar h3,
+  html.lang-ar h4,
   html.lang-ar .font-arabic {
     font-family: var(--font-arabic);
-  }
-
-  html.lang-ar {
     letter-spacing: 0;
   }
 
@@ -263,23 +203,48 @@
     letter-spacing: 0.05em;
   }
 
-  h1,
-  h2,
-  h3 {
-    font-family: var(--font-display);
-    font-weight: 650;
-    letter-spacing: -0.02em;
-    line-height: 1.08;
-    text-wrap: balance;
-  }
-
-  h1 {
-    font-weight: 700;
-  }
-
   ::selection {
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: var(--primary-tint);
+    color: var(--primary-strong);
+  }
+
+  /* Every number in the interface lines up — prices, vitals, times, counts. */
+  .font-mono,
+  .font-data,
+  kbd,
+  time {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* The core layered surface. Elevation is semantic, not decorative. */
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    box-shadow: var(--shadow-1);
+    border-radius: var(--radius-lg);
+  }
+
+  /* The Crest signature: a numbered, gold-ruled editorial section header. */
+  .crest-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-ink);
+  }
+
+  .crest-rule {
+    height: 1px;
+    background: var(--gold-500);
+    opacity: 0.7;
+  }
+
+  .crest-rule-soft {
+    height: 1px;
+    background: var(--line-strong);
   }
 }
 
@@ -307,16 +272,17 @@
     display: inline-flex;
   }
 
+  /* Was hardcoded #b8860b / #ffd700 — now tokenized. */
   .text-rotate-element {
     display: inline-block;
-    background-image: linear-gradient(135deg, #b8860b, #b8860b);
+    background-image: linear-gradient(135deg, var(--primary), var(--accent));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
   .dark .text-rotate-element {
-    background-image: linear-gradient(135deg, #ffd700, #ffd700);
+    background-image: linear-gradient(135deg, var(--primary), var(--accent));
   }
 
   .text-rotate-space {
@@ -324,11 +290,104 @@
   }
 }
 
+/* ==========================================================================
+ * 8PX RHYTHM
+ * Tailwind's default scale mixes 4/6/10/12/20px steps, which is what made
+ * the surfaces feel uneven. Snap every gap/space utility to the nearest 8px
+ * step so all layout spacing resolves to 8 / 16 / 24 / 32 / 48 / 64 / 80.
+ * Unlayered rules intentionally outrank Tailwind's layered utilities.
+ * ========================================================================== */
+.gap-1,
+.gap-1\.5,
+.gap-2\.5 {
+  gap: var(--sp-1);
+}
+.gap-3,
+.gap-3\.5 {
+  gap: var(--sp-2);
+}
+.gap-5,
+.gap-7 {
+  gap: var(--sp-3);
+}
+.gap-x-1,
+.gap-x-1\.5,
+.gap-x-2\.5 {
+  column-gap: var(--sp-1);
+}
+.gap-x-3,
+.gap-x-3\.5 {
+  column-gap: var(--sp-2);
+}
+.gap-x-5,
+.gap-x-7 {
+  column-gap: var(--sp-3);
+}
+.gap-y-1,
+.gap-y-1\.5,
+.gap-y-2\.5 {
+  row-gap: var(--sp-1);
+}
+.gap-y-3,
+.gap-y-3\.5 {
+  row-gap: var(--sp-2);
+}
+.gap-y-5,
+.gap-y-7 {
+  row-gap: var(--sp-3);
+}
+
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-block-start: var(--sp-2);
+}
+.space-y-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-block-start: var(--sp-3);
+}
+.space-x-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-inline-start: var(--sp-2);
+}
+.space-x-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-inline-start: var(--sp-3);
+}
+
+/* The Crest uses one restrained corner radius everywhere. Older routes used
+ * 16–24px pill-like cards; map those utilities to the same 8px architectural
+ * radius so the whole site reads as one hand-drawn system. Avatars and status
+ * dots keep `rounded-full` and are deliberately not touched. */
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl,
+.rounded-4xl {
+  border-radius: var(--radius-lg);
+}
+
+/* The Crest has no glassmorphism. Neutralise every legacy blur utility so
+ * untouched routes also render as flat, solid paper during phasing. */
+.backdrop-blur,
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl,
+.backdrop-blur-2xl,
+.backdrop-blur-none,
+.backdrop-blur-\[2px\] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ---- Compatibility utilities: untouched routes keep their look in phasing ---- */
+
 @utility glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-1);
+}
+
+/* Solid paper — the Crest replacement for the old glass surfaces. */
+@utility paper {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
 }
 
 @utility hero-gradient {
@@ -350,15 +409,15 @@
 }
 
 @utility shadow-card {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-1);
 }
 
 @utility shadow-raised {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-2);
 }
 
 @utility shadow-glow {
-  box-shadow: var(--shadow-glow);
+  box-shadow: var(--shadow-2);
 }
 
 @utility grid-lines {
@@ -370,79 +429,7 @@
 }
 
 @utility blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(60px);
-  will-change: transform;
-}
-
-/*
- * Paw-M mark line-draw animation.
- * Used when <PawMMark animated /> is enabled; the path uses pathLength={1}
- * so dash values live in the 0..1 range. Mirrors the intro animation timing.
- */
-.pawm-draw {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: pawm-draw-line 0.6s var(--ease-entrance) forwards;
-}
-
-.pawm-pads {
-  opacity: 0;
-  transform: scale(0.7);
-  transform-origin: 52px 28px;
-  animation: pawm-draw-pads 0.4s ease 0.45s forwards;
-}
-
-@keyframes pawm-draw-line {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes pawm-draw-pads {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/*
- * Footer decorations: drifting paw prints and the accreditation marquee.
- */
-@keyframes pawm-paw-float {
-  0% {
-    transform: translateY(18px) rotate(-8deg);
-    opacity: 0;
-  }
-  20% {
-    opacity: 0.55;
-  }
-  80% {
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(-52px) rotate(10deg);
-    opacity: 0;
-  }
-}
-
-.animate-paw-float {
-  animation: pawm-paw-float 8s ease-in-out infinite;
-}
-
-@keyframes pawm-marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-marquee {
-  animation: pawm-marquee 30s linear infinite;
-}
-
-.animate-marquee:hover {
-  animation-play-state: paused;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -456,5 +443,6 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

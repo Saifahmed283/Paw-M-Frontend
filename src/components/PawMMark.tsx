@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The Paw-M mark: a single continuous line that reads as a pulse/heartbeat
- * and resolves into a paw at its peak. Used in the intro line-draw animation,
- * the header and the footer.
+ * The Crest mark: a paw seated inside an engraved cradle, crowned by a small
+ * four-point jewel. The old heartbeat zigzag is gone — this reads as a heraldic
+ * badge, matching the clinic's real logo rather than a cardiac monitor.
  */
 export function PawMMark({
   className,
@@ -21,24 +21,20 @@ export function PawMMark({
       role="presentation"
     >
       <path
-        d="M4 42h9l5-11 6 20 5-15 4 6h6"
+        d="M8 45 C20 53 44 53 56 45"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="3"
         strokeLinecap="round"
-        strokeLinejoin="round"
         pathLength={1}
         className={animated ? "pawm-draw" : undefined}
       />
       <g fill="currentColor" className={animated ? "pawm-pads" : undefined}>
-        <ellipse cx="43.5" cy="20" rx="3.1" ry="4.2" />
-        <ellipse cx="52" cy="16.5" rx="3.1" ry="4.4" />
-        <ellipse cx="60" cy="21" rx="2.9" ry="4" />
+        <ellipse cx="43.5" cy="22" rx="3.1" ry="4.2" />
+        <ellipse cx="52" cy="18.5" rx="3.1" ry="4.4" />
+        <ellipse cx="60" cy="23" rx="2.9" ry="4" />
+        <path d="M45 36.5c0-4.6 3.4-8 7.5-8s7.5 3.4 7.5 8c0 4.2-3.1 6.6-7.5 6.6S45 40.7 45 36.5Z" />
+        <path d="M52 4 L54.4 9 L52 14 L49.6 9 Z" />
       </g>
-      <path
-        d="M45 34.5c0-4.6 3.4-8 7.5-8s7.5 3.4 7.5 8c0 4.2-3.1 6.6-7.5 6.6S45 38.7 45 34.5Z"
-        fill="currentColor"
-        className={animated ? "pawm-pads" : undefined}
-      />
     </svg>
   );
 }
@@ -52,7 +48,7 @@ export function PawMLogo({ className }: { className?: string }) {
         className="h-7 w-7 shrink-0"
         decoding="async"
       />
-      <span className="text-[20px] font-bold tracking-[-0.03em] text-foreground">Paw-M</span>
+      <span className="font-display text-[22px] font-semibold tracking-[-0.02em]">Paw-M</span>
     </span>
   );
 }

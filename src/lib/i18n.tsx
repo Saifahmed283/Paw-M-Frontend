@@ -1,5 +1,4 @@
-﻿/* eslint-disable prettier/prettier */
-import { createContext, useContext } from "react";
+﻿import { createContext, useContext } from "react";
 
 export type Lang = "en" | "ar";
 
@@ -32,7 +31,6 @@ export const EN: Dict = {
   "role.staff": "Staff",
 
   // Hero
-  "hero.badge": "Accepting new patients this week",
   "hero.title.a": "Professional veterinary care for your",
   "hero.rotating.0": "beloved pets",
   "hero.rotating.1": "dogs & cats",
@@ -46,6 +44,17 @@ export const EN: Dict = {
   "hero.triage": "Average triage time",
   "hero.nextAvailable": "Next available",
 
+  // Clinical Soft-Tech system
+  "dock.book": "Book",
+  "dock.call": "Call",
+  "dock.bag": "Bag",
+  "command.placeholder": "Search pages and actions…",
+  "command.empty": "Nothing matches that search",
+  "story.openToday": "Open today",
+  "story.liveStatus": "Live clinic status",
+  "story.careNote": "Care you can see, step by step",
+  "story.viewAll": "View all",
+
   // Stats
   "stats.0": "Pets under our care",
   "stats.1": "Licensed veterinarians",
@@ -56,7 +65,6 @@ export const EN: Dict = {
   "services.eyebrow": "Services",
   "why.eyebrow": "Why Paw-M",
   "team.eyebrow": "Our team",
-  "booking.eyebrow": "How it works",
   "testimonials.eyebrow": "Testimonials",
   "faq.eyebrow": "FAQ",
   "cta.title.a": "Your pet deserves",
@@ -754,13 +762,10 @@ export const EN: Dict = {
   "home.team.desc":
     "Every veterinarian here holds a specialty focus, and every chart is reviewed by two of them.",
 
-  // Why / timeline / testimonials / faq sections
+  // Why / testimonials / faq sections
   "why.title": "The standard of care you'd want for yourself",
   "why.desc":
     "Everything here is built to remove guesswork — for you and for the clinician holding the chart.",
-  "timeline.title": "Booked in under a minute",
-  "timeline.desc":
-    "Five short steps. Your progress saves as you go, so a refresh never costs you anything.",
   "testimonials.title": "What pet owners tell us",
   "faq.title": "Questions we hear most",
 
@@ -803,22 +808,6 @@ export const EN: Dict = {
   "whyitem.3.title": "Emergency services",
   "whyitem.3.detail":
     "A staffed critical care team on the floor, not a redirected answering service.",
-  "whyitem.4.title": "Personalised treatment",
-  "whyitem.4.detail": "Care plans built around your pet's age and history — not a template.",
-  "whyitem.5.title": "Digital medical records",
-  "whyitem.5.detail": "Your pet's complete chart, available to you and any clinic you choose.",
-
-  // Booking steps
-  "step.0.title": "Choose a date",
-  "step.0.detail": "Live availability across every clinician.",
-  "step.1.title": "Pick a time",
-  "step.1.detail": "Booked slots disappear as you look.",
-  "step.2.title": "Tell us about your pet",
-  "step.2.detail": "Species, age, weight, history.",
-  "step.3.title": "Describe the case",
-  "step.3.detail": "Symptoms, medications, allergies.",
-  "step.4.title": "Confirm",
-  "step.4.detail": "Summary, calendar invite and reminders.",
 
   // Testimonials
   "testi.0.quote":
@@ -1345,7 +1334,7 @@ export const EN: Dict = {
   "dash.defaultDays": "Mon, Tue, Wed, Thu, Fri, Sat",
   "dash.xAria": "Close",
   "img.hero": "A veterinarian examining a golden retriever in a bright consultation room",
-  "img.clinic": "Diagnostic imaging equipment inside the Paw-M clinic",
+  "img.clinic": "Paw-M diagnostic imaging suite",
   loading: "Loading...",
   "notfound.title": "Page not found",
   "notfound.desc":
@@ -1633,7 +1622,6 @@ const AR: Dict = {
   "role.payroll": "الرواتب",
   "role.staff": "موظف",
 
-  "hero.badge": "نستقبل مرضى جدد هذا الأسبوع",
   "hero.title.a": "رعاية بيطرية احترافية لحيواناتكم",
   "hero.rotating.0": "الأليفة العزيزة",
   "hero.rotating.1": "الكلاب والقطط",
@@ -1647,6 +1635,16 @@ const AR: Dict = {
   "hero.triage": "متوسط زمن الفرز",
   "hero.nextAvailable": "أقرب موعد",
 
+  "dock.book": "احجز",
+  "dock.call": "اتصل",
+  "dock.bag": "السلة",
+  "command.placeholder": "ابحث في الصفحات والإجراءات…",
+  "command.empty": "لا توجد نتائج مطابقة",
+  "story.openToday": "مفتوح اليوم",
+  "story.liveStatus": "حالة العيادة المباشرة",
+  "story.careNote": "رعاية تراها خطوة بخطوة",
+  "story.viewAll": "عرض الكل",
+
   "stats.0": "حيوانات تحت رعايتنا",
   "stats.1": "أطباء مرخّصون",
   "stats.2": "توفر الطوارئ",
@@ -1655,7 +1653,6 @@ const AR: Dict = {
   "services.eyebrow": "الخدمات",
   "why.eyebrow": "لماذا باو-إم",
   "team.eyebrow": "فريقنا",
-  "booking.eyebrow": "كيف يعمل",
   "testimonials.eyebrow": "آراء المالكين",
   "faq.eyebrow": "الأسئلة الشائعة",
   "cta.title.a": "حيوانكم يستحق",
@@ -2342,11 +2339,9 @@ const AR: Dict = {
   "home.team.title": "أطباء يشرحون الصورة بأكملها",
   "home.team.desc": "لكل طبيب هنا تخصص محدد، ويُستعرض كل ملف طبي من قبل اثنين منهم.",
 
-  // أقسام لماذا / الخطوات / آراء العملاء / الأسئلة
+  // أقسام لماذا / آراء العملاء / الأسئلة
   "why.title": "المعيار الطبي الذي تريد لنفسك",
   "why.desc": "كل شيء هنا مصمم لإزالة التخمين، لك وللطبيب الذي يحمل الملف.",
-  "timeline.title": "الحجز في أقل من دقيقة",
-  "timeline.desc": "خمس خطوات قصيرة. يُحفظ تقدمك أثناء التنقل، فلا يكلفك التحديث شيئًا.",
   "testimonials.title": "ماذا يقول أصحاب الحيوانات؟",
   "faq.title": "الأسئلة التي نسمعها كثيرًا",
 
@@ -2385,22 +2380,6 @@ const AR: Dict = {
   "whyitem.2.detail": "تقديرات مكتوبة قبل بدء أي علاج. لا بند لم توافق عليه.",
   "whyitem.3.title": "خدمات الطوارئ",
   "whyitem.3.detail": "فريق رعاية حرجة حاضر في المكان، وليس خدمة تحويل مكالمات.",
-  "whyitem.4.title": "علاج مخصص",
-  "whyitem.4.detail": "خطط رعاية مبنية على عمر وتاريخ حيوانك، لا على قالب جاهز.",
-  "whyitem.5.title": "سجلات رقمية كاملة",
-  "whyitem.5.detail": "ملف حيوانك الكامل متاح لك ولأي عيادة تختار.",
-
-  // خطوات الحجز
-  "step.0.title": "اختر التاريخ",
-  "step.0.detail": "مواعيد متاحة أمام جميع الأطباء.",
-  "step.1.title": "اختر الوقت",
-  "step.1.detail": "المواعيد المحجوزة تختفي أمامك.",
-  "step.2.title": "حدثنا عن حيوانك",
-  "step.2.detail": "النوع والسلالة والعمر والوزن والتاريخ.",
-  "step.3.title": "صف الحالة",
-  "step.3.detail": "الأعراض والأدوية والحساسية.",
-  "step.4.title": "تأكيد الحجز",
-  "step.4.detail": "ملخص ودعوة للتقويم وتذكيرات.",
 
   // آراء العملاء
   "testi.0.quote":
@@ -2918,7 +2897,7 @@ const AR: Dict = {
   "dash.defaultDays": "الاثنين، الثلاثاء، الأربعاء، الخميس، الجمعة، السبت",
   "dash.xAria": "إغلاق",
   "img.hero": "طبيب بيطري يفحص كلبًا من فصيلة غولدن ريتريفر في غرفة استشارات مضيئة",
-  "img.clinic": "معدات التصوير التشخيصي داخل عيادة باو-إم",
+  "img.clinic": "غرفة التصوير التشخيصي في باو-إم",
   loading: "جارٍ التحميل...",
   "notfound.title": "الصفحة غير موجودة",
   "notfound.desc":

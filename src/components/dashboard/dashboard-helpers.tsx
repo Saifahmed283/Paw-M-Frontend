@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
 export function StatusBadge({ status }: { status: Status }) {
   const { t } = useI18n();
   const styles: Record<Status, string> = {
-    pending: "bg-amber-500/15 text-amber-600",
-    confirmed: "bg-success/15 text-success",
-    completed: "bg-primary/15 text-primary",
-    cancelled: "bg-muted text-muted-foreground line-through",
+    pending: "bg-[var(--gold-tint)] text-[var(--gold-700)] dark:text-[var(--gold-300)]",
+    confirmed: "bg-[var(--accent-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]",
+    completed: "bg-[var(--primary-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]",
+    cancelled: "bg-[var(--surface-2)] text-ink-soft line-through",
   };
   return (
     <Badge variant="outline" className={cn("border-transparent", styles[status])}>
@@ -32,9 +32,9 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
   const { t } = useI18n();
   const styles: Record<PaymentMethod, string> = {
-    cash: "bg-amber-500/15 text-amber-600",
-    fawry: "bg-primary/15 text-primary",
-    instapay: "bg-violet-500/15 text-violet-600",
+    cash: "bg-[var(--gold-tint)] text-[var(--gold-700)] dark:text-[var(--gold-300)]",
+    fawry: "bg-[var(--primary-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]",
+    instapay: "bg-[var(--accent-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]",
   };
   return (
     <Badge variant="outline" className={cn("border-transparent", styles[method])}>
@@ -46,34 +46,40 @@ export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const { t } = useI18n();
   if (status === "paid") {
-    return <Badge className="border-transparent bg-success/15 text-success">{t("pay.paid")}</Badge>;
+    return (
+      <Badge className="border-transparent bg-[var(--accent-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]">
+        {t("pay.paid")}
+      </Badge>
+    );
   }
   if (status === "proof_submitted" || status === "under_review") {
     return (
-      <Badge className="border-transparent bg-amber-500/15 text-amber-600">
+      <Badge className="border-transparent bg-[var(--gold-tint)] text-[var(--gold-700)] dark:text-[var(--gold-300)]">
         {t("pay.underReview")}
       </Badge>
     );
   }
   if (status === "rejected") {
     return (
-      <Badge className="border-transparent bg-destructive/15 text-destructive">
+      <Badge className="border-transparent bg-[var(--urgent-tint)] text-[var(--urgent)]">
         {t("verif.rejected")}
       </Badge>
     );
   }
   return (
-    <Badge className="border-transparent bg-muted text-muted-foreground">{t("pay.unpaid")}</Badge>
+    <Badge className="border-transparent bg-[var(--surface-2)] text-ink-soft">
+      {t("pay.unpaid")}
+    </Badge>
   );
 }
 
 export function PaymentKindBadge({ kind }: { kind: PaymentKind }) {
   const { t } = useI18n();
   const styles: Record<PaymentKind, string> = {
-    order: "bg-amber-500/15 text-amber-600",
-    visit: "bg-primary/15 text-primary",
-    manual: "bg-muted text-muted-foreground",
-    refund: "bg-destructive/15 text-destructive",
+    order: "bg-[var(--gold-tint)] text-[var(--gold-700)] dark:text-[var(--gold-300)]",
+    visit: "bg-[var(--primary-tint)] text-[var(--blue-700)] dark:text-[var(--blue-400)]",
+    manual: "bg-[var(--surface-2)] text-ink-soft",
+    refund: "bg-[var(--urgent-tint)] text-[var(--urgent)]",
   };
   return (
     <Badge variant="outline" className={cn("border-transparent", styles[kind ?? "manual"])}>

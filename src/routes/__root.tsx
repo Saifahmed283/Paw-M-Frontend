@@ -9,11 +9,11 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, Suspense, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { motion, MotionConfig } from "motion/react";
 
 import appCss from "../styles.css?url";
-import { IntroAnimation } from "@/components/IntroAnimation";
 import { PawMMark } from "@/components/PawMMark";
+import { ActionDock } from "@/design-system/primitives/ActionDock";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
@@ -101,7 +101,6 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
 }
 
 const SITE_URL = import.meta.env["VITE_SITE_URL"] || "https://pawmclinnic.com";
-const FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap";
 
 function apiOrigin(): string | null {
   try {
@@ -135,13 +134,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:url", content: SITE_URL },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: `${SITE_URL}/og-image.png` },
-      { name: "theme-color", content: "#7BA882" },
+      { name: "theme-color", content: "#F7FAFC" },
       { name: "robots", content: "index, follow" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       ...(API_ORIGIN
         ? [
             { rel: "preconnect", href: API_ORIGIN },
@@ -236,6 +233,32 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={classes}>
       <head>
         <HeadContent />
+        {lang === "ar" ? (
+          <link
+            rel="preload"
+            href="/fonts/plex-ar-700.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <>
+            <link
+              rel="preload"
+              href="/fonts/jakarta-latin.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="preload"
+              href="/fonts/mono-latin.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+          </>
+        )}
       </head>
       <body>
         {children}
@@ -266,49 +289,36 @@ function RootComponent() {
       refreshPublicData();
       if (isAuthed()) refreshClinicData();
     }, 0);
-    // Font stylesheet is loaded after first paint so a slow or unreachable
-    // Google Fonts endpoint can never delay the initial render.
-    let link: HTMLLinkElement | undefined;
-    const id = window.setTimeout(() => {
-      if (cancelled) return;
-      link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.media = "print";
-      link.onload = () => {
-        if (link) link.media = "all";
-      };
-      link.href = FONT_CSS_URL;
-      document.head.appendChild(link);
-    }, 100);
     return () => {
       cancelled = true;
       window.clearTimeout(loadId);
-      window.clearTimeout(id);
     };
   }, []);
 
   return (
-    <I18nProvider initialLang={lang}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider initialDark={dark}>
-          {!isAppSurface && <IntroAnimation />}
-          {!isAppSurface && <SiteHeader />}
-          <motion.main
-            key={pathname}
-            initial={{ opacity: 0, y: isPos ? 0 : 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: isPos ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className={isPos ? "h-dvh overflow-hidden" : "min-h-dvh"}
-          >
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Suspense fallback={<RouteLoadingSkeleton />}>
-              <Outlet />
-            </Suspense>
-          </motion.main>
-          {!isAppSurface && <SiteFooter />}
-          <Toaster position="top-center" richColors />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </I18nProvider>
+    <MotionConfig reducedMotion="user">
+      <I18nProvider initialLang={lang}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider initialDark={dark}>
+            {!isAppSurface && <SiteHeader />}
+            <motion.main
+              key={pathname}
+              initial={{ opacity: 0, y: isPos ? 0 : 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: isPos ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className={isPos ? "h-dvh overflow-hidden" : "min-h-dvh"}
+            >
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Suspense fallback={<RouteLoadingSkeleton />}>
+                <Outlet />
+              </Suspense>
+            </motion.main>
+            {!isAppSurface && <SiteFooter />}
+            {!isAppSurface && <ActionDock />}
+            <Toaster position="top-center" richColors />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </I18nProvider>
+    </MotionConfig>
   );
 }

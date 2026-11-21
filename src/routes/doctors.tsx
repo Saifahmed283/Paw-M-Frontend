@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
-import { DoctorCard, SectionHeading } from "@/components/site/sections";
+import { DoctorCard } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { ANIMAL_TYPES } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -76,22 +77,19 @@ function DoctorsPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.doctors.eyebrow")}
+        title={t("page.doctors.title")}
+        description={t("page.doctors.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
               { label: t("crumb.doctors"), to: "/doctors" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.doctors.eyebrow")}
-            title={t("page.doctors.title")}
-            description={t("page.doctors.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card">

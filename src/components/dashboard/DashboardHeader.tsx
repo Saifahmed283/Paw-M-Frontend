@@ -1,19 +1,18 @@
 import {
   ArrowLeft,
+  LogOut,
   Menu,
   Moon,
-  Sun,
-  LogOut,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
   ScanLine,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Sun,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +24,10 @@ import { LanguageToggle } from "@/lib/i18n-components";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/use-theme-hook";
 import { currentUsername, currentRole, logout } from "@/lib/auth";
-import { ALL_NAV_ITEMS } from "./dashboard-nav";
+import { ALL_NAV_ITEMS, NAV_GROUPS } from "./dashboard-nav";
 import { NotificationBell } from "./NotificationBell";
+import { CommandBar, type CommandItem } from "@/design-system/primitives/CommandBar";
+import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
 import { cn } from "@/lib/utils";
 
 function RoleIcon({ role }: { role: string }) {
@@ -43,15 +44,14 @@ function RoleBadge({ role }: { role: string }) {
     staff: t("role.staff"),
   };
   const styles: Record<string, string> = {
-    admin: "bg-destructive/10 text-destructive border-destructive/20",
-    payroll:
-      "bg-violet-500/10 text-violet-600 border-violet-500/20 dark:bg-violet-400/10 dark:text-violet-400",
-    staff: "bg-primary/10 text-primary border-primary/20",
+    admin: "border-[var(--urgent)]/50 bg-[var(--urgent)]/20 text-white",
+    payroll: "border-[var(--gold-500)]/50 bg-[var(--gold-500)]/15 text-[var(--gold-400)]",
+    staff: "border-white/20 bg-white/10 text-white/85",
   };
   return (
     <Badge
       variant="outline"
-      className={cn("gap-1 text-[10px] font-semibold px-1.5 py-0", styles[role] ?? styles["staff"])}
+      className={cn("gap-1 px-2 py-0 text-[10px] font-semibold", styles[role] ?? styles["staff"])}
     >
       <RoleIcon role={role} />
       {labels[role] ?? role}
@@ -60,14 +60,28 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export function DashboardHeader({
+  canAccess,
   onMobileMenuToggle,
 }: {
+  canAccess: (tabId: string) => boolean;
   onMobileMenuToggle?: (() => void) | undefined;
 }) {
   const { t } = useI18n();
   const { dark, toggle: toggleTheme } = useTheme();
   const username = currentUsername();
   const role = currentRole();
+
+  const commands: CommandItem[] = ALL_NAV_ITEMS.filter((item) => canAccess(item.id)).map((item) => {
+    const Icon = item.icon;
+    const group = NAV_GROUPS.find((g) => g.items.some((i) => i.id === item.id));
+    return {
+      id: item.id,
+      label: t(`dash.${item.id}`),
+      group: group ? t(group.label) : undefined,
+      icon: <Icon className="size-4" />,
+      onSelect: () => navigateToDashboardTab(item.id),
+    };
+  });
 
   const handleSignOut = () => {
     logout();
@@ -80,33 +94,40 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-6">
-      {/* Mobile menu button */}
+    <header className="relative z-30 flex h-14 shrink-0 items-center gap-2 border-b border-[var(--navy-700)] bg-[var(--navy-900)] px-3 text-white sm:gap-3 sm:px-6">
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[var(--gold-500)]/50" />
+
       {onMobileMenuToggle && (
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0 lg:hidden"
+          className="size-8 shrink-0 text-white/70 hover:bg-white/10 hover:text-white"
           onClick={onMobileMenuToggle}
+          aria-label={t("header.openMenu")}
         >
           <Menu className="size-4" />
         </Button>
       )}
 
-      {/* Right side controls */}
-      <div className="ms-auto flex items-center gap-1 sm:gap-1.5">
-        <Link to="/cashier" title={t("header.cashier")} className="shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 px-2 text-muted-foreground hover:text-foreground"
-          >
-            <ScanLine className="size-4 shrink-0" />
-            <span className="hidden text-sm font-medium md:inline">{t("header.cashier")}</span>
-          </Button>
-        </Link>
+      <div className="ms-auto flex items-center gap-2 sm:gap-3">
+        <CommandBar
+          items={commands}
+          className="hidden h-9 max-w-[260px] border-white/15 bg-white/5 text-white/70 placeholder:text-white/40 lg:flex"
+        />
 
-        <div className="hidden sm:block">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex"
+        >
+          <Link to="/cashier" title={t("header.cashier")} className="gap-2">
+            <ScanLine className="size-4 shrink-0 text-[var(--gold-400)]" />
+            <span className="text-sm font-semibold">{t("header.cashier")}</span>
+          </Link>
+        </Button>
+
+        <div className="hidden md:block">
           <NotificationBell />
         </div>
         <LanguageToggle className="hidden size-8 sm:grid" />
@@ -114,27 +135,24 @@ export function DashboardHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="hidden size-8 text-muted-foreground hover:text-foreground sm:inline-flex"
+          className="hidden size-8 text-white/70 hover:bg-white/10 hover:text-white sm:inline-flex"
           onClick={toggleTheme}
           title={dark ? t("header.lightMode") : t("header.darkMode")}
         >
           {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </Button>
 
-        <Separator orientation="vertical" className="mx-1 hidden h-5 sm:block" />
-
-        {/* Account dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 px-2 text-muted-foreground hover:text-foreground"
+              className="gap-2 px-2 text-white/80 hover:bg-white/10 hover:text-white"
             >
-              <span className="grid size-7 place-items-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+              <span className="grid size-7 place-items-center rounded-[var(--radius-md)] bg-[var(--gold-500)] font-data text-xs font-bold text-[var(--navy-900)]">
                 {username?.[0]?.toUpperCase() ?? "S"}
               </span>
-              <span className="hidden text-sm font-medium sm:inline-block">
+              <span className="hidden text-sm font-semibold sm:inline-block">
                 {username || t("auth.staff")}
               </span>
               <span className="hidden lg:inline-flex">
@@ -142,18 +160,18 @@ export function DashboardHeader({
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-52">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium">{username || t("auth.staff")}</p>
-              <p className="text-xs text-muted-foreground">{t(`role.${role}`)}</p>
+              <p className="text-sm font-semibold">{username || t("auth.staff")}</p>
+              <p className="text-xs text-ink-faint">{t(`role.${role}`)}</p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleBackToSite} className="gap-2 text-muted-foreground">
-              <ArrowLeft className="size-4" />
+            <DropdownMenuItem onClick={handleBackToSite} className="gap-2 text-ink-soft">
+              <ArrowLeft className="size-4 rtl:rotate-180" />
               {t("dash.back")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-destructive">
+            <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-status-critical">
               <LogOut className="size-4" />
               {t("auth.signOut")}
             </DropdownMenuItem>

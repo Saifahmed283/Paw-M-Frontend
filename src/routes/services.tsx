@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
-import { SectionHeading, ServicesGrid } from "@/components/site/sections";
+import { ServicesGrid } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { useI18n } from "@/lib/i18n";
 import { ogMeta, withSiteUrl } from "@/lib/seo";
 
@@ -21,22 +22,19 @@ function ServicesPage() {
   const { t } = useI18n();
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.services.eyebrow")}
+        title={t("page.services.title")}
+        description={t("page.services.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
               { label: t("crumb.services"), to: "/services" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.services.eyebrow")}
-            title={t("page.services.title")}
-            description={t("page.services.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 pb-8 pt-4 sm:px-8">
         <ServicesGrid />

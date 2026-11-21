@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { ProductCard } from "@/components/site/ProductCard";
 import {
-  BookingTimeline,
+  CtaBand,
   DoctorCard,
   Faq,
   Hero,
@@ -12,6 +12,7 @@ import {
   Testimonials,
   WhyUs,
 } from "@/components/site/sections";
+import { SectionFrame } from "@/design-system/primitives/SectionFrame";
 import { Button } from "@/components/ui/button";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -74,60 +75,56 @@ function Index() {
     <>
       <Hero />
 
-      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+      <SectionFrame>
         <SectionHeading
           eyebrow={t("services.eyebrow")}
           title={t("home.services.title")}
           description={t("home.services.desc")}
         />
         <ServicesGrid limit={6} />
-      </section>
+      </SectionFrame>
 
       {featured.length > 0 && (
-        <section className="border-y border-border bg-surface py-20">
-          <div className="mx-auto max-w-6xl px-5 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <SectionHeading
-                eyebrow={t("home.shop.eyebrow")}
-                title={t("home.shop.title")}
-                description={t("home.shop.desc")}
-              />
-              <Button asChild variant="outline" className="mb-1">
-                <Link to="/store">
-                  {t("home.shop.browse")}
-                  <ArrowRight className="size-4 rtl:rotate-180" />
-                </Link>
-              </Button>
-            </div>
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {featured.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
+        <SectionFrame tone="surface">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <SectionHeading
+              eyebrow={t("home.shop.eyebrow")}
+              title={t("home.shop.title")}
+              description={t("home.shop.desc")}
+            />
+            <Button asChild variant="outline" className="mb-1">
+              <Link to="/store">
+                {t("home.shop.browse")}
+                <ArrowRight className="size-4 rtl:rotate-180" />
+              </Link>
+            </Button>
           </div>
-        </section>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </SectionFrame>
       )}
 
       <WhyUs />
 
-      <section className="border-t border-border bg-surface py-20">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <SectionHeading
-            eyebrow={t("team.eyebrow")}
-            title={t("home.team.title")}
-            description={t("home.team.desc")}
-          />
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {doctors.slice(0, 3).map((doctor, i) => (
-              <DoctorCard key={doctor.id} doctor={doctor} index={i} />
-            ))}
-          </div>
+      <SectionFrame tone="surface">
+        <SectionHeading
+          eyebrow={t("team.eyebrow")}
+          title={t("home.team.title")}
+          description={t("home.team.desc")}
+        />
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {doctors.slice(0, 3).map((doctor, i) => (
+            <DoctorCard key={doctor.id} doctor={doctor} index={i} />
+          ))}
         </div>
-      </section>
+      </SectionFrame>
 
-      <BookingTimeline />
       <Testimonials />
       <Faq />
+      <CtaBand />
     </>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatusOrb } from "@/design-system/primitives/StatusOrb";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useHardwareScanner } from "./useHardwareScanner";
@@ -37,11 +38,7 @@ export function ScannerStatus({ className }: { className?: string }) {
 
   const active = detected && lastAt !== null && now - lastAt <= SCANNER_ACTIVE_WINDOW_MS;
 
-  const dotClass = cn(
-    "size-2 shrink-0 rounded-full",
-    active ? "bg-success" : detected ? "bg-muted-foreground" : "bg-warning",
-    active && "animate-pulse",
-  );
+  const orbTone = active ? "ok" : detected ? "idle" : "watch";
 
   let message: string;
   if (active && lastAt !== null) message = t("cashier.scannerActive", { ago: timeAgo(lastAt, t) });
@@ -50,12 +47,15 @@ export function ScannerStatus({ className }: { className?: string }) {
   else message = t("cashier.scannerNever");
 
   return (
-    <div className={cn("rounded-lg border bg-muted/40 px-3 py-2.5", className)}>
+    <div
+      className={cn(
+        "rounded-[var(--radius-lg)] border border-border bg-surface-2/60 px-3 py-2.5",
+        className,
+      )}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="inline-flex items-center gap-2 text-sm font-medium">
-          <span className={cn("relative flex items-center", active && "text-success")}>
-            <span className={dotClass} aria-hidden />
-          </span>
+        <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <StatusOrb tone={orbTone} size="sm" pulse={active} />
           {message}
         </span>
         {detected && (

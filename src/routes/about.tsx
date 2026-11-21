@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { SectionHeading } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { CountUp, Reveal } from "@/components/motion-primitives";
 import { STATS, WHY_US } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
@@ -27,22 +28,19 @@ function AboutPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.about.eyebrow")}
+        title={t("page.about.title")}
+        description={t("page.about.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
               { label: t("crumb.about"), to: "/about" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.about.eyebrow")}
-            title={t("page.about.title")}
-            description={t("page.about.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">

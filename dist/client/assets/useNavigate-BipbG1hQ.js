@@ -1,1 +1,0 @@
-import{n as e}from"./useSelector-B0ku3ds2.js";import{i as t,n}from"./jsx-runtime-DyZJNswf.js";var r=t(n(),1);function i(t){let n=e();return r.useCallback(e=>n.navigate({...e,from:e.from??t?.from}),[t?.from,n])}export{i as t};

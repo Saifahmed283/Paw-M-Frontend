@@ -147,10 +147,10 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
                 disabled={out}
                 onClick={() => onAdd(p)}
                 className={cn(
-                  "group relative flex flex-col overflow-hidden rounded-xl border bg-card text-start transition-all duration-200",
+                  "group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--panel-border)] bg-[var(--panel-bg)] text-start shadow-[var(--shadow-1)] transition-all duration-200 ease-[var(--ease-entrance)]",
                   out
-                    ? "border-border opacity-50"
-                    : "border-border hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md",
+                    ? "opacity-50"
+                    : "hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[var(--shadow-2)]",
                 )}
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-muted">
@@ -182,12 +182,12 @@ export function QuickAddGrid({ products, cart, currency, onAdd }: Props) {
                     {p.name}
                   </p>
                   <div className="mt-auto flex items-center justify-between gap-1">
-                    <span className="truncate text-sm font-bold text-primary">
+                    <span className="truncate font-data text-sm font-bold text-primary-strong tabular-nums">
                       {formatPrice(p.price, currency)}
                     </span>
                     <span
                       className={cn(
-                        "grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground",
+                        "grid size-6 shrink-0 place-items-center rounded-full bg-primary-tint text-primary transition group-hover:bg-primary group-hover:text-primary-foreground",
                         atMax && !out && "opacity-40",
                       )}
                       aria-hidden

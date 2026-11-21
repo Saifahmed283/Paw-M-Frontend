@@ -36,7 +36,7 @@ export function AddToCartButton({
     return (
       <div
         className={cn(
-          "flex w-full items-stretch overflow-hidden rounded-lg border bg-background",
+          "flex w-full items-stretch overflow-hidden rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-[var(--surface)]",
           compact ? "h-8" : "h-9",
         )}
       >
@@ -52,11 +52,11 @@ export function AddToCartButton({
               setCartQty(product.id, inCart.qty - 1);
             }
           }}
-          className="grid w-8 shrink-0 place-items-center bg-muted text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive active:scale-95"
+          className="grid w-8 shrink-0 place-items-center bg-[var(--surface-2)] text-ink-soft transition-colors hover:bg-[var(--status-critical-bg)] hover:text-urgent active:scale-95"
         >
           <Minus className="size-4" />
         </button>
-        <span className="flex min-w-8 flex-1 items-center justify-center border-x border-border/60 text-sm font-semibold text-foreground">
+        <span className="flex min-w-8 flex-1 items-center justify-center border-x border-[var(--line)] text-sm font-semibold text-foreground tabular-nums">
           {inCart.qty}
         </span>
         <button
@@ -68,7 +68,7 @@ export function AddToCartButton({
             e.preventDefault();
             addToCart(product);
           }}
-          className="grid w-8 shrink-0 place-items-center bg-muted text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="grid w-8 shrink-0 place-items-center bg-[var(--surface-2)] text-ink-soft transition-colors hover:bg-[var(--primary-tint)] hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus className="size-4" />
         </button>
@@ -78,7 +78,7 @@ export function AddToCartButton({
   return (
     <Button
       size="sm"
-      className={cn("w-full transition-transform hover:scale-[1.03]", compact && "h-8")}
+      className={cn("w-full", compact && "h-8")}
       onClick={(e) => {
         e.preventDefault();
         addToCart(product);
@@ -112,14 +112,14 @@ export function WishlistButton({
       aria-label={wished ? t("wishlist.remove") : t("wishlist.add")}
       aria-pressed={wished}
       className={cn(
-        "grid size-8 place-items-center rounded-full bg-background/80 shadow-card backdrop-blur transition-all hover:scale-110",
+        "grid size-8 place-items-center rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-1)] transition-transform hover:scale-105",
         className,
       )}
     >
       <Heart
         className={cn(
           "size-4 transition-colors",
-          wished ? "fill-rose-500 text-rose-500" : "text-muted-foreground",
+          wished ? "fill-urgent text-urgent" : "text-ink-faint",
         )}
       />
     </button>
@@ -131,11 +131,11 @@ export function ProductPrice({ product }: { product: Product }) {
   const sale = product.compareAtPrice != null && product.compareAtPrice > product.price;
   return (
     <span className="flex flex-col self-start">
-      <span className="text-lg font-bold tracking-tight text-foreground">
+      <span className="font-data text-lg font-bold tracking-tight text-foreground tabular-nums">
         {formatPrice(product.price, settings.currency)}
       </span>
       {sale && (
-        <span className="text-xs font-medium text-muted-foreground line-through">
+        <span className="font-mono text-xs font-medium text-ink-faint line-through">
           {formatPrice(product.compareAtPrice ?? 0, settings.currency)}
         </span>
       )}
@@ -153,9 +153,9 @@ export function ProductCard({ product }: { product: Product }) {
     <Link
       to="/store/$productId"
       params={{ productId: product.id }}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/30 hover:shadow-raised"
+      className="group flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-1)] transition-all duration-200 ease-[var(--ease-entrance)] hover:border-[var(--gold-500)] hover:shadow-[var(--shadow-2)]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden border-b border-[var(--line)] bg-white">
         {product.image ? (
           <img
             src={product.image}
@@ -175,34 +175,33 @@ export function ProductCard({ product }: { product: Product }) {
             </svg>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         {product.featured && (
-          <Badge className="absolute left-6 top-6 border-0 bg-primary/90 text-primary-foreground shadow-sm backdrop-blur-md">
+          <Badge className="absolute start-3 top-3 border-transparent bg-[var(--navy-900)] text-[var(--gold-400)] shadow-[var(--shadow-1)]">
             <Sparkles className="mr-1 size-3" />
             {t("store.featured")}
           </Badge>
         )}
 
-        <WishlistButton productId={product.id} className="absolute right-3 top-3" />
+        <WishlistButton productId={product.id} className="absolute end-3 top-3" />
 
         {out ? (
-          <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-[2px]">
-            <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
+          <div className="absolute inset-0 grid place-items-center bg-[var(--canvas)]/85">
+            <span className="rounded-[var(--radius-sm)] bg-[var(--navy-900)] px-3 py-1 text-xs font-semibold text-white">
               {t("store.outOfStock")}
             </span>
           </div>
         ) : (
           <span
             className={cn(
-              "pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-md",
+              "pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-[var(--radius-sm)] border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em]",
               lowStock
-                ? "border-amber-400/60 bg-amber-400/90 text-amber-900 dark:text-amber-950"
-                : "border-white/20 bg-white/90 text-emerald-700 dark:border-white/10 dark:bg-foreground/90 dark:text-background",
+                ? "border-[var(--status-watch)]/40 bg-[var(--status-watch-bg)] text-[var(--status-watch-ink)]"
+                : "border-[var(--line)] bg-[var(--surface)] text-ink-soft",
             )}
           >
             <span
-              className={cn("size-1.5 rounded-full", lowStock ? "bg-amber-700" : "bg-emerald-500")}
+              className={cn("size-1.5 rounded-full", lowStock ? "bg-status-watch" : "bg-status-ok")}
             />
             {lowStock ? t("store.left", { count: String(product.stock) }) : t("store.inStock")}
           </span>
@@ -210,24 +209,24 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+        <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
           <span className="inline-flex items-center gap-1">
             <PetIcon className="size-3.5" />
             {t(`store.pet.${product.petType ?? "both"}`)}
           </span>
-          <span className="text-muted-foreground/40">·</span>
+          <span className="text-line-strong">/</span>
           <span>{tOr(`store.cat.${categoryKey(product.category)}`, product.category)}</span>
         </div>
 
-        <h3 className="mt-2.5 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400">
+        <h3 className="mt-3 line-clamp-2 text-[15px] font-bold leading-snug transition-colors group-hover:text-[var(--blue-700)] dark:group-hover:text-[var(--blue-400)]">
           {product.name}
         </h3>
 
-        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-ink-soft">
           {product.description}
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/60 pt-3.5">
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
           <ProductPrice product={product} />
           <div className="w-28 shrink-0">
             <AddToCartButton product={product} compact />

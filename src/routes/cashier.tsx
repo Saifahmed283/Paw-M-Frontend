@@ -62,6 +62,7 @@ import { LanguageToggle } from "@/lib/i18n-components";
 import { useTheme } from "@/lib/use-theme-hook";
 import { cn } from "@/lib/utils";
 import { StaffAuthGate } from "@/components/auth/StaffAuthGate";
+import { StatusOrb } from "@/design-system/primitives/StatusOrb";
 import { clinicTodayISO } from "@/components/dashboard/dashboard-format";
 import { PaymentKindBadge } from "@/components/dashboard/dashboard-helpers";
 import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog";
@@ -147,41 +148,46 @@ function CashierPage() {
   const checkedIn = isCheckedInToday(workSession);
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
+    <div className="relative flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--canvas)]">
       {/* Compact POS toolbar — the marketing header/footer are hidden for this
           route in __root.tsx so the counter stays focused and uncluttered. */}
-      <header className="z-30 shrink-0 border-b border-border bg-card">
-        <div className="mx-auto flex h-12 max-w-[1600px] items-center justify-between gap-3 px-3 sm:px-5">
+      <header className="relative z-30 shrink-0 border-b border-[var(--navy-700)] bg-[var(--navy-900)] text-white">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[var(--gold-500)]/55" />
+        <div className="relative mx-auto flex h-12 max-w-[1600px] items-center justify-between gap-3 px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
-            <h1 className="truncate text-base font-semibold">{t("cashier.title")}</h1>
-            {/* No site navigation here — once on the till, staff stay on the till. */}
-            <span
-              className={cn(
-                "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium sm:inline-flex",
-                checkedIn
-                  ? "border-success/30 bg-success/10 text-success"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-600",
-              )}
-            >
-              <span
-                className={cn("size-1.5 rounded-full", checkedIn ? "bg-success" : "bg-amber-500")}
-              />
-              {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
+            <span className="grid size-7 place-items-center rounded-[var(--radius-md)] border border-[var(--gold-500)]/50 text-[var(--gold-400)]">
+              <ScanLine className="size-4" />
             </span>
+            <h1 className="truncate font-display text-base font-semibold tracking-tight text-white">
+              {t("cashier.title")}
+            </h1>
+            {/* No site navigation here — once on the till, staff stay on the till. */}
+            <StatusOrb
+              tone={checkedIn ? "ok" : "watch"}
+              size="sm"
+              label={checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
+              className="hidden rounded-[var(--radius-sm)] border border-white/15 bg-white/5 px-2.5 py-1 [&>span:last-child]:text-white/80 sm:inline-flex"
+            />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button variant="outline" size="sm" asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="border-white/20 bg-transparent text-white/85 hover:bg-white/10 hover:text-white"
+            >
               <Link to="/dashboard">
                 <LogOut className="size-4 rtl:rotate-180" />
                 <span className="hidden sm:inline">{t("cashier.exit")}</span>
               </Link>
             </Button>
-            <LanguageToggle />
+            <LanguageToggle className="text-white/80 hover:bg-white/10 hover:text-white" />
             <Button
               variant="ghost"
               size="icon"
               onClick={toggle}
               aria-label={dark ? t("header.lightMode") : t("header.darkMode")}
+              className="text-white/70 hover:bg-white/10 hover:text-white"
             >
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
@@ -353,8 +359,8 @@ function ShiftRequiredGate() {
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="w-full max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/5 p-8 text-center">
-        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-500/15 text-amber-600">
+      <div className="w-full max-w-md rounded-[var(--radius-2xl)] border border-status-watch/25 bg-[var(--status-watch-bg)] p-8 text-center shadow-[var(--shadow-2)]">
+        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--panel-bg-solid)] text-status-watch-ink ring-1 ring-status-watch/20">
           <LogIn className="size-6" />
         </span>
         <h2 className="mt-4 text-lg font-bold">{t("cashier.checkInRequired")}</h2>
@@ -738,7 +744,7 @@ function CashierApp() {
             {t("cashier.cashReceivedNotice")}
           </p>
         ) : (
-          <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-center text-sm text-amber-600">
+          <p className="rounded-xl border border-status-watch/25 bg-[var(--status-watch-bg)] p-4 text-center text-sm font-medium text-status-watch-ink">
             {t("cashier.paymentPendingNotice")}
           </p>
         )}
@@ -752,27 +758,27 @@ function CashierApp() {
   const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden bg-muted/20 p-2 sm:p-3">
+    <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2 sm:p-3">
       {/* ── TOP COMMAND BAR ─────────────────────────────────────────────── */}
-      <section className="shrink-0 animate-in fade-in slide-in-from-top-3 rounded-2xl border bg-card p-2.5 shadow-sm duration-500 sm:p-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <section className="relative shrink-0 animate-in fade-in slide-in-from-top-3 rounded-[var(--radius-lg)] border border-[var(--line)] border-t-2 border-t-[var(--gold-500)] bg-[var(--surface)] p-3 shadow-[var(--shadow-1)] duration-500 sm:p-4">
+        <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Big total readout */}
           <div className="min-w-[110px]">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">
               {t("cashier.total")}
             </p>
-            <p className="text-2xl font-black leading-tight tabular-nums tracking-tight text-foreground sm:text-3xl">
+            <p className="font-data text-2xl font-black leading-tight tabular-nums tracking-tight text-foreground sm:text-3xl">
               {formatPrice(totals.total, settings.currency)}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="font-mono text-[11px] text-ink-soft">
               {itemCount} {t("cashier.items").toLowerCase()}
             </p>
           </div>
 
-          <div className="hidden h-12 w-px bg-border sm:block" />
+          <div className="hidden h-12 w-px bg-[var(--line)] sm:block" />
 
           {/* Payment method selector */}
-          <div className="flex items-center gap-1 rounded-xl bg-muted p-1">
+          <div className="flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--surface-2)] p-1">
             {PAYMENT_METHODS.map((m) => (
               <button
                 key={m.value}
@@ -784,10 +790,10 @@ function CashierApp() {
                 aria-pressed={method === m.value}
                 title={t(m.short)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all sm:px-2.5 sm:py-2",
+                  "flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-semibold transition-colors sm:px-2.5 sm:py-2",
                   method === m.value
-                    ? "bg-background text-primary shadow-sm"
-                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                    ? "bg-[var(--navy-900)] text-[var(--gold-400)] shadow-[var(--shadow-1)]"
+                    : "text-ink-soft hover:bg-[var(--surface)] hover:text-foreground",
                 )}
               >
                 <m.icon className="size-4" />
@@ -819,7 +825,7 @@ function CashierApp() {
               onClick={() => setRefundOpen(true)}
               title={t("cashier.refund")}
               aria-label={t("cashier.refund")}
-              className="hidden text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
+              className="hidden text-ink-soft hover:bg-primary-tint hover:text-primary-strong sm:inline-flex"
             >
               <Undo2 className="size-4" />
             </Button>
@@ -831,7 +837,7 @@ function CashierApp() {
               disabled={cart.length === 0}
               title={t("cashier.receiptPreview")}
               aria-label={t("cashier.receiptPreview")}
-              className="hidden text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
+              className="hidden text-ink-soft hover:bg-primary-tint hover:text-primary-strong sm:inline-flex"
             >
               <ReceiptText className="size-4" />
             </Button>
@@ -840,7 +846,7 @@ function CashierApp() {
               onClick={submit}
               size="lg"
               disabled={busy || cart.length === 0}
-              className="h-10 gap-2 rounded-xl px-3 shadow-glow sm:h-11 sm:px-5"
+              className="h-10 gap-2 rounded-[var(--radius-md)] px-3 sm:h-11 sm:px-5"
             >
               <Wallet className="size-4" />
               {busy ? "…" : t("cashier.completeSale")}
@@ -854,7 +860,7 @@ function CashierApp() {
             <div className="space-y-1">
               <Label
                 htmlFor="cashier-customer-name"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
               >
                 {t("cashier.customerName")}
               </Label>
@@ -870,7 +876,7 @@ function CashierApp() {
             <div className="space-y-1">
               <Label
                 htmlFor="cashier-customer-phone"
-                className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
               >
                 {t("cashier.customerPhone")}
               </Label>
@@ -885,14 +891,9 @@ function CashierApp() {
               />
             </div>
           </div>
-          <div className="mb-1 flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground sm:w-auto sm:flex-1">
-            <span className="flex items-center gap-1.5 font-medium">
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  checkedIn ? "animate-pulse bg-success" : "bg-amber-500",
-                )}
-              />
+          <div className="mb-1 flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-soft sm:w-auto sm:flex-1">
+            <span className="flex items-center gap-1.5 font-semibold">
+              <StatusOrb tone={checkedIn ? "ok" : "watch"} size="sm" />
               {checkedIn ? t("cashier.shiftOpen") : t("cashier.shiftClosed")}
             </span>
             <span className="hidden sm:inline">
@@ -916,30 +917,32 @@ function CashierApp() {
       </section>
 
       {method === "instapay" && (
-        <p className="shrink-0 rounded-xl border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs">
-          <span className="font-semibold text-primary">{t("checkout.method.instapay.short")}</span>{" "}
+        <p className="shrink-0 rounded-xl border border-primary/25 bg-primary-tint px-3 py-1.5 text-xs">
+          <span className="font-semibold text-primary-strong">
+            {t("checkout.method.instapay.short")}
+          </span>{" "}
           <span className="font-mono font-bold">{settings.instapay}</span>
-          <span className="ms-2 text-amber-600">{t("cashier.paymentPendingNotice")}</span>
+          <span className="ms-2 text-status-watch-ink">{t("cashier.paymentPendingNotice")}</span>
         </p>
       )}
 
       {/* ── WORKSPACE ───────────────────────────────────────────────────── */}
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-2 md:grid-cols-[minmax(0,1fr)_340px] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* Product catalog */}
-        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden bg-card duration-500 slide-in-from-left-3">
+        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border-t-2 border-t-[var(--gold-500)] border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-1)] duration-500 slide-in-from-left-3">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <CardHeader className="shrink-0 gap-2 border-b bg-background/50 p-2.5 sm:p-3">
-              <div className="flex items-center gap-2.5">
-                <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+            <CardHeader className="shrink-0 gap-2 border-b border-[var(--line)] bg-[var(--surface-2)] p-3 sm:p-4">
+              <div className="flex items-center gap-3">
+                <span className="grid size-9 place-items-center rounded-[var(--radius-md)] bg-[var(--navy-900)] text-[var(--gold-400)]">
                   <Grid2X2 className="size-4" />
                 </span>
                 <div className="min-w-0">
                   <CardTitle className="text-sm">{t("cashier.addProducts")}</CardTitle>
-                  <p className="truncate text-[11px] text-muted-foreground">
+                  <p className="truncate text-[11px] text-ink-soft">
                     {t("cashier.scanPlaceholder")}
                   </p>
                 </div>
@@ -1032,10 +1035,10 @@ function CashierApp() {
         </Card>
 
         {/* Live cart */}
-        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden bg-card duration-500 slide-in-from-right-3">
-          <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b bg-background/50 p-2.5 sm:p-3">
-            <div className="flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+        <Card className="animate-in flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border-t-2 border-t-[var(--gold-500)] border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-1)] duration-500 slide-in-from-right-3">
+          <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--surface-2)] p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-[var(--radius-md)] bg-[var(--navy-900)] text-[var(--gold-400)]">
                 <ShoppingCart className="size-4" />
               </span>
               <div>
@@ -1115,8 +1118,8 @@ function CashierApp() {
                       className={cn(
                         "group rounded-xl border p-2.5 transition-all",
                         lastScanned === item.id
-                          ? "border-primary bg-primary/5 shadow-glow"
-                          : "bg-background hover:border-primary/40",
+                          ? "border-[var(--gold-500)] bg-[var(--gold-tint)]"
+                          : "bg-[var(--surface-2)] hover:border-[var(--gold-500)]/50",
                       )}
                     >
                       <div className="flex gap-2.5">

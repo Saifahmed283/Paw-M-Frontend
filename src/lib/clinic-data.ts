@@ -131,14 +131,6 @@ export const WHY_US = [
     title: "Emergency services",
     detail: "A staffed critical care team on the floor, not a redirected answering service.",
   },
-  {
-    title: "Personalised treatment",
-    detail: "Care plans built around your pet's age and history — not a template.",
-  },
-  {
-    title: "Digital medical records",
-    detail: "Your pet's complete chart, available to you and any clinic you choose.",
-  },
 ];
 
 export type Doctor = {
@@ -227,14 +219,6 @@ export const CLINIC_REVIEWS = [
     comment:
       "One of the most comfortable pet clinics I've ever been to. Dr. Mirna is a very skilled doctor.",
   },
-];
-
-export const BOOKING_STEPS = [
-  { title: "Choose a date", detail: "Live availability across every clinician." },
-  { title: "Pick a time", detail: "Booked slots disappear as you look." },
-  { title: "Tell us about your pet", detail: "Species, age, weight, history." },
-  { title: "Describe the case", detail: "Symptoms, medications, allergies." },
-  { title: "Confirm", detail: "Summary, calendar invite and reminders." },
 ];
 
 export const TESTIMONIALS = [

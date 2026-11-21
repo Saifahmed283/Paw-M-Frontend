@@ -11,7 +11,7 @@ import {
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { ProductCard } from "@/components/site/ProductCard";
-import { SectionHeading } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
@@ -110,22 +110,19 @@ function StorePage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.store.eyebrow")}
+        title={t("page.store.title")}
+        description={t("page.store.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
               { label: t("crumb.store"), to: "/store" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.store.eyebrow")}
-            title={t("page.store.title")}
-            description={t("page.store.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 pb-8 pt-6 sm:px-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

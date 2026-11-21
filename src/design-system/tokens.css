@@ -1,0 +1,271 @@
+/*
+ * Paw-M — "The Crest" (Editorial Heritage)
+ *
+ * Every colour is sampled from Paw-Clinic-Veterinary-Badge.png:
+ *   deep navy field, royal/sky blue mark, gold accent, white.
+ * The only derived hues are the warm paper neutrals and a single deepened
+ * amber for destructive states — everything else is literally from the badge.
+ *
+ * Surfaces are SOLID paper with hairline rules. There is no glassmorphism.
+ * Spacing resolves to an 8px rhythm (--sp-1 … --sp-12).
+ */
+
+:root {
+  /* ============================================================
+   * BRAND — sampled from the badge
+   * ============================================================ */
+  --navy-950: #000c26;
+  --navy-900: #001040; /* the badge field */
+  --navy-800: #001848;
+  --navy-700: #002060; /* primary navy */
+  --navy-600: #00307d;
+  --blue-700: #003b8f;
+  --blue-600: #0040a0; /* royal blue in the mark */
+  --blue-500: #0060c0;
+  --blue-400: #0090e8;
+  --blue-300: #00a0f8; /* brightest sky blue in the mark */
+  --gold-700: #8a6800; /* legible gold ink on paper */
+  --gold-600: #b38900;
+  --gold-500: #ffc000; /* the badge gold */
+  --gold-400: #ffd000;
+  --gold-300: #ffe010;
+  --amber-deep: #a8301b; /* deepened gold → destructive signal */
+
+  /* ============================================================
+   * PAPER + INK (warm neutrals derived from the badge white)
+   * ============================================================ */
+  --canvas: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #efece4;
+  --ink: var(--navy-900);
+  --ink-soft: #46536b;
+  --ink-faint: #78859a;
+  --line: #e3ded1;
+  --line-strong: #cfc8b6;
+
+  /* ============================================================
+   * ROLE TOKENS
+   * ============================================================ */
+  --primary: var(--navy-700);
+  --primary-strong: var(--navy-900);
+  --primary-tint: #e9edf4;
+  --accent: var(--blue-500);
+  --accent-tint: #e6f1fb;
+  --gold: var(--gold-500);
+  --gold-tint: #fff5d6;
+  --gold-ink: var(--gold-700);
+  --urgent: var(--amber-deep);
+  --urgent-tint: #fbeae6;
+  --warm: var(--gold-500);
+  --warm-tint: var(--gold-tint);
+
+  /* Status vocabulary — shared by store, dashboard and cashier */
+  --status-ok: var(--blue-600);
+  --status-ok-bg: var(--accent-tint);
+  --status-watch: var(--gold-600);
+  --status-watch-bg: var(--gold-tint);
+  --status-critical: var(--urgent);
+  --status-critical-bg: var(--urgent-tint);
+  --status-watch-ink: var(--gold-700);
+  --accent-ink: var(--blue-700);
+
+  /* ============================================================
+   * PAPER PANELS — solid, hairline-bordered, no blur
+   * ============================================================ */
+  --panel-bg: var(--surface);
+  --panel-bg-solid: var(--surface);
+  --panel-border: var(--line);
+  --panel-highlight: none;
+  --shadow-1: 0 1px 0 var(--line);
+  --shadow-2: 0 1px 0 var(--line-strong), 0 8px 24px -20px rgb(0 16 64 / 0.35);
+  --shadow-3: 0 1px 0 var(--line-strong), 0 20px 48px -28px rgb(0 16 64 / 0.4);
+  --shadow-focus: 0 0 0 3px rgb(0 96 192 / 0.22);
+
+  /* ============================================================
+   * RADII — restrained, architectural
+   * ============================================================ */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  --radius-4xl: 20px;
+
+  /* ============================================================
+   * 8PX SPACING RHYTHM
+   * ============================================================ */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 40px;
+  --sp-6: 48px;
+  --sp-8: 64px;
+  --sp-10: 80px;
+  --sp-12: 96px;
+
+  /* Semantic aliases consumed by shadcn/Radix (untouched component files) */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --surface-elevated: var(--surface);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-soft);
+  --accent-foreground: #ffffff;
+  --destructive: var(--urgent);
+  --destructive-foreground: #ffffff;
+  --success: var(--blue-600);
+  --success-foreground: #ffffff;
+  --warning: var(--gold-500);
+  --warning-foreground: var(--navy-900);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--accent);
+
+  --chart-1: var(--blue-600);
+  --chart-2: var(--navy-700);
+  --chart-3: var(--blue-300);
+  --chart-4: var(--gold-500);
+  --chart-5: var(--urgent);
+
+  --sidebar: var(--navy-900);
+  --sidebar-foreground: #f4f1e8;
+  --sidebar-primary: var(--gold-500);
+  --sidebar-primary-foreground: var(--navy-900);
+  --sidebar-accent: var(--navy-700);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: var(--navy-700);
+  --sidebar-ring: var(--gold-500);
+
+  /* Background wash — navy field with a restrained gold glow */
+  --gradient-hero:
+    radial-gradient(80% 60% at 8% 0%, rgb(0 32 96 / 0.06) 0%, transparent 60%),
+    radial-gradient(60% 50% at 96% 8%, rgb(255 192 0 / 0.12) 0%, transparent 55%);
+  --gradient-primary: linear-gradient(120deg, var(--navy-800), var(--navy-700));
+  --gradient-soft: linear-gradient(120deg, var(--navy-700), var(--blue-600));
+  --gradient-gold: linear-gradient(120deg, var(--gold-400), var(--gold-600));
+
+  /* Legacy aliases — untouched routes keep rendering during phasing */
+  --glass-bg: var(--panel-bg);
+  --glass-border: var(--panel-border);
+  --blob-1: transparent;
+  --blob-2: transparent;
+  --blob-3: transparent;
+  --blob-4: transparent;
+  --primary-glow: rgb(0 96 192 / 0.14);
+  --brass: var(--gold-600);
+  --brass-foreground: var(--navy-900);
+  --brass-strong: var(--gold-700);
+
+  --ease-entrance: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Fluid type scale — serif display wants a touch more room */
+  --step--1: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
+  --step-0: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --step-1: clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);
+  --step-2: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --step-3: clamp(1.75rem, 1.45rem + 1.4vw, 2.5rem);
+  --step-4: clamp(2.25rem, 1.7rem + 2.6vw, 3.5rem);
+  --step-5: clamp(2.9rem, 2rem + 4.2vw, 5rem);
+}
+
+/* ============================================================
+ * DARK — the badge field itself: deep navy with gold
+ * ============================================================ */
+.dark {
+  --canvas: #000c26;
+  --surface: #00123a;
+  --surface-2: #001a4c;
+  --ink: #f5f2e9;
+  --ink-soft: #b8c5d8;
+  --ink-faint: #8598b2;
+  --line: #17345f;
+  --line-strong: #244876;
+
+  --primary: #6ba6e8;
+  --primary-strong: #a9cdf2;
+  --primary-tint: #002358;
+  --accent: #58b4f5;
+  --accent-tint: #002b63;
+  --gold: var(--gold-400);
+  --gold-tint: #2c2300;
+  --gold-ink: var(--gold-300);
+  --urgent: #e8785f;
+  --urgent-tint: #3a120c;
+  --warm: var(--gold-400);
+  --warm-tint: var(--gold-tint);
+
+  --status-ok: var(--accent);
+  --status-ok-bg: var(--accent-tint);
+  --status-watch: var(--gold-300);
+  --status-watch-bg: var(--gold-tint);
+  --status-critical: var(--urgent);
+  --status-critical-bg: var(--urgent-tint);
+  --status-watch-ink: var(--gold-300);
+  --accent-ink: var(--accent);
+
+  --panel-bg: #001640;
+  --panel-bg-solid: #00123a;
+  --panel-border: var(--line);
+  --panel-highlight: none;
+  --shadow-1: 0 1px 0 var(--line);
+  --shadow-2: 0 1px 0 var(--line-strong), 0 12px 32px -24px rgb(0 0 0 / 0.7);
+  --shadow-3: 0 1px 0 var(--line-strong), 0 24px 56px -32px rgb(0 0 0 / 0.8);
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --surface-elevated: var(--surface);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary-foreground: var(--navy-950);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --accent-foreground: var(--navy-950);
+  --destructive: var(--urgent);
+  --destructive-foreground: var(--navy-950);
+  --success: var(--accent);
+  --success-foreground: var(--navy-950);
+  --warning: var(--gold-400);
+  --warning-foreground: var(--navy-950);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--accent);
+
+  --chart-1: var(--accent);
+  --chart-2: var(--gold-400);
+  --chart-3: var(--blue-300);
+  --chart-4: var(--navy-600);
+  --chart-5: var(--urgent);
+
+  --sidebar: #000a20;
+  --sidebar-foreground: #f5f2e9;
+  --sidebar-primary: var(--gold-400);
+  --sidebar-primary-foreground: var(--navy-950);
+  --sidebar-accent: var(--navy-800);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: var(--navy-700);
+  --sidebar-ring: var(--gold-400);
+
+  --gradient-hero:
+    radial-gradient(80% 60% at 8% 0%, rgb(0 64 160 / 0.18) 0%, transparent 60%),
+    radial-gradient(60% 50% at 96% 8%, rgb(255 192 0 / 0.1) 0%, transparent 55%);
+  --gradient-primary: linear-gradient(120deg, var(--navy-700), var(--blue-600));
+  --gradient-soft: linear-gradient(120deg, var(--navy-700), var(--blue-500));
+
+  --glass-bg: var(--panel-bg);
+  --glass-border: var(--panel-border);
+  --primary-glow: rgb(104 166 232 / 0.18);
+  --brass: var(--gold-400);
+  --brass-foreground: var(--navy-950);
+  --brass-strong: var(--gold-300);
+}

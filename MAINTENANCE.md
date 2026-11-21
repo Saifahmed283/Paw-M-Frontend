@@ -5,16 +5,16 @@ under-construction page on **every** route instead of the real pages.
 
 ## Where things live
 
-| Path                                     | What it is                                                       |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| `public/maintenance/index.html`          | The under-construction page (your markup)                         |
-| `public/maintenance/styles.css`          | The page's stylesheet                                             |
-| `nginx.maintenance.conf`                 | nginx config used while the site is paused                        |
-| `nginx.conf`                             | The normal nginx config (the real site)                           |
-| `Dockerfile` (`ARG MAINTENANCE`)         | Chooses which of the two configs gets baked into the image        |
+| Path                             | What it is                                                 |
+| -------------------------------- | ---------------------------------------------------------- |
+| `public/maintenance/index.html`  | The under-construction page (your markup)                  |
+| `public/maintenance/styles.css`  | The page's stylesheet                                      |
+| `nginx.maintenance.conf`         | nginx config used while the site is paused                 |
+| `nginx.conf`                     | The normal nginx config (the real site)                    |
+| `Dockerfile` (`ARG MAINTENANCE`) | Chooses which of the two configs gets baked into the image |
 
 The page **must not** live at `public/index.html`: Vite copies `public/` into the
-build output *before* the router prerenders, and the prerendered home page then
+build output _before_ the router prerenders, and the prerendered home page then
 overwrites it. A `public/index.html` is silently dropped by the build.
 
 ## Pause / resume
@@ -26,9 +26,9 @@ ARG MAINTENANCE=true    # paused  -> under-construction page on every route
 ARG MAINTENANCE=false   # live    -> the real site
 ```
 
-* **Pause** (current state): build with `MAINTENANCE=true` (the default) and
+- **Pause** (current state): build with `MAINTENANCE=true` (the default) and
   redeploy the frontend.
-* **Resume**: build with `--build-arg MAINTENANCE=false` (or change the default
+- **Resume**: build with `--build-arg MAINTENANCE=false` (or change the default
   in the `Dockerfile` to `false`), rebuild and redeploy. Nothing else to undo -
   the React app, its routes and its content were never touched.
 
@@ -56,7 +56,7 @@ To show a live "back in X min" countdown, set the expected return time on the
 `<body>` tag:
 
 ```html
-<body data-eta="2026-10-21T22:00:00+03:00">
+<body data-eta="2026-10-21T22:00:00+03:00"></body>
 ```
 
 ## Checking it locally

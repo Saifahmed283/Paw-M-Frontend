@@ -3,7 +3,7 @@ import { Clock, Mail, MapPin, MessageCircle, Phone, Siren } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { Reveal } from "@/components/motion-primitives";
-import { SectionHeading } from "@/components/site/sections";
+import { PageIntro } from "@/design-system/primitives/PageIntro";
 import { CLINIC } from "@/lib/clinic-data";
 import { useClinicStore } from "@/lib/clinic-store";
 import { useI18n } from "@/lib/i18n";
@@ -64,22 +64,19 @@ function ContactPage() {
 
   return (
     <>
-      <section className="hero-gradient border-b border-border pb-4 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <PageIntro
+        eyebrow={t("page.contact.eyebrow")}
+        title={t("page.contact.title")}
+        description={t("page.contact.desc")}
+        crumb={
           <Breadcrumbs
             items={[
               { label: t("crumb.home"), to: "/" },
               { label: t("crumb.contact"), to: "/contact" },
             ]}
           />
-          <SectionHeading
-            eyebrow={t("page.contact.eyebrow")}
-            title={t("page.contact.title")}
-            description={t("page.contact.desc")}
-            as="h1"
-          />
-        </div>
-      </section>
+        }
+      />
 
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

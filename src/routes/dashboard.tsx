@@ -82,6 +82,7 @@ import {
   formatTime,
 } from "@/components/dashboard/dashboard-format";
 import { StatCard, OverviewCard } from "@/components/dashboard/dashboard-shared";
+import { StatusOrb } from "@/design-system/primitives/StatusOrb";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
 import { DASHBOARD_NAVIGATE_EVENT, type DashboardNavigateDetail } from "@/lib/dashboard-navigation";
@@ -237,25 +238,29 @@ function OverviewTab() {
       label: t("dash.overview.stats.pending"),
       value: pendingCount,
       icon: Radio,
-      tone: "bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400",
+      tone: "bg-[var(--status-watch-bg)] text-status-watch-ink",
+      status: "watch" as const,
     },
     {
       label: t("dash.overview.stats.confirmed"),
       value: confirmedCount,
       icon: CalendarClock,
       tone: "bg-success/10 text-success",
+      status: "active" as const,
     },
     {
       label: t("dash.overview.stats.completed"),
       value: completedCount,
       icon: HeartPulse,
-      tone: "bg-primary/10 text-primary",
+      tone: "bg-primary-tint text-primary",
+      status: "calm" as const,
     },
     {
       label: t("dash.overview.stats.doctors"),
       value: store.doctors.length,
       icon: Stethoscope,
-      tone: "bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-400",
+      tone: "bg-accent-tint text-accent-ink",
+      status: "calm" as const,
     },
   ];
 
@@ -269,10 +274,28 @@ function OverviewTab() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-b-[var(--gold-500)] pb-4">
+        <span className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">
+          <span className="h-px w-6 bg-[var(--gold-500)]" />
+          <StatusOrb tone={pendingCount > 0 ? "watch" : "ok"} size="sm" />
+          {t("story.liveStatus")}
+        </span>
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint tabular-nums">
+          {formatDate(todayISO, lang)}
+        </span>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
-          <StatCard key={s.label} label={s.label} value={s.value} icon={s.icon} tone={s.tone} />
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            icon={s.icon}
+            tone={s.tone}
+            status={s.status}
+          />
         ))}
       </div>
 
@@ -286,17 +309,17 @@ function OverviewTab() {
             {todayAppointments.map((r) => (
               <div
                 key={r.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-muted/50"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/50 p-3 transition-colors hover:border-primary/30 hover:bg-primary-tint/40"
               >
                 <div className="flex items-center gap-3">
-                  <span className="grid size-9 place-items-center rounded-lg bg-success/15 font-mono text-xs font-bold text-success">
+                  <span className="grid h-9 min-w-14 place-items-center rounded-lg border border-primary/15 bg-primary-tint px-1 font-mono text-xs font-bold text-primary-strong tabular-nums">
                     {r.time}
                   </span>
                   <div>
-                    <p className="text-sm font-semibold">
-                      {r.petName} <span className="text-muted-foreground">— {r.ownerName}</span>
+                    <p className="text-sm font-semibold text-foreground">
+                      {r.petName} <span className="text-ink-faint">— {r.ownerName}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-soft">
                       {r.doctorName} · {tOr(`animal.${r.animalType}`, r.animalType)}
                     </p>
                   </div>
