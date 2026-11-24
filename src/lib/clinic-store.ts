@@ -258,6 +258,18 @@ export type WorkSession = {
   createdAt: string;
 };
 
+/** Start-of-shift cash custody & handover declaration for the open shift. */
+export type CashCustody = {
+  id: string;
+  workSessionId: string;
+  employeeId: string;
+  date: string;
+  hasDrawer: boolean;
+  openingAmount: number;
+  note: string;
+  createdAt: string;
+};
+
 export type AuditLog = {
   id: string;
   action: string;
@@ -301,6 +313,8 @@ type Store = {
   settings: ClinicSettings;
   workSession: WorkSession | null;
   workSessionLoading: boolean;
+  cashCustody: CashCustody | null;
+  cashCustodyLoading: boolean;
   auditLogs: AuditLog[];
   workDays: WorkDaySummary[];
   workDay: WorkDayDetail | null;
@@ -317,6 +331,7 @@ const QUERY_KEYS = {
   clients: ["clients"] as const,
   settings: ["settings"] as const,
   workSession: ["work-session"] as const,
+  cashCustody: ["cash-custody"] as const,
   auditLogs: ["audit-logs"] as const,
   workDays: ["work-days"] as const,
 } as const;
@@ -360,6 +375,8 @@ function seed(): Store {
     settings: { ...CLINIC },
     workSession: null,
     workSessionLoading: false,
+    cashCustody: null,
+    cashCustodyLoading: false,
     auditLogs: [],
     workDays: [],
     workDay: null,
@@ -524,6 +541,14 @@ export function useClinicStore() {
     enabled: mounted && isAuthed(),
   });
 
+  const { data: cashCustody = null, isLoading: cashCustodyLoading } = useQuery({
+    queryKey: QUERY_KEYS.cashCustody,
+    queryFn: () => api.get<CashCustody | null>("/work-session/custody"),
+    staleTime: Infinity,
+    placeholderData: (prev) => prev ?? null,
+    enabled: mounted && isAuthed(),
+  });
+
   const { data: auditLogs = seedDefaults.auditLogs } = useQuery({
     queryKey: QUERY_KEYS.auditLogs,
     queryFn: () => api.get<AuditLog[]>("/audit-logs?limit=200"),
@@ -571,6 +596,8 @@ export function useClinicStore() {
       // While the hook is still mounting the session query has not started yet;
       // report loading so consumers never mistake "not fetched" for "no shift".
       workSessionLoading: !mounted || workSessionLoading,
+      cashCustody: gated(cashCustody, null),
+      cashCustodyLoading: !mounted || cashCustodyLoading,
       auditLogs: gated(auditLogs, seedDefaults.auditLogs),
       workDays: gated(workDays, seedDefaults.workDays),
       workDay: gated(workDay ?? null, null),
@@ -588,6 +615,8 @@ export function useClinicStore() {
     settings,
     workSession,
     workSessionLoading,
+    cashCustody,
+    cashCustodyLoading,
     auditLogs,
     workDays,
     workDay,
@@ -611,6 +640,7 @@ export function refreshClinicData() {
   invalidate(QUERY_KEYS.clients);
   invalidate(QUERY_KEYS.settings);
   invalidate(QUERY_KEYS.workSession);
+  invalidate(QUERY_KEYS.cashCustody);
   invalidate(QUERY_KEYS.auditLogs);
   invalidate(QUERY_KEYS.workDays);
 }
@@ -1112,6 +1142,26 @@ export async function checkOut() {
   }
 }
 
+/** Record the start-of-shift cash custody & handover declaration. */
+export async function saveCashCustody(input: {
+  hasDrawer: boolean;
+  openingAmount: number;
+  note?: string;
+}): Promise<CashCustody> {
+  try {
+    const created = await api.post<CashCustody>("/work-session/custody", {
+      hasDrawer: input.hasDrawer,
+      openingAmount: input.hasDrawer ? Math.round(input.openingAmount * 100) / 100 : 0,
+      ...(input.note?.trim() ? { note: input.note.trim() } : {}),
+    });
+    invalidate(QUERY_KEYS.cashCustody);
+    return created;
+  } catch (err) {
+    console.error("Failed to save cash custody", err);
+    throw err;
+  }
+}
+
 export async function loadAuditLogs() {
   try {
     const logs = await api.get<AuditLog[]>("/audit-logs");
@@ -1203,6 +1253,8 @@ export function get(): Store {
     settings: qc.getQueryData<ClinicSettings>(QUERY_KEYS.settings) ?? { ...CLINIC },
     workSession: qc.getQueryData<WorkSession | null>(QUERY_KEYS.workSession) ?? null,
     workSessionLoading: false,
+    cashCustody: qc.getQueryData<CashCustody | null>(QUERY_KEYS.cashCustody) ?? null,
+    cashCustodyLoading: false,
     auditLogs: qc.getQueryData<AuditLog[]>(QUERY_KEYS.auditLogs) ?? [],
     workDays: qc.getQueryData<WorkDaySummary[]>(QUERY_KEYS.workDays) ?? [],
     workDay: qc.getQueryData<WorkDayDetail>(["work-day"]) ?? null,

@@ -50,6 +50,7 @@ import {
   addPaymentItem,
   checkIn,
   refreshClinicData,
+  saveCashCustody,
   settlePayment,
   type WorkSession,
 } from "@/lib/clinic-store";
@@ -380,10 +381,165 @@ function ShiftRequiredGate() {
   );
 }
 
+function CashCustodyGate() {
+  const { t } = useI18n();
+  const { settings } = useClinicStore();
+  const [hasDrawer, setHasDrawer] = useState<boolean | null>(null);
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (busy) return;
+    if (hasDrawer === null) {
+      setError(t("cashier.custodyQuestion"));
+      return;
+    }
+    let openingAmount = 0;
+    if (hasDrawer) {
+      const parsed = Number(amount);
+      if (
+        amount.trim() === "" ||
+        !Number.isFinite(parsed) ||
+        parsed < 0 ||
+        Math.round(parsed * 100) !== parsed * 100
+      ) {
+        setError(t("cashier.custodyAmountInvalid"));
+        return;
+      }
+      openingAmount = parsed;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      await saveCashCustody({
+        hasDrawer,
+        openingAmount,
+        ...(note.trim() ? { note } : {}),
+      });
+      await refreshClinicData();
+      toast.success(t("cashier.custodySaved"));
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("cashier.custodyFailed")));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="w-full max-w-lg rounded-[var(--radius-2xl)] border border-[var(--line)] border-t-2 border-t-[var(--gold-500)] bg-[var(--surface)] p-6 text-center shadow-[var(--shadow-2)] sm:p-8">
+        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--navy-900)] text-[var(--gold-400)] ring-1 ring-[var(--gold-500)]/30">
+          <Banknote className="size-6" />
+        </span>
+        <h2 className="mt-4 text-lg font-bold">{t("cashier.custodyTitle")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("cashier.custodyDesc")}</p>
+
+        <div className="mt-6 space-y-4 text-start">
+          <div className="space-y-2">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+              {t("cashier.custodyQuestion")} <span className="text-destructive">*</span>
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={hasDrawer === true ? "default" : "outline"}
+                className={cn(hasDrawer === true && "ring-2 ring-[var(--gold-500)]/50")}
+                onClick={() => {
+                  setHasDrawer(true);
+                  setError(null);
+                }}
+              >
+                {t("cashier.custodyYes")}
+              </Button>
+              <Button
+                type="button"
+                variant={hasDrawer === false ? "default" : "outline"}
+                className={cn(hasDrawer === false && "ring-2 ring-[var(--gold-500)]/50")}
+                onClick={() => {
+                  setHasDrawer(false);
+                  setAmount("");
+                  setError(null);
+                }}
+              >
+                {t("cashier.custodyNo")}
+              </Button>
+            </div>
+          </div>
+
+          {hasDrawer === true && (
+            <>
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="cashier-custody-amount"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
+                >
+                  {t("cashier.custodyAmountLabel")} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="cashier-custody-amount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={t("cashier.custodyAmountPlaceholder")}
+                  className={cn("h-11 text-base", error && "border-destructive")}
+                  autoFocus
+                />
+                <p className="font-mono text-[11px] text-ink-soft">{settings.currency}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="cashier-custody-note"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint"
+                >
+                  {t("cashier.custodyNoteLabel")}
+                </Label>
+                <Input
+                  id="cashier-custody-note"
+                  value={note}
+                  maxLength={200}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={t("cashier.custodyNotePlaceholder")}
+                  className="h-10 text-sm"
+                />
+              </div>
+            </>
+          )}
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+
+        <Button
+          onClick={submit}
+          disabled={busy || hasDrawer === null}
+          className="mt-6 w-full shadow-glow"
+        >
+          {busy ? t("cashier.custodySaving") : t("cashier.custodySubmit")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CashierApp() {
   const { t } = useI18n();
-  const { products, services, orders, settings, workSession, workSessionLoading } =
-    useClinicStore();
+  const {
+    products,
+    services,
+    orders,
+    settings,
+    workSession,
+    workSessionLoading,
+    cashCustody,
+    cashCustodyLoading,
+  } = useClinicStore();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, ItemDiscount>>({});
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscount>({ type: "none", value: 0 });
@@ -725,7 +881,7 @@ function CashierApp() {
 
   // Everything rung up here lands in today's workday folder, so the till is
   // unavailable until the signed-in staff member has checked in for today.
-  if (workSessionLoading) {
+  if (workSessionLoading || cashCustodyLoading) {
     return (
       <div className="grid min-h-[50vh] place-items-center text-sm text-muted-foreground">
         {t("dash.loading")}
@@ -733,6 +889,9 @@ function CashierApp() {
     );
   }
   if (!isCheckedInToday(workSession)) return <ShiftRequiredGate />;
+  // Every role must declare cash custody & handover once per shift before the
+  // till becomes usable. No drawer is still a declaration (amount 0).
+  if (!cashCustody) return <CashCustodyGate />;
 
   if (result) {
     return (
