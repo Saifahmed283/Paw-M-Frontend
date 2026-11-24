@@ -1,19 +1,54 @@
-import { test, expect } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
- * Runs for every staff project (staff, payroll, admin, mobile-staff), proving
- * that any role is asked for cash custody & handover once per shift.
+ * The SPA reads its staff session from sessionStorage, while the shared auth
+ * files only carry cookies. Seed the same token the auth files use into
+ * sessionStorage so the cashier sees an authenticated staff member.
  */
+async function signIn(page: Page): Promise<string> {
+  const authFile = path.resolve(process.cwd(), "tests", ".auth", "admin.json");
+  const state = JSON.parse(fs.readFileSync(authFile, "utf8")) as {
+    cookies: { name: string; value: string }[];
+  };
+  const token = state.cookies.find((c) => c.name === "paw-m-session")?.value;
+  if (!token) throw new Error("No staff token in tests/.auth/admin.json — run global setup");
+
+  await page.addInitScript(
+    ([t]) => {
+      sessionStorage.setItem(
+        "paw-m:admin-session",
+        JSON.stringify({
+          username: "technical-support",
+          role: "admin",
+          expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+          token: t,
+        }),
+      );
+    },
+    [token],
+  );
+  await page.goto("/cashier");
+  await expect(page.getByRole("heading", { name: /staff sign-in/i })).toBeHidden({
+    timeout: 15000,
+  });
+  return token;
+}
+
 test.describe("Cashier — cash custody & handover", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    const token = await signIn(page);
+    // Every test gets a fresh shift so the custody gate is guaranteed to be
+    // unanswered; no test can skip because a previous one declared custody.
+    const api = process.env.API_BASE_URL ?? "http://localhost:3001/api";
+    const headers = { Authorization: `Bearer ${token}` };
+    await request.post(`${api}/work-session/check-out`, { headers });
+    await request.post(`${api}/work-session/check-in`, { headers });
     await page.goto("/cashier");
-    // The sign-in gate is satisfied by the project's storageState. If this is a
-    // fresh shift, check in first so the custody gate is the next gate shown.
-    const checkIn = page.getByRole("button", { name: /check in & open till/i });
-    if (await checkIn.isVisible()) {
-      await checkIn.click();
-      await expect(checkIn).toBeHidden({ timeout: 10000 });
-    }
+    await expect(page.getByRole("heading", { name: /cash custody & handover/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("required gate blocks the till until the handover is answered", async ({ page }) => {

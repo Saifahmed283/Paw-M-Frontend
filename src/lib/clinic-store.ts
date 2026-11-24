@@ -1121,6 +1121,9 @@ export async function checkIn() {
       archived: { bookings: number; orders: number };
     }>("/work-session/check-in", {});
     invalidate(QUERY_KEYS.workSession);
+    // A new shift always needs a fresh custody declaration, even when the
+    // check-in is triggered from the dashboard rather than the cashier.
+    invalidate(QUERY_KEYS.cashCustody);
     return result;
   } catch (err) {
     console.error("Failed to check in", err);
@@ -1135,6 +1138,7 @@ export async function checkOut() {
       archived: { bookings: number; orders: number };
     }>("/work-session/check-out", {});
     invalidate(QUERY_KEYS.workSession);
+    invalidate(QUERY_KEYS.cashCustody);
     return result;
   } catch (err) {
     console.error("Failed to check out", err);

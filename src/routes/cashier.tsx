@@ -890,8 +890,12 @@ function CashierApp() {
   }
   if (!isCheckedInToday(workSession)) return <ShiftRequiredGate />;
   // Every role must declare cash custody & handover once per shift before the
-  // till becomes usable. No drawer is still a declaration (amount 0).
-  if (!cashCustody) return <CashCustodyGate />;
+  // till becomes usable. No drawer is still a declaration (amount 0). The
+  // workSessionId check also guards against a stale cached declaration from a
+  // previous shift being mistaken for this one's answer.
+  if (!cashCustody || cashCustody.workSessionId !== workSession?.id) {
+    return <CashCustodyGate />;
+  }
 
   if (result) {
     return (
