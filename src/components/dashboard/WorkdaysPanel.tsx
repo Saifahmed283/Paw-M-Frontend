@@ -193,10 +193,10 @@ function FinanceCard({ finance, currency }: { finance: WorkDayFinance; currency:
               <p className="text-xs text-muted-foreground">{methodLabel(row.method)}</p>
               <p className="mt-1 text-lg font-bold">{formatMoney(row.collected, currency)}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("clients.outstanding")}: {formatMoney(row.pending, currency)}
+                {t("workdays.pending")}: {formatMoney(row.pending, currency)}
               </p>
               <p className="text-xs text-muted-foreground">
-                {t("workdays.payments")}: {formatMoney(row.refunded, currency)}
+                {t("workdays.refunded")}: {formatMoney(row.refunded, currency)}
               </p>
             </div>
           ))}
@@ -240,11 +240,11 @@ function FinanceCard({ finance, currency }: { finance: WorkDayFinance; currency:
             <b>{formatMoney(finance.totals.payments, currency)}</b>
           </span>
           <span>
-            <span className="block text-xs text-muted-foreground">{t("clients.outstanding")}</span>
+            <span className="block text-xs text-muted-foreground">{t("workdays.pending")}</span>
             <b>{formatMoney(finance.totals.pending, currency)}</b>
           </span>
           <span>
-            <span className="block text-xs text-muted-foreground">{t("workdays.revenue")}</span>
+            <span className="block text-xs text-muted-foreground">{t("workdays.refunded")}</span>
             <b>{formatMoney(finance.totals.refunded, currency)}</b>
           </span>
         </div>

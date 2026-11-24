@@ -3,7 +3,7 @@
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795583643,
+      "expires": 1795586266,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-session",
@@ -13,7 +13,7 @@
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795583643,
+      "expires": 1795586266,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-csrf-token",
@@ -23,7 +23,7 @@
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795583643,
+      "expires": 1795586266,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-test-session",
