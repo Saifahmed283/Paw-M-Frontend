@@ -56,7 +56,7 @@ import {
 } from "@/lib/clinic-store";
 import { apiErrorMessage } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
-import { usesSinglePaymentMethod } from "@/lib/payment-verification";
+import { isOrderPayment, usesSinglePaymentMethod } from "@/lib/payment-verification";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/lib/i18n-components";
@@ -226,7 +226,7 @@ function PaymentRequestsCard({
 
   const combineAndSettle = async (p: Payment) => {
     if (busyId) return;
-    if (cartLines.length === 0) return;
+    if (cartLines.length === 0 || isOrderPayment(p)) return;
     setBusyId(p.id);
     try {
       await addPaymentItem(p.id, cartLines);
@@ -284,16 +284,22 @@ function PaymentRequestsCard({
               >
                 {t("cashier.settleVisit")}
               </Button>
-              <Button
-                size="sm"
-                className="h-7 flex-1"
-                disabled={cartLines.length === 0 || busyId !== null}
-                onClick={() => combineAndSettle(p)}
-              >
-                {busyId === p.id
-                  ? t("dash.saving")
-                  : t("cashier.combineLine", { count: String(cartLines.length) })}
-              </Button>
+              {isOrderPayment(p) ? (
+                <p className="flex flex-1 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
+                  {t("cashier.combineVerificationOnly")}
+                </p>
+              ) : (
+                <Button
+                  size="sm"
+                  className="h-7 flex-1"
+                  disabled={cartLines.length === 0 || busyId !== null}
+                  onClick={() => combineAndSettle(p)}
+                >
+                  {busyId === p.id
+                    ? t("dash.saving")
+                    : t("cashier.combineLine", { count: String(cartLines.length) })}
+                </Button>
+              )}
             </div>
           </div>
         ))}

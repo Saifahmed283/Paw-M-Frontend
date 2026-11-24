@@ -18,6 +18,7 @@ import {
 } from "@/lib/clinic-store";
 import { isOrderPayment } from "@/lib/payment-verification";
 import { navigateToDashboardTab } from "@/lib/dashboard-navigation";
+import { currentRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { Field } from "./dashboard-helpers";
 import { formatMoney } from "./dashboard-format";
@@ -35,6 +36,8 @@ export function PaymentSettleDialog({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const orderPayment = isOrderPayment(payment);
+  // The review API is admin-only; match the button to what the server accepts.
+  const canViewQueue = currentRole() === "admin";
 
   const settle = async () => {
     if (busy || orderPayment) return;
@@ -68,18 +71,22 @@ export function PaymentSettleDialog({
           {orderPayment ? (
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 text-sm">
               <p className="text-amber-600">{t("verif.orderSettled")}</p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={() => {
-                  navigateToDashboardTab("payment-verification");
-                  onClose();
-                }}
-              >
-                {t("verif.goQueue")}
-              </Button>
+              {canViewQueue ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => {
+                    navigateToDashboardTab("payment-verification", payment.orderId ?? undefined);
+                    onClose();
+                  }}
+                >
+                  {t("verif.goQueue")}
+                </Button>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">{t("verif.queueAdminOnly")}</p>
+              )}
             </div>
           ) : (
             <>

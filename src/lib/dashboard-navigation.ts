@@ -1,9 +1,10 @@
 /**
- * Lightweight bridge for cross-component dashboard navigation.
+ * Bridge for cross-component dashboard navigation.
  *
- * The dashboard keeps its active tab in local state (it is not URL-driven), so
- * components rendered inside the shell — e.g. the notification bell — use this
- * event to ask the shell to switch tabs without prop-drilling through layout.
+ * Inside the dashboard the active tab switches in place via a window event.
+ * Callers outside the dashboard (notably the cashier's "Open verification
+ * queue" button) must first navigate to /dashboard — otherwise the event is
+ * dispatched with no listener and appears to do nothing.
  */
 export const DASHBOARD_NAVIGATE_EVENT = "pawm:dashboard-navigate";
 
@@ -16,5 +17,16 @@ export type DashboardNavigateDetail = {
 export function navigateToDashboardTab(tabId: string, recordId?: string | number) {
   if (typeof window === "undefined") return;
   const detail: DashboardNavigateDetail = recordId === undefined ? { tabId } : { tabId, recordId };
-  window.dispatchEvent(new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail }));
+
+  if (window.location.pathname === "/dashboard") {
+    window.dispatchEvent(new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail }));
+    return;
+  }
+
+  // The dashboard's tab lives in local state, so a plain event fired from
+  // another route has no listener. Carry the requested tab in the URL and let
+  // the dashboard apply it when it mounts.
+  const params = new URLSearchParams({ tab: tabId });
+  if (recordId !== undefined) params.set("record", String(recordId));
+  window.location.assign(`/dashboard?${params.toString()}`);
 }

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Archive,
@@ -87,6 +87,10 @@ import { ALL_NAV_ITEMS } from "@/components/dashboard/dashboard-nav";
 import { DASHBOARD_NAVIGATE_EVENT, type DashboardNavigateDetail } from "@/lib/dashboard-navigation";
 
 export const Route = createFileRoute("/dashboard")({
+  validateSearch: (search: Record<string, unknown>): { tab?: string; record?: string } => ({
+    ...(typeof search["tab"] === "string" ? { tab: search["tab"] } : {}),
+    ...(typeof search["record"] === "string" ? { record: search["record"] } : {}),
+  }),
   head: () => ({
     meta: [{ title: "Staff Dashboard — Paw-M" }, { name: "robots", content: "noindex, nofollow" }],
   }),
@@ -902,6 +906,9 @@ function DashboardPage() {
   const [authed, setAuthed] = useState(false);
   const [role, setRole] = useState<string>("staff");
   const [tab, setTab] = useState<string>("overview");
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const appliedUrlTab = useRef(false);
 
   const orderCount = store.orders.filter((o) => !o.archived).length;
   const pendingRequestCount = store.requests.filter(
@@ -922,6 +929,21 @@ function DashboardPage() {
 
   const canAccess = (tabId: string) =>
     allowedTabsForRole(store.settings?.rolePermissions, role).includes(tabId);
+
+  // Cross-route callers (e.g. the cashier's payment verification link) arrive
+  // at /dashboard?tab=... . Apply that tab once; later manual tab changes stick.
+  useEffect(() => {
+    if (!authed || appliedUrlTab.current) return;
+    const requested = search.tab;
+    if (
+      !requested ||
+      !allowedTabsForRole(store.settings?.rolePermissions, role).includes(requested)
+    ) {
+      return;
+    }
+    appliedUrlTab.current = true;
+    setTab(requested);
+  }, [authed, search.tab, role, store.settings?.rolePermissions]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -976,7 +998,14 @@ function DashboardPage() {
       {tab === "staff" && <StaffPanel />}
       {tab === "payroll" && <PayrollPanel />}
       {tab === "finance" && <PaymentsPanel />}
-      {tab === "payment-verification" && <PaymentVerificationPanel />}
+      {tab === "payment-verification" && (
+        <PaymentVerificationPanel
+          focusOrderId={search.record}
+          onClearFocus={() =>
+            navigate({ to: "/dashboard", search: { tab: "payment-verification" } })
+          }
+        />
+      )}
       {tab === "clients" && <ClientsPanel />}
       {tab === "doctors" && <DoctorsPanel />}
       {tab === "services" && <ServicesPanel />}

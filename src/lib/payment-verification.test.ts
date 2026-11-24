@@ -17,6 +17,7 @@ import {
   getCashDrawer,
   getVerificationEvidenceUrl,
   getVerificationSubmissions,
+  isActionableVerification,
   isOrderPayment,
   rejectVerification,
   showCashPickupNotice,
@@ -196,6 +197,19 @@ describe("admin verification API", () => {
     expect(api.get).toHaveBeenCalledWith(
       "/payment-verification/admin/submissions?status=submitted",
     );
+  });
+
+  it("can focus the queue on the order the cashier just settled", async () => {
+    vi.mocked(api.get).mockResolvedValue({ submissions: [], total: 0 });
+    await getVerificationSubmissions("all", { orderId: "ORD-1" });
+    expect(api.get).toHaveBeenCalledWith("/payment-verification/admin/submissions?orderId=ORD-1");
+  });
+
+  it("only treats submitted and under-review rows as actionable", () => {
+    expect(isActionableVerification("submitted")).toBe(true);
+    expect(isActionableVerification("under_review")).toBe(true);
+    expect(isActionableVerification("approved")).toBe(false);
+    expect(isActionableVerification("superseded")).toBe(false);
   });
 
   it("requires a bank transaction reference before approval", async () => {

@@ -14,23 +14,29 @@ const PROOF_PAYMENT_METHODS: readonly PaymentMethod[] = ["fawry", "instapay"];
 export type VerificationDecision =
   "submitted" | "under_review" | "approved" | "rejected" | "superseded";
 
+export type VerificationFilter = VerificationDecision | "all";
+
 export type VerificationSubmission = {
   id: string;
   orderId: string;
+  paymentId: string | null;
   customerName: string;
   phone: string;
   total: number;
   createdAt: string;
+  method: PaymentMethod;
+  /** customer_transfer | cash_reception | pos_transfer | store_transfer */
   source: string;
   decision: VerificationDecision;
   customerRef: string;
   senderName: string;
-  transferredAt: string;
+  transferredAt: string | null;
   evidenceKey: string;
   note: string;
-  reviewerId: string;
-  reviewedAt: string;
-  bankTransactionReference: string;
+  reviewerId: string | null;
+  reviewerUsername: string | null;
+  reviewedAt: string | null;
+  bankTransactionReference: string | null;
 };
 
 export type VerificationList = {
@@ -157,6 +163,11 @@ export function canRejectVerification(input: { reason: string }): boolean {
   return input.reason.trim().length > 0;
 }
 
+/** Rows a reviewer can still act on. Approved/rejected/superseded are history. */
+export function isActionableVerification(decision: VerificationDecision): boolean {
+  return decision === "submitted" || decision === "under_review";
+}
+
 export function varianceTone(variance: number): "positive" | "negative" | "neutral" {
   if (!Number.isFinite(variance) || Math.abs(variance) < 0.005) return "neutral";
   return variance > 0 ? "positive" : "negative";
@@ -206,9 +217,13 @@ export async function confirmCashReceived(
 }
 
 export async function getVerificationSubmissions(
-  status: VerificationDecision | "all" = "submitted",
+  status: VerificationFilter = "submitted",
+  options: { orderId?: string | undefined } = {},
 ): Promise<VerificationList> {
-  const query = status === "all" ? "" : `?status=${encodeURIComponent(status)}`;
+  const params = new URLSearchParams();
+  if (status !== "all") params.set("status", status);
+  if (options.orderId) params.set("orderId", options.orderId);
+  const query = params.size > 0 ? `?${params.toString()}` : "";
   return api.get<VerificationList>(`/payment-verification/admin/submissions${query}`);
 }
 

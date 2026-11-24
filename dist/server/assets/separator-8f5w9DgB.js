@@ -1,0 +1,83 @@
+import { D as cn } from "./api-DvWJKWa0.js";
+import * as React from "react";
+import { jsx } from "react/jsx-runtime";
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
+// src/components/dashboard/dashboard-format.ts
+var STATUS_OPTIONS = [
+	{
+		value: "all",
+		key: "dash.filterAll"
+	},
+	{
+		value: "pending",
+		key: "dash.filterPending"
+	},
+	{
+		value: "confirmed",
+		key: "dash.filterConfirmed"
+	},
+	{
+		value: "completed",
+		key: "dash.filterCompleted"
+	},
+	{
+		value: "cancelled",
+		key: "dash.filterCancelled"
+	}
+];
+/** Format a date as YYYY-MM-DD in the user's local timezone (never UTC). */
+function localISODate(date) {
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+/** Current calendar date in the user's local timezone (YYYY-MM-DD). */
+function localTodayISO() {
+	return localISODate(/* @__PURE__ */ new Date());
+}
+var CLINIC_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+	timeZone: "Africa/Cairo",
+	year: "numeric",
+	month: "2-digit",
+	day: "2-digit"
+});
+/** Current calendar date in Africa/Cairo (YYYY-MM-DD) for day folders and shifts. */
+function clinicTodayISO() {
+	const parts = CLINIC_DATE_FORMATTER.formatToParts(/* @__PURE__ */ new Date());
+	const part = (type) => parts.find((p) => p.type === type)?.value ?? "";
+	return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function formatDate(dateISO, lang) {
+	if (!dateISO) return "—";
+	const iso = /^\d{4}-\d{2}-\d{2}$/.test(dateISO) ? `${dateISO}T00:00:00` : dateISO;
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return dateISO;
+	return d.toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric"
+	});
+}
+function formatTime(iso, lang) {
+	if (!iso) return "—";
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return "—";
+	return d.toLocaleString(lang === "ar" ? "ar-EG" : "en-US", {
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit"
+	});
+}
+function formatMoney(amount, currency) {
+	const safe = Number.isFinite(amount) ? Number(amount) : 0;
+	return currency === "$" ? `$${safe.toFixed(2)}` : `${currency} ${safe.toFixed(2)}`;
+}
+// src/components/ui/separator.tsx
+var Separator = React.forwardRef(({ className, orientation = "horizontal", decorative = true, ...props }, ref) => /* @__PURE__ */ jsx(SeparatorPrimitive.Root, {
+	ref,
+	decorative,
+	orientation,
+	className: cn("shrink-0 bg-border", orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]", className),
+	...props
+}));
+Separator.displayName = SeparatorPrimitive.Root.displayName;
+export { formatMoney as a, localTodayISO as c, formatDate as i, STATUS_OPTIONS as n, formatTime as o, clinicTodayISO as r, localISODate as s, Separator as t };
