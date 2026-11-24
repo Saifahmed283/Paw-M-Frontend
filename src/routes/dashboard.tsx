@@ -134,7 +134,7 @@ function RequestsTable({
             </TableRow>
           )}
           {requests.map((r) => (
-            <TableRow key={r.id}>
+            <TableRow key={r.id} data-testid={`booking-row-${r.id}`}>
               <TableCell>
                 <div className="whitespace-nowrap font-medium">{r.ownerName}</div>
                 <div className="whitespace-nowrap text-xs text-muted-foreground">{r.phone}</div>
@@ -162,7 +162,7 @@ function RequestsTable({
                 </div>
               </TableCell>
               <TableCell>
-                <StatusBadge status={r.status} />
+                <StatusBadge status={r.status} data-testid={`status-badge-${r.id}`} />
               </TableCell>
               <TableCell className="text-end">
                 <div className="flex items-center justify-end gap-1.5">
@@ -171,6 +171,7 @@ function RequestsTable({
                       size="sm"
                       variant="outline"
                       className="h-7"
+                      data-testid={`confirm-btn-${r.id}`}
                       onClick={() => onConfirm(r.id)}
                     >
                       {t("dash.confirmRow")}
@@ -181,6 +182,7 @@ function RequestsTable({
                       size="sm"
                       variant="outline"
                       className="h-7"
+                      data-testid={`cancel-btn-${r.id}`}
                       onClick={() => onCancel(r.id)}
                     >
                       {t("dash.cancelRow")}
@@ -193,6 +195,7 @@ function RequestsTable({
                       className="h-7 px-2 text-muted-foreground hover:text-foreground"
                       aria-label={t("dash.archive")}
                       title={t("dash.archive")}
+                      data-testid={`archive-btn-${r.id}`}
                       onClick={() => onArchive(r.id)}
                     >
                       <Archive className="size-3.5" />
@@ -203,6 +206,7 @@ function RequestsTable({
                     variant="ghost"
                     className="h-7 px-2 text-muted-foreground hover:text-destructive"
                     aria-label={t("dash.delete")}
+                    data-testid={`delete-btn-${r.id}`}
                     onClick={() => onDelete(r.id)}
                   >
                     <Trash2 className="size-3.5" />

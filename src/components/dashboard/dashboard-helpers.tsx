@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import type { PaymentKind, PaymentMethod, PaymentStatus, Status } from "@/lib/clinic-store";
 import { cn } from "@/lib/utils";
 
-export function StatusBadge({ status }: { status: Status }) {
+export function StatusBadge({ status, testId }: { status: Status; testId?: string }) {
   const { t } = useI18n();
   const styles: Record<Status, string> = {
     pending: "bg-[var(--gold-tint)] text-[var(--gold-700)] dark:text-[var(--gold-300)]",
@@ -14,7 +14,7 @@ export function StatusBadge({ status }: { status: Status }) {
     cancelled: "bg-[var(--surface-2)] text-ink-soft line-through",
   };
   return (
-    <Badge variant="outline" className={cn("border-transparent", styles[status])}>
+    <Badge variant="outline" className={cn("border-transparent", styles[status])} data-testid={testId}>
       {t(`dash.status.${status}`)}
     </Badge>
   );

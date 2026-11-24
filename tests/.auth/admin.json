@@ -1,0 +1,35 @@
+{
+  "cookies": [
+    {
+      "name": "paw-m-session",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXNlcm5hbWUiOiJ0ZWNobmljYWwtc3VwcG9ydCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTUzMTM0OSwiZXhwIjoxNzk1NTYwMTQ5fQ.KpwP5tT-Hqxw6QBHEQa4zlrOrpOwdhVFOMrY0QO6ucM",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1795560149.811873,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "paw-m-csrf-token",
+      "value": "c07ed9868ad84b994055c9817e9926635ccf8d0129609b46eaec66c1a0bb2ebc",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1795560149.813049,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "paw-m:lang",
+          "value": "en"
+        }
+      ]
+    }
+  ]
+}

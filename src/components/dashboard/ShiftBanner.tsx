@@ -77,6 +77,7 @@ export function ShiftBanner() {
 
   return (
     <div
+      data-testid="shift-banner"
       className={cn(
         "mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-5 py-4",
         sessionStarted ? "border-success/30 bg-success/10" : "border-amber-500/30 bg-amber-500/10",
@@ -84,6 +85,7 @@ export function ShiftBanner() {
     >
       <div className="flex items-center gap-3">
         <span
+          data-testid="shift-status"
           className={cn(
             "grid size-10 place-items-center rounded-xl",
             sessionStarted ? "bg-success/20 text-success" : "bg-amber-500/15 text-amber-600",
@@ -106,6 +108,7 @@ export function ShiftBanner() {
         </div>
       </div>
       <Button
+        data-testid={sessionStarted ? "check-out-btn" : "check-in-btn"}
         variant={sessionStarted ? "outline" : "default"}
         className={cn(!sessionStarted && "shadow-glow")}
         onClick={sessionStarted ? doCheckOut : doCheckIn}

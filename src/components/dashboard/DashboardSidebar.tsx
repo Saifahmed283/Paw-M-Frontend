@@ -47,6 +47,7 @@ export function DashboardSidebar({
 
   return (
     <aside
+      data-testid="dashboard-sidebar"
       className={cn(
         "sticky top-0 flex h-dvh shrink-0 flex-col border-e border-[var(--navy-700)] bg-[var(--navy-900)] text-white transition-[width] duration-300 ease-[var(--ease-entrance)]",
         collapsed ? "w-20" : "w-64",
@@ -143,6 +144,7 @@ function NavItemButton({
 
   const content = (
     <button
+      data-testid={`nav-${item.id}`}
       onClick={onClick}
       className={cn(
         "group relative flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm font-semibold transition-colors duration-200",
