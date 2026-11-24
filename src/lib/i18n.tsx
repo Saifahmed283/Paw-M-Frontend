@@ -1643,7 +1643,11 @@ export const EN: Dict = {
   "verif.drawerCountedInput": "Counted amount",
   "verif.drawerInvalid": "Enter a valid counted amount.",
   "verif.drawerSaved": "Cash drawer closed.",
+  "verif.drawerUpdated": "Cash drawer updated.",
   "verif.drawerClose": "Close cash drawer",
+  "verif.drawerUpdate": "Update cash drawer",
+  "verif.drawerSnapshot":
+    "You can save or update this at any time. The expected total is locked to the amount shown when you save, so later approvals will not change it.",
 
   // Homepage reviews section
   "homepage.clinicReviews.eyebrow": "Google Reviews",
@@ -3254,7 +3258,11 @@ const AR: Dict = {
   "verif.drawerCountedInput": "المبلغ المعدود",
   "verif.drawerInvalid": "أدخل مبلغًا صحيحًا للنقد المعدود.",
   "verif.drawerSaved": "تم إغلاق الخزنة النقدية.",
+  "verif.drawerUpdated": "تم تحديث الخزنة النقدية.",
   "verif.drawerClose": "إغلاق الخزنة النقدية",
+  "verif.drawerUpdate": "تحديث الخزنة النقدية",
+  "verif.drawerSnapshot":
+    "يمكنك الحفظ أو التعديل في أي وقت. يثبت النقد المتوقع عند الحفظ، لذا لن تغيّره الموافقات اللاحقة.",
 
   // Homepage reviews section
   "homepage.clinicReviews.eyebrow": "آراء غوغل",

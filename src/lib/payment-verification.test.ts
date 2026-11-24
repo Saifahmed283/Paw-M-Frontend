@@ -290,8 +290,9 @@ describe("cash drawer", () => {
       countedBy: 7,
       note: "short",
     });
-    await closeCashDrawer({ countedAmount: 98, note: " short " });
+    await closeCashDrawer({ date: "2026-11-20", countedAmount: 98, note: " short " });
     expect(api.post).toHaveBeenCalledWith("/payment-verification/admin/cash-drawer/close", {
+      date: "2026-11-20",
       countedAmount: 98,
       note: "short",
     });

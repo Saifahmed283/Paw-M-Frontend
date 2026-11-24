@@ -273,6 +273,7 @@ export async function getVerificationEvidenceUrl(
 }
 
 export async function closeCashDrawer(input: {
+  date: string;
   countedAmount: number;
   note?: string | undefined;
 }): Promise<CashDrawerClose> {
@@ -280,6 +281,7 @@ export async function closeCashDrawer(input: {
     const result = await api.post<CashDrawerClose>(
       "/payment-verification/admin/cash-drawer/close",
       {
+        date: input.date,
         countedAmount: input.countedAmount,
         ...(input.note?.trim() ? { note: input.note.trim() } : {}),
       },

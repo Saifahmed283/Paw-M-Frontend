@@ -49,7 +49,14 @@ export function CashDrawerCard() {
     void loadDrawer(drawerDate);
   }, [drawerDate, loadDrawer]);
 
+  const hasClose = Boolean(drawer?.close);
+
   const submitDrawer = async () => {
+    // An untouched number input reads as "0" in JS. Never save that by accident.
+    if (countedAmount.trim() === "") {
+      toast.error(t("verif.drawerInvalid"));
+      return;
+    }
     const amount = Number(countedAmount);
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error(t("verif.drawerInvalid"));
@@ -57,11 +64,19 @@ export function CashDrawerCard() {
     }
     setClosingDrawer(true);
     try {
-      await closeCashDrawer({
+      const saved = await closeCashDrawer({
+        date: drawerDate,
         countedAmount: amount,
         ...(drawerNote.trim() ? { note: drawerNote } : {}),
       });
-      toast.success(t("verif.drawerSaved"));
+      // Show the server's saved values immediately; don't wait for a second GET.
+      setCountedAmount(saved.counted.toFixed(2));
+      setDrawer((previous) =>
+        previous
+          ? { ...previous, close: saved, expected: saved.expected }
+          : { date: saved.date, close: saved, expected: saved.expected, payments: [] },
+      );
+      toast.success(t(hasClose ? "verif.drawerUpdated" : "verif.drawerSaved"));
       setDrawerNote("");
       await loadDrawer(drawerDate);
     } catch (err) {
@@ -168,14 +183,17 @@ export function CashDrawerCard() {
             />
           </div>
         </div>
-        <div>
+        <div className="grid gap-2">
           <Button
             onClick={() => void submitDrawer()}
-            disabled={closingDrawer}
+            disabled={closingDrawer || countedAmount.trim() === ""}
             className="w-full sm:w-auto"
           >
-            {closingDrawer ? t("dash.saving") : t("verif.drawerClose")}
+            {closingDrawer
+              ? t("dash.saving")
+              : t(hasClose ? "verif.drawerUpdate" : "verif.drawerClose")}
           </Button>
+          <p className="text-xs text-muted-foreground">{t("verif.drawerSnapshot")}</p>
         </div>
       </CardContent>
     </Card>
