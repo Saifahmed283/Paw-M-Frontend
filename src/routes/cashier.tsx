@@ -41,22 +41,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   createOrder,
   useClinicStore,
-  type Payment,
   type PaymentMethod,
   type Product,
   type ServiceItem,
 } from "@/lib/clinic-store";
 import {
-  addPaymentItem,
   checkIn,
   refreshClinicData,
   saveCashCustody,
-  settlePayment,
   type WorkSession,
 } from "@/lib/clinic-store";
 import { apiErrorMessage } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
-import { isOrderPayment, usesSinglePaymentMethod } from "@/lib/payment-verification";
+import { usesSinglePaymentMethod } from "@/lib/payment-verification";
 import { formatPrice } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/lib/i18n-components";
@@ -65,8 +62,6 @@ import { cn } from "@/lib/utils";
 import { StaffAuthGate } from "@/components/auth/StaffAuthGate";
 import { StatusOrb } from "@/design-system/primitives/StatusOrb";
 import { clinicTodayISO } from "@/components/dashboard/dashboard-format";
-import { PaymentKindBadge } from "@/components/dashboard/dashboard-helpers";
-import { PaymentSettleDialog } from "@/components/dashboard/PaymentSettleDialog";
 import { PhoneScannerMode } from "@/components/cashier/PhoneScannerMode";
 import { ScannerStatusIcon } from "@/components/cashier/ScannerStatus";
 import { useHardwareScanner } from "@/components/cashier/useHardwareScanner";
@@ -206,114 +201,6 @@ function CashierPage() {
         <CashierApp />
       </div>
     </div>
-  );
-}
-
-function PaymentRequestsCard({
-  cartLines,
-  onCombined,
-}: {
-  cartLines: { label: string; amount: number; kind: "product"; referenceId: string }[];
-  onCombined: () => void;
-}) {
-  const { t } = useI18n();
-  const { payments, settings } = useClinicStore();
-  const [settling, setSettling] = useState<Payment | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const pending = payments.filter((p) => p.status === "unpaid");
-  const settlingPayment = pending.find((p) => p.id === settling?.id) ?? settling;
-
-  const combineAndSettle = async (p: Payment) => {
-    if (busyId) return;
-    if (cartLines.length === 0 || isOrderPayment(p)) return;
-    setBusyId(p.id);
-    try {
-      await addPaymentItem(p.id, cartLines);
-      toast.success(t("cashier.billCombined"));
-      await settlePayment(p.id, { method: "cash", notes: t("cashier.combineLinesHint") });
-      toast.success(t("cashier.billSettled"));
-      refreshClinicData();
-      onCombined();
-    } catch (err) {
-      const message = err instanceof Error && err.message ? err.message : "";
-      toast.error(message || t("dash.toast.error"));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  if (pending.length === 0) return null;
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ReceiptText className="size-4 text-muted-foreground" />
-          {t("cashier.paymentRequests")}
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">{t("cashier.paymentRequestsDesc")}</p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {pending.map((p) => (
-          <div key={p.id} className="rounded-xl border border-border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{p.title}</p>
-                {p.client?.fullName && (
-                  <p className="text-xs text-muted-foreground">{p.client.fullName}</p>
-                )}
-                {p.items && p.items.length > 0 && (
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {p.items.map((it) => it.label).join(" · ")}
-                  </p>
-                )}
-              </div>
-              <div className="text-end">
-                <p className="text-base font-bold">{formatPrice(p.amount, settings.currency)}</p>
-                <PaymentKindBadge kind={p.kind} />
-              </div>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 flex-1"
-                disabled={busyId === p.id}
-                onClick={() => setSettling(p)}
-              >
-                {t("cashier.settleVisit")}
-              </Button>
-              {isOrderPayment(p) ? (
-                <p className="flex flex-1 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
-                  {t("cashier.combineVerificationOnly")}
-                </p>
-              ) : (
-                <Button
-                  size="sm"
-                  className="h-7 flex-1"
-                  disabled={cartLines.length === 0 || busyId !== null}
-                  onClick={() => combineAndSettle(p)}
-                >
-                  {busyId === p.id
-                    ? t("dash.saving")
-                    : t("cashier.combineLine", { count: String(cartLines.length) })}
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-        {settlingPayment && (
-          <PaymentSettleDialog
-            payment={settlingPayment}
-            onClose={() => {
-              setSettling(null);
-              refreshClinicData();
-            }}
-          />
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -563,10 +450,6 @@ function CashierApp() {
   const [refundOpen, setRefundOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
-  const [result, setResult] = useState<{
-    id: string;
-    paymentMethod: PaymentMethod;
-  } | null>(null);
   const [activeTab, setActiveTab] = useState("scan");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -577,14 +460,6 @@ function CashierApp() {
   );
   const itemCount = cart.reduce((n, i) => n + i.qty, 0);
   const checkedIn = isCheckedInToday(workSession);
-
-  const cartLines = cart.map((i) => ({
-    label: i.name,
-    amount:
-      Math.round(itemEffectivePrice(i.originalPrice, itemDiscounts[i.id]) * i.qty * 100) / 100,
-    kind: "product" as const,
-    referenceId: i.id,
-  }));
 
   const addProduct = useCallback(
     (product: Product, qty = 1) => {
@@ -868,11 +743,17 @@ function CashierApp() {
               : t("cashier.discountOrder")
             : "",
       });
-      setResult({ id: order.id, paymentMethod: order.paymentMethod });
+      // No success interstitial: clear the till immediately so the next
+      // customer can be rung up without another click.
       clearCart();
       setSplit([]);
       setCashReceived(0);
-      toast.success(t("cashier.orderCreated", { id: order.id }));
+      toast.success(
+        cashReceivedAtCounter
+          ? t("cashier.saleCompleteCashToast")
+          : t("cashier.saleCompleteVerificationToast"),
+      );
+      customerNameRef.current?.focus();
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message) {
@@ -901,33 +782,6 @@ function CashierApp() {
   // previous shift being mistaken for this one's answer.
   if (!cashCustody || cashCustody.workSessionId !== workSession?.id) {
     return <CashCustodyGate />;
-  }
-
-  if (result) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
-        <div className="size-16 grid place-items-center rounded-2xl bg-success/15 text-success animate-in zoom-in-95">
-          <CheckCircle2 className="size-8" />
-        </div>
-        <h2 className="text-2xl font-bold">{t("cashier.successTitle")}</h2>
-        <p className="text-muted-foreground">{t("cashier.successDesc")}</p>
-        <p className="font-mono text-lg">
-          {t("cashier.orderId")}: {result.id}
-        </p>
-        {result.paymentMethod === "cash" ? (
-          <p className="rounded-xl border border-success/25 bg-success/10 p-4 text-center text-sm text-success">
-            {t("cashier.cashReceivedNotice")}
-          </p>
-        ) : (
-          <p className="rounded-xl border border-status-watch/25 bg-[var(--status-watch-bg)] p-4 text-center text-sm font-medium text-status-watch-ink">
-            {t("cashier.paymentPendingNotice")}
-          </p>
-        )}
-        <Button size="lg" onClick={() => setResult(null)} className="w-full max-w-xs">
-          {t("cashier.newSale")}
-        </Button>
-      </div>
-    );
   }
 
   const discountAmount = totals.itemDiscount + totals.orderDiscountAmt;
