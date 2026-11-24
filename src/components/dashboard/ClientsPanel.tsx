@@ -15,6 +15,7 @@ import {
   Phone,
   ReceiptText,
   UserCheck,
+  UserPlus,
   UserX,
   Users,
 } from "lucide-react";
@@ -60,6 +61,7 @@ import {
 } from "@/components/ui/table";
 import { PaginationBar, SearchBox, useGrid } from "@/components/dash-grid";
 import {
+  createClient,
   deleteClient,
   getClient,
   notifyClient,
@@ -450,6 +452,99 @@ function typeOf(detail: ClientDetail): ClientType {
   return "new";
 }
 
+function AddClientDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const { t } = useI18n();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!fullName.trim() || !email.trim() || password.length < 6) {
+      toast.error(t("clients.addInvalid"));
+      return;
+    }
+    setBusy(true);
+    try {
+      await createClient({ fullName: fullName.trim(), email, phone, password });
+      toast.success(t("clients.addDone"));
+      onDone();
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("dash.toast.error"));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg" data-testid="client-create-dialog">
+        <DialogHeader>
+          <DialogTitle>
+            <UserPlus className="me-2 inline size-4 text-primary" />
+            {t("clients.add")}
+          </DialogTitle>
+          <DialogDescription>{t("clients.addDesc")}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="client-create-name">{t("clients.form.name")}</Label>
+            <Input
+              id="client-create-name"
+              data-testid="client-create-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="client-create-email">{t("clients.form.email")}</Label>
+            <Input
+              id="client-create-email"
+              data-testid="client-create-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={200}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="client-create-phone">{t("clients.form.phone")}</Label>
+            <Input
+              id="client-create-phone"
+              data-testid="client-create-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={40}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="client-create-password">{t("clients.form.password")}</Label>
+            <Input
+              id="client-create-password"
+              data-testid="client-create-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+              autoComplete="new-password"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} data-testid="client-create-cancel">
+            {t("clients.cancel")}
+          </Button>
+          <Button onClick={save} disabled={busy} data-testid="client-create-submit">
+            {busy ? "…" : t("clients.add")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function NotifyClientDialog({
   client,
   onClose,
@@ -663,6 +758,7 @@ export function ClientsPanel() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [addingClient, setAddingClient] = useState(false);
   const grid = useGrid(
     clients.filter((c) => typeFilter === "all" || c.type === typeFilter),
     query,
@@ -707,9 +803,15 @@ export function ClientsPanel() {
 
       <Card>
         <CardHeader className="space-y-4">
-          <div>
-            <CardTitle className="text-base">{t("dash.clients")}</CardTitle>
-            <CardDescription>{t("clients.hint")}</CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">{t("dash.clients")}</CardTitle>
+              <CardDescription>{t("clients.hint")}</CardDescription>
+            </div>
+            <Button onClick={() => setAddingClient(true)} data-testid="client-create-button">
+              <UserPlus className="me-2 size-4" />
+              {t("clients.add")}
+            </Button>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <SearchBox value={query} onChange={setQuery} placeholder={t("dash.search")} />
@@ -761,6 +863,7 @@ export function ClientsPanel() {
                     {grid.slice.map((c: ClientSummary) => (
                       <TableRow
                         key={c.id}
+                        data-testid={`client-row-${c.id}`}
                         className="cursor-pointer"
                         onClick={() => setSelectedId(c.id)}
                       >
@@ -822,6 +925,16 @@ export function ClientsPanel() {
           )}
         </CardContent>
       </Card>
+      {addingClient && (
+        <AddClientDialog
+          onClose={() => setAddingClient(false)}
+          onDone={() => {
+            setQuery("");
+            setTypeFilter("all");
+            grid.setPage(1);
+          }}
+        />
+      )}
     </div>
   );
 }

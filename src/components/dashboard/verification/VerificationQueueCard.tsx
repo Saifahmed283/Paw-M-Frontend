@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, FileImage, Landmark, RefreshCw, XCircle } from "lucide-react";
 
@@ -24,6 +24,7 @@ import {
   type VerificationSubmission,
 } from "@/lib/payment-verification";
 import { cn } from "@/lib/utils";
+import { PaginationBar, useGrid } from "@/components/dash-grid";
 import { formatMoney, formatTime } from "../dashboard-format";
 import type { ReviewAction } from "./ReviewDialog";
 import { decisionTone, FILTERS } from "./presentation";
@@ -50,6 +51,12 @@ export function VerificationQueueCard({
   const { t, lang } = useI18n();
   const { settings } = useClinicStore();
   const [evidenceBusyId, setEvidenceBusyId] = useState<string | null>(null);
+  const grid = useGrid(submissions, "", [], 10);
+  const { setPage: setGridPage } = grid;
+
+  useEffect(() => {
+    setGridPage(1);
+  }, [status, focusOrderId, setGridPage]);
 
   const openEvidence = (submission: VerificationSubmission) => {
     if (!submission.evidenceKey || evidenceBusyId) return;
@@ -74,7 +81,7 @@ export function VerificationQueueCard({
   };
 
   return (
-    <Card>
+    <Card data-testid="verification-queue">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -137,10 +144,10 @@ export function VerificationQueueCard({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {submissions.map((submission) => {
+                {grid.slice.map((submission) => {
                   const actionable = isActionableVerification(submission.decision);
                   return (
-                    <TableRow key={submission.id}>
+                    <TableRow key={submission.id} data-testid={`verification-row-${submission.id}`}>
                       <TableCell>
                         <div className="font-mono text-xs">{submission.orderId}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">
@@ -220,6 +227,15 @@ export function VerificationQueueCard({
                 })}
               </TableBody>
             </Table>
+            <PaginationBar
+              total={grid.total}
+              page={grid.page}
+              pageSize={grid.pageSize}
+              pageCount={grid.pageCount}
+              onPage={grid.setPage}
+              onPageSize={grid.setPageSize}
+              testId="verification-queue"
+            />
           </div>
         )}
       </CardContent>

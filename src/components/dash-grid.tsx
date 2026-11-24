@@ -69,6 +69,7 @@ export function PaginationBar({
   pageCount,
   onPage,
   onPageSize,
+  testId,
 }: {
   total: number;
   page: number;
@@ -76,6 +77,7 @@ export function PaginationBar({
   pageCount: number;
   onPage: (p: number) => void;
   onPageSize: (n: number) => void;
+  testId?: string;
 }) {
   const { t } = useI18n();
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -93,10 +95,13 @@ export function PaginationBar({
 
   return (
     <div
-      data-testid="pagination"
+      data-testid={testId ? `${testId}-pagination` : "pagination"}
       className="flex flex-wrap items-center justify-between gap-3 pt-4"
     >
-      <p data-testid="page-info" className="text-xs text-muted-foreground">
+      <p
+        data-testid={testId ? `${testId}-page-info` : "page-info"}
+        className="text-xs text-muted-foreground"
+      >
         {t("dash.pager.showing", { from: String(from), to: String(to), total: String(total) })}
       </p>
       <div className="flex items-center gap-1.5">

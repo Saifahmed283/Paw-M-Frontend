@@ -292,13 +292,60 @@ export type WorkDaySummary = {
   } | null;
 };
 
+export type WorkDayFinance = {
+  byMethod: {
+    method: PaymentMethod;
+    collected: number;
+    pending: number;
+    refunded: number;
+    net: number;
+  }[];
+  byKind: { kind: PaymentKind; count: number; collected: number }[];
+  items: { kind: PaymentItemKind; label: string; count: number; amount: number }[];
+  totals: {
+    sales: number;
+    orders: number;
+    products: number;
+    payments: number;
+    pending: number;
+    refunded: number;
+  };
+  counts: {
+    payments: number;
+    paidPayments: number;
+    orders: number;
+    verifications: number;
+  };
+  cashDrawer: {
+    expected: number;
+    counted: number | null;
+    variance: number | null;
+    note: string;
+    countedBy: string | null;
+  };
+  openingAmount: number;
+};
+
+export type WorkDayStaff = WorkSession & {
+  employee: { id: string; fullName: string; role: string; email: string };
+  custody: CashCustody | null;
+  hours: number;
+  ordersCount: number;
+  revenue: number;
+  activityCount: number;
+  logs: AuditLog[];
+};
+
 export type WorkDayDetail = {
   date: string;
-  session: WorkSession | null;
+  session: (WorkSession & Partial<WorkDayStaff>) | null;
+  sessions: WorkDayStaff[];
+  staff: WorkDayStaff[];
   bookings: BookingRequest[];
   orders: Order[];
-  payments: Payment[];
+  payments: (Payment & { items?: PaymentItem[] })[];
   logs: AuditLog[];
+  finance: WorkDayFinance;
 };
 
 type Store = {
@@ -1063,6 +1110,28 @@ export async function settlePayment(id: string, input: { method: PaymentMethod; 
     return updated;
   } catch (err) {
     console.error("Failed to settle payment", err);
+    throw err;
+  }
+}
+
+export type ClientDraft = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  password: string;
+};
+
+export async function createClient(input: ClientDraft) {
+  try {
+    const created = await api.post<ClientSummary>("/clients", {
+      ...input,
+      email: input.email.trim().toLowerCase(),
+      phone: input.phone?.trim() || "",
+    });
+    invalidate(QUERY_KEYS.clients);
+    return created;
+  } catch (err) {
+    console.error("Failed to create client", err);
     throw err;
   }
 }

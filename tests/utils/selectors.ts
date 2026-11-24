@@ -126,6 +126,13 @@ export const SELECTORS = {
       `[data-testid="unsuspend-${id}"], button:has-text("Unsuspend")`,
     notifyButton: (id: string) => `[data-testid="notify-${id}"], button:has-text("Notify")`,
     detailView: '[data-testid="client-detail"], .client-detail',
+    createButton: '[data-testid="client-create-button"]',
+    createDialog: '[data-testid="client-create-dialog"]',
+    createName: '[data-testid="client-create-name"]',
+    createEmail: '[data-testid="client-create-email"]',
+    createPhone: '[data-testid="client-create-phone"]',
+    createPassword: '[data-testid="client-create-password"]',
+    createSubmit: '[data-testid="client-create-submit"]',
     detailBack: '[data-testid="client-back"], button:has-text("Back")',
     petsList: '[data-testid="client-pets"]',
     bookingsList: '[data-testid="client-bookings"]',
@@ -140,6 +147,27 @@ export const SELECTORS = {
     settleButton: (id: string) => `[data-testid="settle-payment-${id}"], button:has-text("Settle")`,
     statusBadge: (id: string) => `[data-testid="payment-status-${id}"], .payment-status-badge`,
     methodBadge: (id: string) => `[data-testid="payment-method-${id}"], .payment-method-badge`,
+  },
+
+  // Workdays Panel
+  workdays: {
+    folder: (date: string) => `[data-testid="workday-folder-${date}"]`,
+    foldersPager: '[data-testid="workday-folders-pagination"]',
+    finance: '[data-testid="workday-finance"]',
+    financeCash: '[data-testid="workday-finance-cash"]',
+    financeFawry: '[data-testid="workday-finance-fawry"]',
+    financeInstapay: '[data-testid="workday-finance-instapay"]',
+    financeDrawer: '[data-testid="workday-finance-drawer"]',
+    staff: '[data-testid="workday-staff"]',
+    activity: '[data-testid="workday-activity"]',
+    activityPager: '[data-testid="workday-activity-pagination"]',
+  },
+
+  // Verification queue
+  verification: {
+    queue: '[data-testid="verification-queue"]',
+    row: (id: string) => `[data-testid="verification-row-${id}"]`,
+    pager: '[data-testid="verification-queue-pagination"]',
   },
 
   // Toast notifications
