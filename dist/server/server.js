@@ -149,7 +149,7 @@ function buildSecurityHeaders(apiOrigin) {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-CUDD1aOP.js").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./assets/server-BVGCsNEB.js").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 function applySecurityHeaders(response, apiOrigin) {

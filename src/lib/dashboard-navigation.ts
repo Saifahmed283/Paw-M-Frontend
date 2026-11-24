@@ -1,9 +1,10 @@
 /**
  * Bridge for cross-component dashboard navigation.
  *
- * Inside the dashboard the active tab switches in place via a window event.
- * Callers outside the dashboard (notably the cashier's "Open verification
- * queue" button) must first navigate to /dashboard — otherwise the event is
+ * Inside the dashboard the active tab is mirrored into `?tab=` by the event
+ * handler, so the address bar always matches the visible panel. Callers
+ * outside the dashboard (notably the cashier's "Open verification queue"
+ * button) must first navigate to /dashboard — otherwise the event is
  * dispatched with no listener and appears to do nothing.
  */
 export const DASHBOARD_NAVIGATE_EVENT = "pawm:dashboard-navigate";
@@ -23,9 +24,8 @@ export function navigateToDashboardTab(tabId: string, recordId?: string | number
     return;
   }
 
-  // The dashboard's tab lives in local state, so a plain event fired from
-  // another route has no listener. Carry the requested tab in the URL and let
-  // the dashboard apply it when it mounts.
+  // A plain event fired from another route has no listener. Carry the
+  // requested tab in the URL and let the dashboard apply it when it mounts.
   const params = new URLSearchParams({ tab: tabId });
   if (recordId !== undefined) params.set("record", String(recordId));
   window.location.assign(`/dashboard?${params.toString()}`);

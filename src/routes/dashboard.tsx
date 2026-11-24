@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Archive,
@@ -905,10 +905,38 @@ function DashboardPage() {
   const store = useClinicStore();
   const [authed, setAuthed] = useState(false);
   const [role, setRole] = useState<string>("staff");
-  const [tab, setTab] = useState<string>("overview");
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const appliedUrlTab = useRef(false);
+
+  const allowedTabs = useMemo(
+    () => allowedTabsForRole(store.settings?.rolePermissions, role),
+    [role, store.settings?.rolePermissions],
+  );
+
+  // The URL is the source of truth for the active tab. Sidebar clicks, in-app
+  // shortcuts and browser back/forward all go through the same `?tab=` param,
+  // so the address bar never disagrees with the visible panel.
+  const requestedTab = search.tab;
+  const tab =
+    requestedTab && allowedTabs.includes(requestedTab)
+      ? requestedTab
+      : (ALL_NAV_ITEMS.find((i) => allowedTabs.includes(i.id))?.id ?? "overview");
+
+  const canAccess = (tabId: string) => allowedTabs.includes(tabId);
+
+  const selectTab = useCallback(
+    (tabId: string, recordId?: string | number) => {
+      if (!allowedTabsForRole(store.settings?.rolePermissions, role).includes(tabId)) return;
+      navigate({
+        to: "/dashboard",
+        search: {
+          tab: tabId,
+          ...(recordId === undefined ? {} : { record: String(recordId) }),
+        },
+      });
+    },
+    [navigate, role, store.settings?.rolePermissions],
+  );
 
   const orderCount = store.orders.filter((o) => !o.archived).length;
   const pendingRequestCount = store.requests.filter(
@@ -919,52 +947,27 @@ function DashboardPage() {
     if (isAuthed()) {
       setAuthed(true);
       setRole(currentRole());
-      const firstAllowed = ALL_NAV_ITEMS.find((i) =>
-        allowedTabsForRole(store.settings?.rolePermissions, currentRole()).includes(i.id),
-      );
-      if (firstAllowed) setTab(firstAllowed.id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canAccess = (tabId: string) =>
-    allowedTabsForRole(store.settings?.rolePermissions, role).includes(tabId);
-
-  // Cross-route callers (e.g. the cashier's payment verification link) arrive
-  // at /dashboard?tab=... . Apply that tab once; later manual tab changes stick.
+  // Fill in / correct the tab in the address bar (first load, stale bookmark,
+  // forbidden tab for the current role). Browser back/forward is already
+  // reflected in `search.tab`, so this never overrides a deliberate navigation.
   useEffect(() => {
-    if (!authed || appliedUrlTab.current) return;
-    const requested = search.tab;
-    if (
-      !requested ||
-      !allowedTabsForRole(store.settings?.rolePermissions, role).includes(requested)
-    ) {
-      return;
-    }
-    appliedUrlTab.current = true;
-    setTab(requested);
-  }, [authed, search.tab, role, store.settings?.rolePermissions]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (authed && !canAccess(tab)) {
-      const fallback = ALL_NAV_ITEMS.find((i) => canAccess(i.id));
-      const next = fallback ? fallback.id : "overview";
-      if (next !== tab) setTab(next);
-    }
-  });
+    if (!authed || search.tab === tab) return;
+    navigate({ to: "/dashboard", search: { tab }, replace: true });
+  }, [authed, navigate, search.tab, tab]);
 
   // Let in-shell components (e.g. the notification bell) request a tab switch.
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<DashboardNavigateDetail>).detail;
       if (!detail?.tabId) return;
-      if (!allowedTabsForRole(store.settings?.rolePermissions, role).includes(detail.tabId)) return;
-      setTab(detail.tabId);
+      selectTab(detail.tabId, detail.recordId);
     };
     window.addEventListener(DASHBOARD_NAVIGATE_EVENT, handler);
     return () => window.removeEventListener(DASHBOARD_NAVIGATE_EVENT, handler);
-  }, [role, store.settings?.rolePermissions]);
+  }, [selectTab]);
 
   useNotificationSound({
     enabled: authed,
@@ -988,7 +991,7 @@ function DashboardPage() {
   }
 
   return (
-    <DashboardLayout activeTab={tab} onTabChange={setTab} canAccess={canAccess}>
+    <DashboardLayout activeTab={tab} onTabChange={selectTab} canAccess={canAccess}>
       <ShiftBanner />
 
       {tab === "overview" && <OverviewTab />}
