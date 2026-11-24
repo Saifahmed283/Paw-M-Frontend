@@ -11,7 +11,7 @@ import type { I18nValue } from "@/lib/i18n";
 
 type Options = {
   t: I18nValue["t"];
-  /** When set by the cashier's "Settle bill" link, only this order is loaded. */
+  /** When set by a cashier deep link, only this order is loaded. */
   focusOrderId: string | undefined;
 };
 

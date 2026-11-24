@@ -1142,6 +1142,9 @@ export const EN: Dict = {
   "cashier.successDesc": "The order has been created successfully.",
   "cashier.orderId": "Order ID",
   "cashier.orderCreated": "Order created: {id}",
+  "cashier.saleCompleteCashToast": "Sale complete — cart cleared, ready for the next customer.",
+  "cashier.saleCompleteVerificationToast":
+    "Sale complete — payment sent to verification for end-of-day review.",
   "cashier.added": "Added {name} to cart",
   "cashier.productNotFound": "Product not found: {code}",
   "cashier.outOfStock": "{name} is out of stock",
@@ -2762,6 +2765,9 @@ const AR: Dict = {
   "cashier.successDesc": "تم إنشاء الطلب بنجاح.",
   "cashier.orderId": "رقم الطلب",
   "cashier.orderCreated": "تم إنشاء الطلب: {id}",
+  "cashier.saleCompleteCashToast": "تم البيع — تم تفريغ السلة وهي جاهزة للعميل التالي.",
+  "cashier.saleCompleteVerificationToast":
+    "تم البيع — أُرسل الدفع إلى التحقق للمراجعة في نهاية اليوم.",
   "cashier.added": "تمت إضافة {name} إلى السلة",
   "cashier.productNotFound": "المنتج غير موجود: {code}",
   "cashier.outOfStock": "{name} غير متوفر في المخزون",

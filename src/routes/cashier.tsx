@@ -5,7 +5,6 @@ import {
   BadgePercent,
   Banknote,
   Barcode,
-  CheckCircle2,
   ChevronDown,
   Grid2X2,
   Keyboard,
@@ -45,12 +44,7 @@ import {
   type Product,
   type ServiceItem,
 } from "@/lib/clinic-store";
-import {
-  checkIn,
-  refreshClinicData,
-  saveCashCustody,
-  type WorkSession,
-} from "@/lib/clinic-store";
+import { checkIn, refreshClinicData, saveCashCustody, type WorkSession } from "@/lib/clinic-store";
 import { apiErrorMessage } from "@/lib/api";
 import { isAuthed } from "@/lib/auth";
 import { usesSinglePaymentMethod } from "@/lib/payment-verification";
@@ -1164,7 +1158,6 @@ function CashierApp() {
                 </CardContent>
               </Card>
             )}
-            <PaymentRequestsCard cartLines={cartLines} onCombined={clearCart} />
 
             {cart.length === 0 ? (
               <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">

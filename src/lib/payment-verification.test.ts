@@ -202,7 +202,9 @@ describe("admin verification API", () => {
   it("can focus the queue on the order the cashier just settled", async () => {
     vi.mocked(api.get).mockResolvedValue({ submissions: [], total: 0 });
     await getVerificationSubmissions("all", { orderId: "ORD-1" });
-    expect(api.get).toHaveBeenCalledWith("/payment-verification/admin/submissions?orderId=ORD-1");
+    expect(api.get).toHaveBeenCalledWith(
+      "/payment-verification/admin/submissions?status=all&orderId=ORD-1",
+    );
   });
 
   it("only treats submitted and under-review rows as actionable", () => {

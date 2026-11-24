@@ -221,7 +221,9 @@ export async function getVerificationSubmissions(
   options: { orderId?: string | undefined } = {},
 ): Promise<VerificationList> {
   const params = new URLSearchParams();
-  if (status !== "all") params.set("status", status);
+  // Send every filter explicitly — the API defaults a missing `status` to
+  // "submitted", which would silently make "All statuses" show only submitted.
+  params.set("status", status);
   if (options.orderId) params.set("orderId", options.orderId);
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return api.get<VerificationList>(`/payment-verification/admin/submissions${query}`);
