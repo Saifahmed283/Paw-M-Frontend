@@ -92,8 +92,11 @@ export function PaginationBar({
     "grid size-8 place-items-center rounded-lg border text-xs font-medium transition-colors disabled:opacity-40";
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
-      <p className="text-xs text-muted-foreground">
+    <div
+      data-testid="pagination"
+      className="flex flex-wrap items-center justify-between gap-3 pt-4"
+    >
+      <p data-testid="page-info" className="text-xs text-muted-foreground">
         {t("dash.pager.showing", { from: String(from), to: String(to), total: String(total) })}
       </p>
       <div className="flex items-center gap-1.5">

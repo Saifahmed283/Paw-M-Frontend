@@ -97,7 +97,7 @@ export function ShiftBanner() {
           <p className="text-sm font-bold">
             {sessionStarted ? t("dash.checkedIn") : t("dash.notCheckedIn")}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p data-testid="session-time" className="mt-0.5 text-xs text-muted-foreground">
             {sessionStarted
               ? `${t("dash.checkedInSince")} ${sessionStarted.toLocaleString(
                   lang === "ar" ? "ar" : "en-US",

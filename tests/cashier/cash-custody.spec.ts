@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { test, expect, type Page } from "@playwright/test";
+import { test } from "@tests/fixtures/authed-page";
+import { expect, type Page } from "@playwright/test";
 
 /**
  * The SPA reads its staff session from sessionStorage, while the shared auth

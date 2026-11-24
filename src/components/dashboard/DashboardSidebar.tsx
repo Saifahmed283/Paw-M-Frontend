@@ -145,6 +145,7 @@ function NavItemButton({
   const content = (
     <button
       data-testid={`nav-${item.id}`}
+      aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={cn(
         "group relative flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm font-semibold transition-colors duration-200",

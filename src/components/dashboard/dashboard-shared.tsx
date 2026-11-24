@@ -13,6 +13,7 @@ export function StatCard({
   tone,
   status = "calm",
   className,
+  testId,
 }: {
   label: string;
   value: number | string;
@@ -20,10 +21,12 @@ export function StatCard({
   tone?: string;
   status?: TraceStatus;
   className?: string;
+  testId?: string;
 }) {
   return (
     <GlassPanel
       elevation={1}
+      data-testid={testId}
       className={cn("group overflow-hidden border-t-2 border-t-[var(--gold-500)] p-0", className)}
     >
       <div className="flex items-start justify-between gap-3 p-5 pb-4">
@@ -55,14 +58,16 @@ export function OverviewCard({
   description,
   action,
   children,
+  testId,
 }: {
   title: string;
   description?: string | undefined;
   action?: ReactNode;
   children: ReactNode;
+  testId?: string;
 }) {
   return (
-    <GlassPanel elevation={1} className="overflow-hidden p-0">
+    <GlassPanel elevation={1} data-testid={testId} className="overflow-hidden p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div className="min-w-0">
           <h3 className="font-display text-base font-semibold tracking-tight text-foreground">

@@ -1,24 +1,34 @@
 {
   "cookies": [
     {
-      "name": "paw-m-session",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsInVzZXJuYW1lIjoidGVzdC1wYXlyb2xsIiwicm9sZSI6InBheXJvbGwiLCJpYXQiOjE3OTU1MzEzNjIsImV4cCI6MTc5NTU2MDE2Mn0.gkJbsSL2MDRe7nCtrO0DzGfDrN_GUlTnLvPxvusyATI",
       "domain": "localhost",
       "path": "/",
-      "expires": 1795560162.478156,
-      "httpOnly": true,
+      "expires": 1795580089,
       "secure": false,
-      "sameSite": "Lax"
+      "sameSite": "Lax",
+      "name": "paw-m-session",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInVzZXJuYW1lIjoidGVzdC1wYXlyb2xsIiwicm9sZSI6InBheXJvbGwiLCJpYXQiOjE3OTU1NDk2NDgsImV4cCI6MTc5NTU3ODQ0OH0.N9l-BR-vurMlCsgh_ydSIk2EhKrIavK_Q2hntm9-Wr4",
+      "httpOnly": true
     },
     {
-      "name": "paw-m-csrf-token",
-      "value": "14505ab8965518644b7ef1cea02f5782c5f4898006e462e8d2db63593fb5f6a1",
       "domain": "localhost",
       "path": "/",
-      "expires": 1795560162.478291,
-      "httpOnly": false,
+      "expires": 1795580089,
       "secure": false,
-      "sameSite": "Lax"
+      "sameSite": "Lax",
+      "name": "paw-m-csrf-token",
+      "value": "14505ab8965518644b7ef1cea02f5782c5f4898006e462e8d2db63593fb5f6a1",
+      "httpOnly": false
+    },
+    {
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1795580089,
+      "secure": false,
+      "sameSite": "Lax",
+      "name": "paw-m-test-session",
+      "value": "%7B%22username%22%3A%22test-payroll%22%2C%22role%22%3A%22payroll%22%2C%22token%22%3A%22eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInVzZXJuYW1lIjoidGVzdC1wYXlyb2xsIiwicm9sZSI6InBheXJvbGwiLCJpYXQiOjE3OTU1NDk2NDgsImV4cCI6MTc5NTU3ODQ0OH0.N9l-BR-vurMlCsgh_ydSIk2EhKrIavK_Q2hntm9-Wr4%22%7D",
+      "httpOnly": false
     }
   ],
   "origins": [

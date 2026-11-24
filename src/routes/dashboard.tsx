@@ -115,7 +115,7 @@ function RequestsTable({
   const { t, lang } = useI18n();
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table data-testid="requests-table">
         <TableHeader>
           <TableRow>
             <TableHead>{t("dash.owner")}</TableHead>
@@ -293,7 +293,7 @@ function OverviewTab() {
         </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-testid="overview-stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <StatCard
             key={s.label}
@@ -306,7 +306,7 @@ function OverviewTab() {
         ))}
       </div>
 
-      <OverviewCard title={t("dash.overview.today")}>
+      <OverviewCard title={t("dash.overview.today")} testId="today-appointments">
         {todayAppointments.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
             {t("dash.overview.noData")}
@@ -316,6 +316,7 @@ function OverviewTab() {
             {todayAppointments.map((r) => (
               <div
                 key={r.id}
+                data-testid="today-appointment"
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/50 p-3 transition-colors hover:border-primary/30 hover:bg-primary-tint/40"
               >
                 <div className="flex items-center gap-3">
@@ -347,7 +348,11 @@ function OverviewTab() {
         )}
       </OverviewCard>
 
-      <OverviewCard title={t("dash.overview.recent")} description={t("dash.overview.recentDesc")}>
+      <OverviewCard
+        title={t("dash.overview.recent")}
+        description={t("dash.overview.recentDesc")}
+        testId="recent-activity"
+      >
         {recent.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">{t("dash.empty")}</p>
         ) : (
@@ -502,6 +507,7 @@ function ReservationsTab() {
             {resGrid.slice.map((r) => (
               <div
                 key={r.id}
+                data-testid={`reservation-${r.id}`}
                 className="rounded-xl border border-border p-4 transition-colors hover:bg-muted/50"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -545,6 +551,7 @@ function ReservationsTab() {
                   <Button
                     size="sm"
                     variant="outline"
+                    data-testid={`complete-res-${r.id}`}
                     onClick={async () => {
                       await setBookingStatus(r.id, "completed");
                       toast.success(t("dash.toast.completed"));
@@ -552,18 +559,34 @@ function ReservationsTab() {
                   >
                     {t("dash.complete")}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setRecordFor(r)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid={`record-visit-${r.id}`}
+                    onClick={() => setRecordFor(r)}
+                  >
                     <ScrollText className="size-4" /> {t("dash.recordVisit")}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setRxFor(r)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid={`prescription-${r.id}`}
+                    onClick={() => setRxFor(r)}
+                  >
                     <Stethoscope className="size-4" /> {t("dash.writePrescription")}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setReqPayFor(r)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid={`payment-${r.id}`}
+                    onClick={() => setReqPayFor(r)}
+                  >
                     <Banknote className="size-4" /> {t("reservations.reqPayment")}
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
+                    data-testid={`cancel-res-${r.id}`}
                     onClick={() => cancelReq(r.id)}
                     className="text-muted-foreground hover:text-destructive"
                   >

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { test, expect, type Page } from "@playwright/test";
+import { clickDashboardTab, test, waitForDashboard } from "@tests/fixtures/authed-page";
+import { expect, type Page } from "@playwright/test";
 
 async function signIn(page: Page) {
   const state = JSON.parse(
@@ -32,21 +33,23 @@ async function currentSearch(page: Page) {
 test("dashboard tabs stay in sync with the address bar", async ({ page }) => {
   await signIn(page);
   await page.goto("/dashboard");
+  await waitForDashboard(page);
 
   // A bare /dashboard is normalised to the default tab.
   await expect(page).toHaveURL(/\/dashboard\?tab=overview/);
 
-  await page.getByTestId("nav-payment-verification").click();
+  await clickDashboardTab(page, "payment-verification");
   await expect(page).toHaveURL(/\/dashboard\?tab=payment-verification/);
   await expect(page.getByText("Payment verification queue").first()).toBeVisible();
 
   // Reloading a deep link must reopen the same tab.
   await page.reload();
+  await waitForDashboard(page);
   await expect(page).toHaveURL(/\/dashboard\?tab=payment-verification/);
   await expect(page.getByText("Payment verification queue").first()).toBeVisible();
 
   // Browser back/forward must switch panels too.
-  await page.getByTestId("nav-finance").click();
+  await clickDashboardTab(page, "finance");
   await expect(page).toHaveURL(/\/dashboard\?tab=finance/);
   await page.goBack();
   await expect(page).toHaveURL(/\/dashboard\?tab=payment-verification/);
@@ -57,7 +60,7 @@ test("in-app navigation carries the focused record into the URL", async ({ page 
   await signIn(page);
   await page.goto("/dashboard?tab=overview");
   // Wait for the dashboard shell (and its event listener) to mount.
-  await expect(page.getByTestId("nav-payment-verification")).toBeVisible();
+  await page.locator('[data-testid="shift-banner"]').waitFor({ state: "visible" });
 
   await page.evaluate(() => {
     window.dispatchEvent(
