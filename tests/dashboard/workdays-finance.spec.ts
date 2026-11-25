@@ -34,6 +34,23 @@ test("workday detail shows provider totals, staff hours, and paginated activity"
     });
   });
 
+  await page.route("**/api/cash-withdrawals**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        date: DAY,
+        available: 830,
+        expected: 830,
+        counted: 830,
+        openingAmount: 100,
+        reserved: 0,
+        close: null,
+        withdrawals: [],
+      }),
+    });
+  });
+
   await page.route(`**/api/work-days/${DAY}`, async (route) => {
     await route.fulfill({
       status: 200,
@@ -47,10 +64,12 @@ test("workday detail shows provider totals, staff hours, and paginated activity"
           endedAt: `${DAY}T16:00:00.000Z`,
           createdAt: `${DAY}T08:00:00.000Z`,
         },
+        view: "admin",
+        scopeEmployeeId: null,
         sessions: [],
         staff: [
           {
-            id: "WS-1",
+            id: "EMP-1",
             date: DAY,
             startedAt: `${DAY}T08:00:00.000Z`,
             endedAt: `${DAY}T16:00:00.000Z`,
@@ -62,11 +81,16 @@ test("workday detail shows provider totals, staff hours, and paginated activity"
               email: "cashier@example.com",
             },
             custody: { hasDrawer: true, openingAmount: 100 },
+            sessions: [],
+            shiftCount: 1,
+            firstCheckIn: `${DAY}T08:00:00.000Z`,
+            lastCheckOut: `${DAY}T16:00:00.000Z`,
             hours: 8,
             ordersCount: 2,
             revenue: 830,
+            cashCollected: 430,
             activityCount: 12,
-            logs: Array.from({ length: 12 }, (_, i) => log(i + 1)),
+            logs: Array.from({ length: 12 }, (_, i) => ({ ...log(i + 1), count: 1 })),
           },
         ],
         bookings: [],
@@ -93,6 +117,7 @@ test("workday detail shows provider totals, staff hours, and paginated activity"
           cashDrawer: { expected: 830, counted: 830, variance: 0, note: "", countedBy: "Admin" },
           openingAmount: 100,
         },
+        withdrawals: [],
       }),
     });
   });
@@ -104,8 +129,8 @@ test("workday detail shows provider totals, staff hours, and paginated activity"
   await expect(page.getByTestId("workday-finance-fawry")).toContainText("200");
   await expect(page.getByTestId("workday-finance-instapay")).toContainText("200");
   await expect(page.getByTestId("workday-finance-drawer")).toContainText("830");
-  await expect(page.getByTestId("workday-staff-WS-1")).toContainText("Cashier One");
-  await expect(page.getByTestId("workday-staff-WS-1")).toContainText("8.00");
+  await expect(page.getByTestId("workday-staff-EMP-1")).toContainText("Cashier One");
+  await expect(page.getByTestId("workday-staff-EMP-1")).toContainText("8.00");
 
   const activityPager = page.getByTestId("workday-activity-pagination");
   await expect(activityPager).toBeVisible();

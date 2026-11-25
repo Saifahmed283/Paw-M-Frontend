@@ -14,7 +14,11 @@ export function StatusBadge({ status, testId }: { status: Status; testId?: strin
     cancelled: "bg-[var(--surface-2)] text-ink-soft line-through",
   };
   return (
-    <Badge variant="outline" className={cn("border-transparent", styles[status])} data-testid={testId}>
+    <Badge
+      variant="outline"
+      className={cn("border-transparent", styles[status])}
+      data-testid={testId}
+    >
       {t(`dash.status.${status}`)}
     </Badge>
   );

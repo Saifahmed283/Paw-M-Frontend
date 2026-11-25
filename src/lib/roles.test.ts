@@ -27,6 +27,7 @@ describe("roles permissions", () => {
   it("defaults include shared tabs plus role-specific tabs", () => {
     expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("overview");
     expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("reservations");
+    expect(DEFAULT_ROLE_PERMISSIONS.staff).toContain("workdays");
     expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("payroll");
     expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("tasks");
     expect(DEFAULT_ROLE_PERMISSIONS.staff).not.toContain("notifications");

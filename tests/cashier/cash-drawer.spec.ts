@@ -39,13 +39,16 @@ type Close = {
   note: string;
 };
 
+// Use an isolated test day so this UI check never overwrites a real close.
+const TEST_DAY = "2026-11-23";
+
 test("cash drawer saves the typed amount for the selected day without saving an empty count", async ({
   page,
 }) => {
   await signIn(page);
   let close: Close = {
     id: "CD-1",
-    date: "2026-11-24",
+    date: TEST_DAY,
     expected: 830,
     counted: 0,
     variance: -830,
@@ -59,7 +62,7 @@ test("cash drawer saves the typed amount for the selected day without saving an 
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        date: "2026-11-24",
+        date: TEST_DAY,
         close,
         expected: close.expected,
         payments: [],
@@ -86,6 +89,8 @@ test("cash drawer saves the typed amount for the selected day without saving an 
 
   await page.goto("/dashboard?tab=payment-verification");
   await expect(page.getByText("Cash drawer", { exact: true })).toBeVisible({ timeout: 15000 });
+  await page.locator("#drawer-date").fill(TEST_DAY);
+  await expect(page.locator("#drawer-date")).toHaveValue(TEST_DAY);
 
   const input = page.locator("#drawer-counted");
   const button = page.getByRole("button", { name: /^(Close|Update) cash drawer$/ });
@@ -102,7 +107,7 @@ test("cash drawer saves the typed amount for the selected day without saving an 
   await expect
     .poll(() => savedPayload)
     .toEqual({
-      date: "2026-11-24",
+      date: TEST_DAY,
       countedAmount: 812.75,
       note: "counted at closing",
     });

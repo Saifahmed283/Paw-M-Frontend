@@ -4,7 +4,7 @@ import {
   test,
   waitForDashboard,
 } from "@tests/fixtures/authed-page";
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "@tests/utils/selectors";
 
 /**
@@ -12,12 +12,29 @@ import { SELECTORS } from "@tests/utils/selectors";
  * The banner shows the toast only after a full clinic refresh, which can be
  * slow on a cold first run — allow enough time for that refresh to finish.
  */
-function successToastMatching(page: import("@playwright/test").Page, pattern: RegExp) {
+function successToastMatching(page: Page, pattern: RegExp) {
   return page
     .locator('[data-sonner-toast][data-type="success"]')
     .filter({ hasText: pattern })
     .first();
 }
+
+/** The CTA re-renders on a timer; a DOM click avoids the detach/retry loop. */
+async function clickShiftButton(page: Page, testId: "check-in-btn" | "check-out-btn") {
+  const button = page.getByTestId(testId);
+  await button.evaluate((el) => (el as HTMLElement).click());
+}
+
+/** Make each test start from the same visible checked-out state. */
+async function ensureCheckedOut(page: Page) {
+  const checkOut = page.getByTestId("check-out-btn");
+  if (await checkOut.isVisible().catch(() => false)) {
+    await clickShiftButton(page, "check-out-btn");
+  }
+  await expect(page.getByTestId("check-in-btn")).toBeVisible({ timeout: 10_000 });
+  await expect(checkOut).toHaveCount(0);
+}
+
 const TOAST_TIMEOUT = 30_000;
 
 test.describe("Shift Banner", () => {
@@ -25,6 +42,7 @@ test.describe("Shift Banner", () => {
     await resetWorkSession(page);
     await page.goto("/dashboard");
     await waitForDashboard(page);
+    await ensureCheckedOut(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -45,22 +63,26 @@ test.describe("Shift Banner", () => {
   });
 
   test("clicking Check In should show success toast and switch to Check Out", async ({ page }) => {
-    await page.getByTestId("check-in-btn").click();
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
-
-    const toast = successToastMatching(page, /checked in|check in|started/i);
-    await expect(toast).toBeVisible({ timeout: TOAST_TIMEOUT });
+    const toastVisible = expect(
+      successToastMatching(page, /checked in|check in|started/i),
+    ).toBeVisible({
+      timeout: TOAST_TIMEOUT,
+    });
+    await clickShiftButton(page, "check-in-btn");
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
+    await toastVisible;
   });
 
   test("clicking Check Out should show success toast and switch to Check In", async ({ page }) => {
-    await page.getByTestId("check-in-btn").click();
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
+    await clickShiftButton(page, "check-in-btn");
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
 
-    await page.getByTestId("check-out-btn").click();
-    await expect(page.getByTestId("check-in-btn")).toBeVisible({ timeout: 10000 });
-
-    const toast = successToastMatching(page, /check.?out|ended/i);
-    await expect(toast).toBeVisible({ timeout: TOAST_TIMEOUT });
+    const toastVisible = expect(successToastMatching(page, /check.?out|ended/i)).toBeVisible({
+      timeout: TOAST_TIMEOUT,
+    });
+    await clickShiftButton(page, "check-out-btn");
+    await expect(page.getByTestId("check-in-btn")).toBeVisible({ timeout: 10_000 });
+    await toastVisible;
   });
 
   test("should display status orb indicating shift state", async ({ page }) => {
@@ -71,8 +93,8 @@ test.describe("Shift Banner", () => {
   });
 
   test("should display session time when checked in", async ({ page }) => {
-    await page.getByTestId("check-in-btn").click();
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
+    await clickShiftButton(page, "check-in-btn");
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
 
     const sessionTime = page.getByTestId("session-time");
     await expect(sessionTime).toBeVisible();
@@ -84,21 +106,21 @@ test.describe("Shift Banner", () => {
     const initialClass = (await statusOrb.getAttribute("class")) ?? "";
     expect(initialClass).toMatch(/bg-amber/);
 
-    await page.getByTestId("check-in-btn").click();
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
+    await clickShiftButton(page, "check-in-btn");
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
 
-    const checkedInClass = (await statusOrb.getAttribute("class")) ?? "";
-    expect(checkedInClass).not.toBe(initialClass);
-    expect(checkedInClass).toMatch(/bg-success/);
+    await expect
+      .poll(async () => (await statusOrb.getAttribute("class")) ?? "")
+      .toMatch(/bg-success/);
   });
 
   test("should persist shift state across page refresh", async ({ page }) => {
-    await page.getByTestId("check-in-btn").click();
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
+    await clickShiftButton(page, "check-in-btn");
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
 
     await page.reload();
     await waitForDashboard(page);
-    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId("check-out-btn")).toBeVisible({ timeout: 10_000 });
   });
 
   test("should be visible on all dashboard tabs", async ({ page }) => {

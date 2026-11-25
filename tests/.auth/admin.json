@@ -3,17 +3,17 @@
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795586266,
+      "expires": 1795594367,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-session",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXNlcm5hbWUiOiJ0ZWNobmljYWwtc3VwcG9ydCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTUzMTM0OSwiZXhwIjoxNzk1NTYwMTQ5fQ.KpwP5tT-Hqxw6QBHEQa4zlrOrpOwdhVFOMrY0QO6ucM",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXNlcm5hbWUiOiJ0ZWNobmljYWwtc3VwcG9ydCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTU2MDQxMCwiZXhwIjoxNzk1NTg5MjEwfQ.9J2FlfxWNMhAI7JMFE5oXcez8BZ6Hk9UQi-NR7O_kpo",
       "httpOnly": true
     },
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795586266,
+      "expires": 1795594367,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-csrf-token",
@@ -23,11 +23,11 @@
     {
       "domain": "localhost",
       "path": "/",
-      "expires": 1795586266,
+      "expires": 1795594367,
       "secure": false,
       "sameSite": "Lax",
       "name": "paw-m-test-session",
-      "value": "%7B%22username%22%3A%22technical-support%22%2C%22role%22%3A%22admin%22%2C%22token%22%3A%22eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXNlcm5hbWUiOiJ0ZWNobmljYWwtc3VwcG9ydCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTUzMTM0OSwiZXhwIjoxNzk1NTYwMTQ5fQ.KpwP5tT-Hqxw6QBHEQa4zlrOrpOwdhVFOMrY0QO6ucM%22%7D",
+      "value": "%7B%22username%22%3A%22technical-support%22%2C%22role%22%3A%22admin%22%2C%22token%22%3A%22eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXNlcm5hbWUiOiJ0ZWNobmljYWwtc3VwcG9ydCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTU2MDQxMCwiZXhwIjoxNzk1NTg5MjEwfQ.9J2FlfxWNMhAI7JMFE5oXcez8BZ6Hk9UQi-NR7O_kpo%22%7D",
       "httpOnly": false
     }
   ],

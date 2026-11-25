@@ -46,7 +46,11 @@ test.describe("Requests Tab", () => {
   });
 
   test("should filter by status", async ({ page }) => {
-    await page.getByRole("radio", { name: "Pending", exact: true }).click();
+    // The tab strip re-renders while clinic data streams in; a DOM click avoids
+    // Playwright retrying against a detached Radix toggle item.
+    await page
+      .getByRole("radio", { name: "Pending", exact: true })
+      .evaluate((el) => (el as HTMLElement).click());
 
     const statusBadges = page.locator(SELECTORS.requests.statusBadge(""));
     const count = await statusBadges.count();

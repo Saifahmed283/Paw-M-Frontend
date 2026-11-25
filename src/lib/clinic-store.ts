@@ -278,6 +278,34 @@ export type AuditLog = {
   createdAt: string;
 };
 
+/** Repeated identical actions collapsed into a single staff-activity row. */
+export type WorkDayActivitySummary = {
+  id: string;
+  action: string;
+  target: string;
+  detail: string;
+  count: number;
+  createdAt: string;
+};
+
+export type CashWithdrawal = {
+  id: string;
+  date: string;
+  amount: number;
+  note: string;
+  status: "pending" | "approved" | "rejected";
+  requestedBy: number;
+  requesterUsername: string;
+  employeeId: string | null;
+  employeeName: string | null;
+  workSessionId: string | null;
+  reviewNote: string;
+  reviewedBy: number | null;
+  reviewerUsername: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+};
+
 export type WorkDaySummary = {
   date: string;
   bookings: number;
@@ -329,15 +357,22 @@ export type WorkDayFinance = {
 export type WorkDayStaff = WorkSession & {
   employee: { id: string; fullName: string; role: string; email: string };
   custody: CashCustody | null;
+  sessions: WorkSession[];
+  shiftCount: number;
+  firstCheckIn: string | null;
+  lastCheckOut: string | null;
   hours: number;
   ordersCount: number;
   revenue: number;
+  cashCollected: number;
   activityCount: number;
-  logs: AuditLog[];
+  logs: WorkDayActivitySummary[];
 };
 
 export type WorkDayDetail = {
   date: string;
+  view: "admin" | "staff";
+  scopeEmployeeId: string | null;
   session: (WorkSession & Partial<WorkDayStaff>) | null;
   sessions: WorkDayStaff[];
   staff: WorkDayStaff[];
@@ -346,6 +381,7 @@ export type WorkDayDetail = {
   payments: (Payment & { items?: PaymentItem[] })[];
   logs: AuditLog[];
   finance: WorkDayFinance;
+  withdrawals: CashWithdrawal[];
 };
 
 type Store = {
@@ -438,6 +474,19 @@ function getQc(): ReturnType<typeof useQueryClient> | null {
 
 function invalidate(key: readonly unknown[]) {
   getQc()?.invalidateQueries({ queryKey: key, exact: true });
+}
+
+/**
+ * Apply a check-in/check-out result immediately. An in-flight refetch that
+ * started before the mutation would otherwise be able to resolve afterwards
+ * and overwrite the new session with a stale one (or null).
+ */
+async function settleWorkSession(session: WorkSession | null) {
+  const qc = getQc();
+  if (!qc) return;
+  await qc.cancelQueries({ queryKey: QUERY_KEYS.workSession, exact: true });
+  qc.setQueryData(QUERY_KEYS.workSession, session);
+  invalidate(QUERY_KEYS.workSession);
 }
 
 /** Orders and their Payment rows are kept in sync, so refresh both together. */
@@ -1189,7 +1238,10 @@ export async function checkIn() {
       session: WorkSession;
       archived: { bookings: number; orders: number };
     }>("/work-session/check-in", {});
-    invalidate(QUERY_KEYS.workSession);
+    // A refetch started before the server committed the session can otherwise
+    // resolve late and overwrite the cache with `null`, leaving the shift
+    // banner stuck on "not checked in". Cancel it, then seed the known result.
+    await settleWorkSession(result.session);
     // A new shift always needs a fresh custody declaration, even when the
     // check-in is triggered from the dashboard rather than the cashier.
     invalidate(QUERY_KEYS.cashCustody);
@@ -1206,7 +1258,7 @@ export async function checkOut() {
       session: WorkSession;
       archived: { bookings: number; orders: number };
     }>("/work-session/check-out", {});
-    invalidate(QUERY_KEYS.workSession);
+    await settleWorkSession(result.session);
     invalidate(QUERY_KEYS.cashCustody);
     return result;
   } catch (err) {

@@ -39,25 +39,54 @@ export async function clickDashboardTab(page: Page, tabId: string) {
   await waitForDashboard(page);
   const nav = page.getByTestId(`nav-${tabId}`);
   const menu = page.getByRole("button", { name: /open menu/i });
+  const expectedUrl = new RegExp(`[?&]tab=${tabId}(?:&|$)`);
+
+  // The mobile hook can flip from desktop to sheet after the banner mounts, so
+  // wait for either entry point before deciding which one to use.
+  await menu.or(nav).first().waitFor({ state: "visible" });
 
   // On small viewports the rail lives in a Radix sheet. Selecting a tab closes
   // the sheet immediately, so Playwright's normal click can see the button
   // detach mid-action and retry forever. A DOM click is synchronous and avoids
   // that race while still exercising the same React onClick handler.
-  if (await menu.isVisible().catch(() => false)) {
-    await menu.click();
-    await nav.waitFor({ state: "visible" });
-    await nav.evaluate((el) => (el as HTMLElement).click());
-    return;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (await nav.isVisible().catch(() => false)) {
+      await nav.evaluate((el) => (el as HTMLElement).click());
+    } else {
+      await menu.click();
+      await nav.waitFor({ state: "visible" });
+      await nav.evaluate((el) => (el as HTMLElement).click());
+    }
+
+    try {
+      await page.waitForURL(expectedUrl, { timeout: 3000 });
+      return;
+    } catch {
+      // A transient re-render can swallow the click; reopen the sheet and retry.
+    }
   }
-  await nav.click();
+
+  throw new Error(`Clicking dashboard tab ${tabId} did not update the URL`);
 }
 
 /** Start each shift test from a known checked-out state. */
 export async function resetWorkSession(page: Page) {
+  // The cookie alone is rejected by the API's CSRF guard on POSTs. Use the
+  // readable test-session cookie to send the same Bearer token the UI uses.
+  const cookies = await page.context().cookies();
+  const sessionCookie = cookies.find((cookie) => cookie.name === "paw-m-test-session");
+  let token: string | undefined;
+  try {
+    if (sessionCookie) {
+      token = JSON.parse(decodeURIComponent(sessionCookie.value)).token;
+    }
+  } catch {
+    // A malformed fixture cookie must not break the reset; the app will fail auth.
+  }
+  const headers: Record<string, string> = { "x-pawm-e2e": "1" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   await page.request
-    .post(`${API_BASE_URL}/work-session/check-out`, {
-      headers: { "x-pawm-e2e": "1" },
-    })
+    .post(`${API_BASE_URL}/work-session/check-out`, { headers })
     .catch(() => undefined);
 }

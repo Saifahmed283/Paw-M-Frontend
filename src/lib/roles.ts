@@ -47,7 +47,7 @@ export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
     "archive",
     "prescriptions",
   ],
-  staff: ["overview", "requests", "reservations", "prescriptions"],
+  staff: ["overview", "requests", "reservations", "prescriptions", "workdays"],
 };
 
 export function allowedTabsForRole(perms: RolePermissions | undefined, role: string): string[] {
